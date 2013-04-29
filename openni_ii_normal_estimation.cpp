@@ -100,6 +100,8 @@ class OpenNIIntegralImageNormalEstimation
       double start = pcl::getTime ();
       ne_.setInputCloud (cloud);
       ne_.compute (*normals_);
+	  DBSCAN(normals_, 0.2, 10);
+	  
       double stop = pcl::getTime ();
       std::cout << "Time for normal estimation: " << (stop - start) * 1000.0 << " ms" << std::endl;
       cloud_ = cloud;
@@ -184,36 +186,42 @@ class OpenNIIntegralImageNormalEstimation
       interface->stop ();
     }
 	
-	vector<int> regionQuery(pcl::KdTree<pcl::Normal> kdPoints, int currentPoint, double radius) {
+	vector<int> regionQuery(pcl::KdTreeFLANN<pcl::Normal> kdPoints, pcl::Normal currentPoint, double radius) {
 		vector<int> k_indicies;
 		vector<float> k_sqr_distances;
-		pcl::KdPoints<pcl::Normal>::radiusSearch(currentPoint, radius, k_indicies, k_sqr_distances);
+		//kdPoints.radiusSearch(currentPoint, radius, k_indicies, k_sqr_distances);
+		kdPoints.radiusSearch(currentPoint, radius, k_indicies, k_sqr_distances);
 		return k_indicies;
 	}
 
-	void DBSCAN (CloudConstPtr mynormals, double radius, int minPoints){
+	void DBSCAN (pcl::PointCloud<pcl::Normal>::Ptr mynormals, double radius, int minPoints){
 		vector<int> NeighborPts;
-		pcl::KdTree kdPoints;
+		pcl::KdTreeFLANN<pcl::Normal> kdPoints;
+		
 		pcl::IndicesConstPtr ind = pcl::IndicesConstPtr();
-		kdPoints.setInputCloud(*myNormals, ind);
-		int sizeOfData = mynormals.size();
-		bool Visited[sizeOfData];
-		for(int i = 0; i<sizeOfData; i++){
-			Visited[i]=false;
+
+		kdPoints.setInputCloud(mynormals, ind);
+		//Visited 
+		int sizeOfData = mynormals->size();
+		vector<bool> Visited;
+		for(int i = 0; i<sizeOfData; i++) 
+		{
+			Visited.push_back(false);
 		}
+
 		vector<int> currentCluster;
 		vector<vector<int>> clusters;
 		int clusterInd = 0;
 
-		for(i = 0; i<sizeOfData; i++){
-			if(Visited[i]=false){
+		for(int i = 0; i<sizeOfData; i++){
+			if(Visited[i]==false){
 				Visited[i] = true;
-				NeighborPts = regionQuery(kdPoints, i, radius);
+				NeighborPts = regionQuery(kdPoints, mynormals[i] radius);
 				if(NeighborPts.size()<minPoints){
 					//nothing here could call it noise explicitly
 				}
 				else{
-					expandCluster(i,NeighborPts,currentCluster,radius,minPoints,KdPoints,Visited);
+					expandCluster(i,NeighborPts,currentCluster,radius,minPoints,kdPoints,Visited);
 					clusters.push_back(currentCluster);
 					clusterInd++;
 				}
@@ -222,13 +230,13 @@ class OpenNIIntegralImageNormalEstimation
 	}
 
 	void expandCluster(	int inputInd, vector<int> NeighborPts,vector<int> currentCluster,
-						double radius, int minPoints, pcl::KdTree<pcl::Normal> kdPoints,bool Visited[10]){
+						double radius, int minPoints, pcl::KdTreeFLANN<pcl::Normal> kdPoints,vector<bool> Visited){
 		currentCluster.push_back(inputInd);
 		vector<int> secondNeighborPts;
 		for(int j = 0; j < NeighborPts.size(); j++){
-			if(Visited[neighborPts[j]]=false){
-				Visited[neighborPts[j]]=true;
-				secondNeighborPts = regoinQuery(KdPoints,NeighborPts[j],radius);
+			if(Visited[NeighborPts[j]]=false){
+				Visited[NeighborPts[j]]=true;
+				secondNeighborPts = regionQuery(kdPoints,NeighborPts[j],radius);
 				if(secondNeighborPts.size()>=minPoints){
 					//take the union of neighborPts and secondneighborPts
 				}
@@ -237,9 +245,7 @@ class OpenNIIntegralImageNormalEstimation
 		}
 
 	}
-
-
-		
+			
     pcl::IntegralImageNormalEstimation<PointType, pcl::Normal> ne_;
     pcl::visualization::CloudViewer viewer;
     std::string device_id_;
