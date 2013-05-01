@@ -110,6 +110,7 @@ class OpenNIIntegralImageNormalEstimation
      ne_.setInputCloud (cloud);
 	  ne_.compute (*normals_); 
 	  cloud_global = cloud;
+
 	  DBSCAN(cloud, 0.2, 10);
 
       double stop = pcl::getTime ();
