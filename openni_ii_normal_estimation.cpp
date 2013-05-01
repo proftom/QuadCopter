@@ -76,7 +76,7 @@ class OpenNIIntegralImageNormalEstimation
 	typedef pcl::PointCloud<pcl::PointXYZ> CloudXYZ;
 	typedef boost::shared_ptr<CloudXYZ> CloudPtrXYZ;
 	typedef boost::shared_ptr<const CloudXYZ> CloudConstPtrXYZ;
-
+	CloudConstPtr cloud_global;
 	//For future
 	//https://code.ros.org/trac/wg-ros-pkg/browser/trunk/stacks/drivers_experimental/dp_ptu47_pan_tilt_stage/src/extract_object_roi.cpp?rev=37618
 
@@ -99,23 +99,24 @@ class OpenNIIntegralImageNormalEstimation
     {
       boost::mutex::scoped_lock lock (mtx_);
       //lock while we set our cloud;
-      //FPS_CALC ("computation");
+      FPS_CALC ("computation");
       // Estimate surface normals
 
 	  // Cloud cld (new Cloud(cloud));
 
-//      normals_.reset (new pcl::PointCloud<pcl::Normal>);
+      normals_.reset (new pcl::PointCloud<pcl::Normal>);
 
       double start = pcl::getTime ();
-     // ne_.setInputCloud (cloud);
-	  //ne_.compute (*normals_); 
-	  
+     ne_.setInputCloud (cloud);
+	  ne_.compute (*normals_); 
+	  cloud_global = cloud;
 	  DBSCAN(cloud, 0.2, 10);
-	  
+
       double stop = pcl::getTime ();
-      std::cout << "Time for normal estimation: " << (stop - start) * 1000.0 << " ms" << std::endl;
+      //std::cout << "Time for normal estimation: " << (stop - start) * 1000.0 << " ms" << std::endl;
       cloud_ = cloud;
-	  
+
+	  cloud_global = cloud;
       new_cloud_ = true;
 
     }
@@ -155,12 +156,19 @@ class OpenNIIntegralImageNormalEstimation
     void
     keyboard_callback (const pcl::visualization::KeyboardEvent& event, void*)
     {
+		ofstream MyFile;
+		MyFile.open ("data.csv", ios::out | ios::ate | ios::app) ;
       boost::mutex::scoped_lock lock (mtx_);
       switch (event.getKeyCode ())
       {
         case '1':
-          ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::COVARIANCE_MATRIX);
-          std::cout << "switched to COVARIANCE_MATRIX method\n";
+          //ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::COVARIANCE_MATRIX);
+          //std::cout << "switched to COVARIANCE_MATRIX method\n";
+			for (int p = 0; p <19200; p++){
+				MyFile << cloud_global->points[p].x << " " << cloud_global->points[p].y << " " << cloud_global->points[p].z << "\n";
+			}
+
+			MyFile << "//\n"; 
           break;
         case '2':
           ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::AVERAGE_3D_GRADIENT);
@@ -196,32 +204,22 @@ class OpenNIIntegralImageNormalEstimation
 
       interface->stop ();
     }
-	
+
 
 	//void DBSCAN (pcl::PointCloud<pcl::Normal>::Ptr mynormals, double radius, int minPoints){
 	//http://www.pointclouds.org/documentation/tutorials/kdtree_search.php
 	void DBSCAN (CloudConstPtr cloudd, double radius, int minPoints){
 
 		vector<int> NeighborPts;
-	    pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
+	    //pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
 		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
-
-		// Generate pointcloud data
-		cloud->width = 160;
-		cloud->height = 120;
-		cloud->points.resize (cloud->width * cloud->height);
-
-		for (size_t i = 0; i < cloud->points.size (); ++i)
-		{
-			cloud->points[i].x = 1024.0f * rand () / (RAND_MAX + 1.0f);
-			cloud->points[i].y = 1024.0f * rand () / (RAND_MAX + 1.0f);
-			cloud->points[i].z = 1024.0f * rand () / (RAND_MAX + 1.0f);
-		}
-
-		kdtree.setInputCloud (cloud);
-
+		
+		//http://www.pointclouds.org/documentation/tutorials/extract_indices.php
+		pcl::PointCloud<pcl::PointXYZ>::Ptr xyzcloud (new pcl::PointCloud<pcl::PointXYZ>);
+		pcl::PCDReader reader;
+		
 		//Visited 
-		int sizeOfData = cloud->size();
+		int sizeOfData = cloud_global->size();
 		vector<bool> Visited;
 		vector<bool> addedToCluster;
 		for(int i = 0; i<sizeOfData; i++) 
@@ -238,31 +236,45 @@ class OpenNIIntegralImageNormalEstimation
 			if(Visited[i]==false){
 				Visited[i] = true;
 			
-				NeighborPts = regionQuery(kdtree, i, 0.2);
+				NeighborPts = regionQuery(cloud, i, 0.2);
 				if(NeighborPts.size()<minPoints){
 					//nothing here could call it noise explicitly
 				}
 				else{
-					expandCluster(i,NeighborPts,currentCluster,radius,minPoints,kdtree,Visited, addedToCluster);
+					expandCluster(i, NeighborPts, currentCluster, radius, minPoints, cloud, Visited, addedToCluster);
 					clusters.push_back(currentCluster);
 					clusterInd++;
 				}
 			}
 		}
+		cout << clusters.size() << " clusters found" << endl;
 	}
 
 	//pcl::Normal causes alignment error
-	vector<int> regionQuery(pcl::KdTreeFLANN<pcl::PointXYZ> kdtree, int currentPoint, double radius) {
+	vector<int> regionQuery(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, int currentPoint, double radius) {
 		vector<int> k_indicies;
-		vector<float> k_sqr_distances;
-
-		//kdPoints.radiusSearch(kdtree.get, radius, k_indicies, k_sqr_distances);
 		
+		//kdPoints.radiusSearch(cloud->points[currentPoint], radius, k_indicies, k_sqr_distances);
+		
+
+			for( int j = 0; j < 19200; j++) {
+				if	(
+						(abs(cloud_global->points[currentPoint].x - cloud_global->points[j].x) < radius) 
+					&&	(abs(cloud_global->points[currentPoint].y - cloud_global->points[j].y) < radius) 
+					&&	(abs(cloud_global->points[currentPoint].z - cloud_global->points[j].z) < radius)
+					)
+				{
+					k_indicies.push_back(j);
+				}
+			}
+
+		
+
 		return k_indicies;
 	}
 
 	void expandCluster(	int inputInd, vector<int> NeighborPts,vector<int> currentCluster,
-			double radius, int minPoints, pcl::KdTreeFLANN<pcl::PointXYZ> kdPoints,vector<bool> &Visited, vector<bool> &addedToCluster){
+			double radius, int minPoints, pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, vector<bool> &Visited, vector<bool> &addedToCluster){
 
 		currentCluster.push_back(inputInd);
 		vector<int> secondNeighborPts;
@@ -270,7 +282,7 @@ class OpenNIIntegralImageNormalEstimation
 		for(int j = 0; j < NeighborPts.size(); j++){
 			if(Visited[NeighborPts[j]]==false){
 				Visited[NeighborPts[j]]=true;
-				secondNeighborPts = regionQuery(kdPoints,NeighborPts[j],radius);
+				secondNeighborPts = regionQuery(cloud,NeighborPts[j],radius);
 				if(secondNeighborPts.size()>=minPoints){
 					inplace_union(NeighborPts, secondNeighborPts);
 				}
@@ -369,5 +381,3 @@ main (int argc, char ** argv)
 
   return (0);
 }
-
-
