@@ -75,8 +75,7 @@ class OpenNIIntegralImageNormalEstimation
     typedef Cloud::ConstPtr CloudConstPtr; //typename
 
 	CloudConstPtr cloud_global;
-	CloudConstPtr cld_render_ptr;
-	pcl::PointCloud<PointType> cld_render;
+	//CloudPtr cld_render_ptr;
 
 
 	//For future
@@ -107,7 +106,7 @@ class OpenNIIntegralImageNormalEstimation
 	  // Cloud cld (new Cloud(cloud));
 
       normals_.reset (new pcl::PointCloud<pcl::Normal>);
-	  cld_render_ptr.reset(&cld_render);
+	  //cld_render_ptr.reset(new pcl::PointCloud<PointType>);
 
       double start = pcl::getTime ();
      ne_.setInputCloud (cloud);
@@ -141,9 +140,21 @@ class OpenNIIntegralImageNormalEstimation
       temp_normals.swap (normals_);
       mtx_.unlock ();
 
-      if (!viz.updatePointCloud (temp_cloud, "OpenNICloud"))
+
+		pcl::PointCloud<PointType> pc(*cloud_global);
+
+		for (int p = 0; p < pc.points.size(); p++){
+			
+			pc.points[p].r = 255;
+			pc.points[p].g = 0;
+			pc.points[p].b = 0;
+
+		}
+		CloudConstPtr inputtmp(new pcl::PointCloud<PointType>(pc));
+
+      if (!viz.updatePointCloud (inputtmp, "OpenNICloud"))
       {
-        viz.addPointCloud (temp_cloud, "OpenNICloud");
+        viz.addPointCloud (inputtmp, "OpenNICloud");
 		viz.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "OpenNICloud");
         viz.resetCameraViewpoint ("OpenNICloud");
       }
@@ -151,22 +162,10 @@ class OpenNIIntegralImageNormalEstimation
       if (new_cloud_)
       {
 
-		pcl::PointCloud<PointType> pc(*cloud_global);
-
-		for (int p = 0; p < 19200; p++){
-			
-			pc.points[p].r = 255;
-			pc.points[p].g = 0;
-			pc.points[p].b = 0;
-
-		}
-
-		cld_render = pc; //warning this is a full copy!
-
         viz.removePointCloud ("normalcloud");
 		/*const pcl::PointCloud<pcl::PointXYZ>::ConstPtr p = pc;*/
 
-        viz.addPointCloudNormals<PointType, pcl::Normal> (cld_render_ptr, temp_normals, 5, 0.05f, "normalcloud");
+        viz.addPointCloudNormals<PointType, pcl::Normal> (inputtmp, temp_normals, 5, 0.05f, "normalcloud");
         new_cloud_ = false;
 
       }
