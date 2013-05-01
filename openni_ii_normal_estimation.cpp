@@ -74,16 +74,27 @@ class OpenNIIntegralImageNormalEstimation
 	typedef Cloud::Ptr CloudPtr; //typename
     typedef Cloud::ConstPtr CloudConstPtr; //typename
 
-	CloudConstPtr cloud_global;
-	//CloudPtr cld_render_ptr;
+	unsigned int eventflag; 
+
+	//This is used to hold the data used by DBSCAN
+	CloudConstPtr cloud_dbscanproc;
+
+	pcl::IntegralImageNormalEstimation<PointType, pcl::Normal> ne_;
+
+    pcl::visualization::CloudViewer viewer;
+    std::string device_id_;
+    boost::mutex mtx_;
+    // Data
+    pcl::PointCloud<pcl::Normal>::Ptr normals_;
+    CloudConstPtr cloud_;
+    bool new_cloud_;
 
 
-	//For future
-	//https://code.ros.org/trac/wg-ros-pkg/browser/trunk/stacks/drivers_experimental/dp_ptu47_pan_tilt_stage/src/extract_object_roi.cpp?rev=37618
-
+	
     OpenNIIntegralImageNormalEstimation (const std::string& device_id = "")
       : viewer ("PCL OpenNI NormalEstimation Viewer")
     , device_id_(device_id)
+	, eventflag(0)
     {
       //ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::COVARIANCE_MATRIX);
       ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::SIMPLE_3D_GRADIENT);
@@ -107,19 +118,57 @@ class OpenNIIntegralImageNormalEstimation
 
       normals_.reset (new pcl::PointCloud<pcl::Normal>);
 	  //cld_render_ptr.reset(new pcl::PointCloud<PointType>);
-
+	  
       double start = pcl::getTime ();
-     ne_.setInputCloud (cloud);
+      ne_.setInputCloud (cloud);
 	  ne_.compute (*normals_); 
-	  cloud_global = cloud;
-
 
       double stop = pcl::getTime ();
       //std::cout << "Time for normal estimation: " << (stop - start) * 1000.0 << " ms" << std::endl;
-      cloud_ = cloud;
+      //cloud_ = cloud;
 
-	  cloud_global = cloud;
-      new_cloud_ = true;
+
+	  cloud_dbscanproc = cloud; //TODO unessecary copy
+
+	  static bool hasrun = false;
+	  if(eventflag & 0x1){
+		  if(!hasrun){
+				hasrun = true;
+				vector<vector<int>> clusterIndicies = DBSCAN(0.2, 10);
+
+				pcl::PointCloud<PointType> pc(*cloud_dbscanproc);
+
+				//Colour clusters
+				for(int i = 0; i < clusterIndicies.size(); i++) 
+				{
+					char r,b,g;
+					r = rand()%256;
+					g = rand()%256;
+					b = rand()%256;
+					for(int j = 0; j < clusterIndicies[i].size(); j++) {
+						pc.points[clusterIndicies[i][j]].r = r;
+						pc.points[clusterIndicies[i][j]].g = g;
+						pc.points[clusterIndicies[i][j]].b = b;
+					}
+				}
+
+				CloudConstPtr inputtmp(new pcl::PointCloud<PointType>(pc));
+				cloud_ = inputtmp;
+
+				new_cloud_ = true;
+		  }
+	  }else{
+		  cloud_ = cloud;
+		  if (!(eventflag & 0x1)){
+			  new_cloud_ = true;
+			  hasrun = false;
+		  }
+	  }
+
+		
+
+		//mtx_.unlock();
+		//while(eventflag & 0x1);
 
     }
 
@@ -140,21 +189,9 @@ class OpenNIIntegralImageNormalEstimation
       temp_normals.swap (normals_);
       mtx_.unlock ();
 
-
-		pcl::PointCloud<PointType> pc(*cloud_global);
-
-		for (int p = 0; p < pc.points.size(); p++){
-			
-			pc.points[p].r = 255;
-			pc.points[p].g = 0;
-			pc.points[p].b = 0;
-
-		}
-		CloudConstPtr inputtmp(new pcl::PointCloud<PointType>(pc));
-
-      if (!viz.updatePointCloud (inputtmp, "OpenNICloud"))
+      if (!viz.updatePointCloud (temp_cloud, "OpenNICloud"))
       {
-        viz.addPointCloud (inputtmp, "OpenNICloud");
+        viz.addPointCloud (temp_cloud, "OpenNICloud");
 		viz.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "OpenNICloud");
         viz.resetCameraViewpoint ("OpenNICloud");
       }
@@ -165,7 +202,7 @@ class OpenNIIntegralImageNormalEstimation
         viz.removePointCloud ("normalcloud");
 		/*const pcl::PointCloud<pcl::PointXYZ>::ConstPtr p = pc;*/
 
-        viz.addPointCloudNormals<PointType, pcl::Normal> (inputtmp, temp_normals, 5, 0.05f, "normalcloud");
+        viz.addPointCloudNormals<PointType, pcl::Normal> (temp_cloud, temp_normals, 5, 0.05f, "normalcloud");
         new_cloud_ = false;
 
       }
@@ -183,10 +220,10 @@ class OpenNIIntegralImageNormalEstimation
         case '1':
           //ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::COVARIANCE_MATRIX);
           //std::cout << "switched to COVARIANCE_MATRIX method\n";
-			//(cloud_global->width, cloud_global->height, cloud_global);
+			//(cloud_dbscanproc->width, cloud_dbscanproc->height, cloud_dbscanproc);
 			for (int p = 0; p <19200; p++){
 
-				MyFile << cloud_global->points[p].x << "," << cloud_global->points[p].y <<","<< cloud_global->points[p].z<<"\n";
+				MyFile << cloud_dbscanproc->points[p].x << "," << cloud_dbscanproc->points[p].y <<","<< cloud_dbscanproc->points[p].z<<"\n";
 
 			}
 
@@ -195,7 +232,7 @@ class OpenNIIntegralImageNormalEstimation
           break;
         case '2':
 
-		  DBSCAN(0.2, 10);
+		  
           ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::AVERAGE_3D_GRADIENT);
           std::cout << "switched to AVERAGE_3D_GRADIENT method\n";
           break;
@@ -207,6 +244,11 @@ class OpenNIIntegralImageNormalEstimation
           ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::SIMPLE_3D_GRADIENT);
           std::cout << "switched to SIMPLE_3D_GRADIENT method\n";
           break;
+		case '5':
+			eventflag |= 0x1;
+			break;
+		case '6':
+			eventflag &= ~0x1;
       }
     }
 
@@ -230,16 +272,15 @@ class OpenNIIntegralImageNormalEstimation
       interface->stop ();
     }
 
-	void DBSCAN (double epsilon, int minPoints){
+	vector<vector<int>> DBSCAN (double epsilon, int minPoints){
 
 		
-		int sizeOfData = cloud_global->size();
+		int sizeOfData = cloud_dbscanproc->size();
 		vector<bool> Visited;
 		vector<bool> addedToCluster;
 		vector<int> NeighborPts;
 
 		//Clusters
-		vector<int> currentCluster;
 		vector<vector<int>> clusters;
 		
 		//Initialise
@@ -258,6 +299,7 @@ class OpenNIIntegralImageNormalEstimation
 				NeighborPts = regionQuery(i, 0.2);
 				if(!(NeighborPts.size()<minPoints))
 				{
+					vector<int> currentCluster;
 					expandCluster(i, NeighborPts, currentCluster, epsilon, minPoints, Visited, addedToCluster);
 					clusters.push_back(currentCluster);
 					clusterInd++;
@@ -267,23 +309,17 @@ class OpenNIIntegralImageNormalEstimation
 
 		cout << clusters.size() << " clusters found" << endl;
 
-		//Colour clusters
-		//for(int i = 0; i < clusters.size(); i++) 
-		//{
-		//	for(int j = 0; j < clusters[j]; j++) {
-		//		cloud_global->points[j].r = 255; //clusters[j]
-		//	}
-		//}
+		return clusters;
 
 	}
 
 	//Get all points in region within esp
 	vector<int> regionQuery(int currentPoint, double epsilon) {
 		vector<int> k_indicies;
-		for( int j = 0; j < cloud_global->size(); j++) {
-			if	(	(abs(cloud_global->points[currentPoint].x - cloud_global->points[j].x) < epsilon) 
-				&&	(abs(cloud_global->points[currentPoint].y - cloud_global->points[j].y) < epsilon) 
-				&&	(abs(cloud_global->points[currentPoint].z - cloud_global->points[j].z) < epsilon))
+		for( int j = 0; j < cloud_dbscanproc->size(); j++) {
+			if	(	(abs(cloud_dbscanproc->points[currentPoint].x - cloud_dbscanproc->points[j].x) < epsilon) 
+				&&	(abs(cloud_dbscanproc->points[currentPoint].y - cloud_dbscanproc->points[j].y) < epsilon) 
+				&&	(abs(cloud_dbscanproc->points[currentPoint].z - cloud_dbscanproc->points[j].z) < epsilon))
 			{
 				k_indicies.push_back(j);
 			}
@@ -292,7 +328,7 @@ class OpenNIIntegralImageNormalEstimation
 		return k_indicies;
 	}
 
-	void expandCluster(	int inputInd, vector<int> NeighborPts,vector<int> currentCluster,
+	void expandCluster(	int inputInd, vector<int> NeighborPts,vector<int> &currentCluster,
 						double radius, int minPoints, vector<bool> &Visited, vector<bool> &addedToCluster){
 
 		currentCluster.push_back(inputInd);
@@ -327,16 +363,6 @@ class OpenNIIntegralImageNormalEstimation
 		//Remove duplicate elements from the sorted vector
 		a.erase(std::unique(a.begin(), a.end()), a.end());
 	}
-
-    pcl::IntegralImageNormalEstimation<PointType, pcl::Normal> ne_;
-
-    pcl::visualization::CloudViewer viewer;
-    std::string device_id_;
-    boost::mutex mtx_;
-    // Data
-    pcl::PointCloud<pcl::Normal>::Ptr normals_;
-    CloudConstPtr cloud_;
-    bool new_cloud_;
 };
 
 void
