@@ -111,8 +111,6 @@ class OpenNIIntegralImageNormalEstimation
 	  ne_.compute (*normals_); 
 	  cloud_global = cloud;
 
-	  DBSCAN(cloud, 0.2, 10);
-
       double stop = pcl::getTime ();
       //std::cout << "Time for normal estimation: " << (stop - start) * 1000.0 << " ms" << std::endl;
       cloud_ = cloud;
@@ -172,6 +170,7 @@ class OpenNIIntegralImageNormalEstimation
 			MyFile << "//\n"; 
           break;
         case '2':
+		  DBSCAN(0.2, 10);
           ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::AVERAGE_3D_GRADIENT);
           std::cout << "switched to AVERAGE_3D_GRADIENT method\n";
           break;
@@ -206,76 +205,69 @@ class OpenNIIntegralImageNormalEstimation
       interface->stop ();
     }
 
+	void DBSCAN (double epsilon, int minPoints){
 
-	//void DBSCAN (pcl::PointCloud<pcl::Normal>::Ptr mynormals, double radius, int minPoints){
-	//http://www.pointclouds.org/documentation/tutorials/kdtree_search.php
-	void DBSCAN (CloudConstPtr cloudd, double radius, int minPoints){
-
-		vector<int> NeighborPts;
-	    //pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
-		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
 		
-		//http://www.pointclouds.org/documentation/tutorials/extract_indices.php
-		pcl::PointCloud<pcl::PointXYZ>::Ptr xyzcloud (new pcl::PointCloud<pcl::PointXYZ>);
-		pcl::PCDReader reader;
-		
-		//Visited 
 		int sizeOfData = cloud_global->size();
 		vector<bool> Visited;
 		vector<bool> addedToCluster;
-		for(int i = 0; i<sizeOfData; i++) 
-		{
-			Visited.push_back(false);
-			addedToCluster.push_back(false);
-		}
+		vector<int> NeighborPts;
 
+		//Clusters
 		vector<int> currentCluster;
 		vector<vector<int>> clusters;
+		
+		//Initialise
+		for(int i = 0; i< sizeOfData; i++) 
+		{
+			Visited.push_back(false);
+			addedToCluster.push_back(false); 
+		}
+
 		int clusterInd = 0;
 
 		for(int i = 0; i<sizeOfData; i++){
 			if(Visited[i]==false){
 				Visited[i] = true;
 			
-				NeighborPts = regionQuery(cloud, i, 0.2);
-				if(NeighborPts.size()<minPoints){
-					//nothing here could call it noise explicitly
-				}
-				else{
-					expandCluster(i, NeighborPts, currentCluster, radius, minPoints, cloud, Visited, addedToCluster);
+				NeighborPts = regionQuery(i, 0.2);
+				if(!(NeighborPts.size()<minPoints))
+				{
+					expandCluster(i, NeighborPts, currentCluster, epsilon, minPoints, Visited, addedToCluster);
 					clusters.push_back(currentCluster);
 					clusterInd++;
 				}
 			}
 		}
+
 		cout << clusters.size() << " clusters found" << endl;
+
+		//Colour clusters
+		for(int i = 0; i < clusters.size(); i++) 
+		{
+			for(int j = 0; j < clusters[j]; j++) {
+				cloud_global->points[j].r = 255; //clusters[j]
+			}
+		}
+
 	}
 
-	//pcl::Normal causes alignment error
-	vector<int> regionQuery(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, int currentPoint, double radius) {
+	//Get all points in region within esp
+	vector<int> regionQuery(int currentPoint, double epsilon) {
 		vector<int> k_indicies;
-		
-		//kdPoints.radiusSearch(cloud->points[currentPoint], radius, k_indicies, k_sqr_distances);
-		
-
-			for( int j = 0; j < 19200; j++) {
-				if	(
-						(abs(cloud_global->points[currentPoint].x - cloud_global->points[j].x) < radius) 
-					&&	(abs(cloud_global->points[currentPoint].y - cloud_global->points[j].y) < radius) 
-					&&	(abs(cloud_global->points[currentPoint].z - cloud_global->points[j].z) < radius)
-					)
-				{
-					k_indicies.push_back(j);
-				}
+		for( int j = 0; j < cloud_global->size(); j++) {
+			if	(	(abs(cloud_global->points[currentPoint].x - cloud_global->points[j].x) < epsilon) 
+				&&	(abs(cloud_global->points[currentPoint].y - cloud_global->points[j].y) < epsilon) 
+				&&	(abs(cloud_global->points[currentPoint].z - cloud_global->points[j].z) < epsilon))
+			{
+				k_indicies.push_back(j);
 			}
-
-		
-
+		}
 		return k_indicies;
 	}
 
 	void expandCluster(	int inputInd, vector<int> NeighborPts,vector<int> currentCluster,
-			double radius, int minPoints, pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, vector<bool> &Visited, vector<bool> &addedToCluster){
+						double radius, int minPoints, vector<bool> &Visited, vector<bool> &addedToCluster){
 
 		currentCluster.push_back(inputInd);
 		vector<int> secondNeighborPts;
@@ -283,13 +275,14 @@ class OpenNIIntegralImageNormalEstimation
 		for(int j = 0; j < NeighborPts.size(); j++){
 			if(Visited[NeighborPts[j]]==false){
 				Visited[NeighborPts[j]]=true;
-				secondNeighborPts = regionQuery(cloud,NeighborPts[j],radius);
+				secondNeighborPts = regionQuery(NeighborPts[j],radius);
 				if(secondNeighborPts.size()>=minPoints){
 					inplace_union(NeighborPts, secondNeighborPts);
 				}
 			}
 			if (!addedToCluster[j])
-				currentCluster.push_back(NeighborPts[j]);//if neighborPts[j] has yet to be added to a cluster add it to this one
+				currentCluster.push_back(NeighborPts[j]);
+				//if neighborPts[j] has yet to be added to a cluster add it to this one
 		}
 
 	}
@@ -340,8 +333,6 @@ usage (char ** argv)
   else
     cout << "No devices connected." << endl;
 }
-
-
 
 int
 main (int argc, char ** argv)
