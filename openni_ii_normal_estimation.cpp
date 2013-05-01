@@ -76,7 +76,7 @@ class OpenNIIntegralImageNormalEstimation
 	typedef pcl::PointCloud<pcl::PointXYZ> CloudXYZ;
 	typedef boost::shared_ptr<CloudXYZ> CloudPtrXYZ;
 	typedef boost::shared_ptr<const CloudXYZ> CloudConstPtrXYZ;
-
+	CloudConstPtr cloud_global;
 	//For future
 	//https://code.ros.org/trac/wg-ros-pkg/browser/trunk/stacks/drivers_experimental/dp_ptu47_pan_tilt_stage/src/extract_object_roi.cpp?rev=37618
 
@@ -99,23 +99,24 @@ class OpenNIIntegralImageNormalEstimation
     {
       boost::mutex::scoped_lock lock (mtx_);
       //lock while we set our cloud;
-      //FPS_CALC ("computation");
+      FPS_CALC ("computation");
       // Estimate surface normals
 
 	  // Cloud cld (new Cloud(cloud));
 
-//      normals_.reset (new pcl::PointCloud<pcl::Normal>);
+      normals_.reset (new pcl::PointCloud<pcl::Normal>);
 
       double start = pcl::getTime ();
-     // ne_.setInputCloud (cloud);
-	  //ne_.compute (*normals_); 
-	  
-	  DBSCAN(cloud, 0.2, 10);
+     ne_.setInputCloud (cloud);
+	  ne_.compute (*normals_); 
+	  cloud_global = cloud;
+	  //DBSCAN(cloud, 0.2, 10);
 	  
       double stop = pcl::getTime ();
-      std::cout << "Time for normal estimation: " << (stop - start) * 1000.0 << " ms" << std::endl;
+      //std::cout << "Time for normal estimation: " << (stop - start) * 1000.0 << " ms" << std::endl;
       cloud_ = cloud;
 	  
+	  cloud_global = cloud;
       new_cloud_ = true;
 
     }
@@ -155,12 +156,19 @@ class OpenNIIntegralImageNormalEstimation
     void
     keyboard_callback (const pcl::visualization::KeyboardEvent& event, void*)
     {
+		ofstream MyFile;
+		MyFile.open ("data.csv", ios::out | ios::ate | ios::app) ;
       boost::mutex::scoped_lock lock (mtx_);
       switch (event.getKeyCode ())
       {
         case '1':
-          ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::COVARIANCE_MATRIX);
-          std::cout << "switched to COVARIANCE_MATRIX method\n";
+          //ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::COVARIANCE_MATRIX);
+          //std::cout << "switched to COVARIANCE_MATRIX method\n";
+			for (int p = 0; p <19200; p++){
+				MyFile << cloud_global->points[p].x << " " << cloud_global->points[p].y << " " << cloud_global->points[p].z << "\n";
+			}
+
+			MyFile << "//\n"; 
           break;
         case '2':
           ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::AVERAGE_3D_GRADIENT);
