@@ -65,18 +65,20 @@ do \
     } \
 }while(false)
 
-template <typename PointType>
+//template <typename PointType>
+typedef pcl::PointXYZRGBA PointType;
 class OpenNIIntegralImageNormalEstimation
 {
   public:
     typedef pcl::PointCloud<PointType> Cloud;
-	typedef typename Cloud::Ptr CloudPtr;
-    typedef typename Cloud::ConstPtr CloudConstPtr;
+	typedef Cloud::Ptr CloudPtr; //typename
+    typedef Cloud::ConstPtr CloudConstPtr; //typename
 
-	typedef pcl::PointCloud<pcl::PointXYZ> CloudXYZ;
-	typedef boost::shared_ptr<CloudXYZ> CloudPtrXYZ;
-	typedef boost::shared_ptr<const CloudXYZ> CloudConstPtrXYZ;
 	CloudConstPtr cloud_global;
+	CloudConstPtr cld_render_ptr;
+	pcl::PointCloud<PointType> cld_render;
+
+
 	//For future
 	//https://code.ros.org/trac/wg-ros-pkg/browser/trunk/stacks/drivers_experimental/dp_ptu47_pan_tilt_stage/src/extract_object_roi.cpp?rev=37618
 
@@ -105,11 +107,13 @@ class OpenNIIntegralImageNormalEstimation
 	  // Cloud cld (new Cloud(cloud));
 
       normals_.reset (new pcl::PointCloud<pcl::Normal>);
+	  cld_render_ptr.reset(&cld_render);
 
       double start = pcl::getTime ();
      ne_.setInputCloud (cloud);
 	  ne_.compute (*normals_); 
 	  cloud_global = cloud;
+
 
       double stop = pcl::getTime ();
       //std::cout << "Time for normal estimation: " << (stop - start) * 1000.0 << " ms" << std::endl;
@@ -146,9 +150,25 @@ class OpenNIIntegralImageNormalEstimation
       // Render the data
       if (new_cloud_)
       {
+
+		pcl::PointCloud<PointType> pc(*cloud_global);
+
+		for (int p = 0; p < 19200; p++){
+			
+			pc.points[p].r = 255;
+			pc.points[p].g = 0;
+			pc.points[p].b = 0;
+
+		}
+
+		cld_render = pc; //warning this is a full copy!
+
         viz.removePointCloud ("normalcloud");
-        viz.addPointCloudNormals<PointType, pcl::Normal> (temp_cloud, temp_normals, 5, 0.05f, "normalcloud");
+		/*const pcl::PointCloud<pcl::PointXYZ>::ConstPtr p = pc;*/
+
+        viz.addPointCloudNormals<PointType, pcl::Normal> (cld_render_ptr, temp_normals, 5, 0.05f, "normalcloud");
         new_cloud_ = false;
+
       }
     }
 
@@ -158,18 +178,24 @@ class OpenNIIntegralImageNormalEstimation
 		ofstream MyFile;
 		MyFile.open ("data.csv", ios::out | ios::ate | ios::app) ;
       boost::mutex::scoped_lock lock (mtx_);
-      switch (event.getKeyCode ())
+      
+	  switch (event.getKeyCode ())
       {
         case '1':
           //ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::COVARIANCE_MATRIX);
           //std::cout << "switched to COVARIANCE_MATRIX method\n";
+			//(cloud_global->width, cloud_global->height, cloud_global);
 			for (int p = 0; p <19200; p++){
-				MyFile << cloud_global->points[p].x << " " << cloud_global->points[p].y << " " << cloud_global->points[p].z << "\n";
+
+				MyFile << cloud_global->points[p].x << "," << cloud_global->points[p].y <<","<< cloud_global->points[p].z<<"\n";
+
 			}
+
 
 			MyFile << "//\n"; 
           break;
         case '2':
+
 		  DBSCAN(0.2, 10);
           ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::AVERAGE_3D_GRADIENT);
           std::cout << "switched to AVERAGE_3D_GRADIENT method\n";
@@ -243,12 +269,12 @@ class OpenNIIntegralImageNormalEstimation
 		cout << clusters.size() << " clusters found" << endl;
 
 		//Colour clusters
-		for(int i = 0; i < clusters.size(); i++) 
-		{
-			for(int j = 0; j < clusters[j]; j++) {
-				cloud_global->points[j].r = 255; //clusters[j]
-			}
-		}
+		//for(int i = 0; i < clusters.size(); i++) 
+		//{
+		//	for(int j = 0; j < clusters[j]; j++) {
+		//		cloud_global->points[j].r = 255; //clusters[j]
+		//	}
+		//}
 
 	}
 
@@ -263,6 +289,7 @@ class OpenNIIntegralImageNormalEstimation
 				k_indicies.push_back(j);
 			}
 		}
+
 		return k_indicies;
 	}
 
@@ -361,14 +388,14 @@ main (int argc, char ** argv)
   if (grabber.providesCallback<pcl::OpenNIGrabber::sig_cb_openni_point_cloud_rgba> ())
   {
     PCL_INFO ("PointXYZRGBA mode enabled.\n");
-    OpenNIIntegralImageNormalEstimation<pcl::PointXYZRGBA> v ("");
+    OpenNIIntegralImageNormalEstimation v ("");
     v.run ();
   }
   else
   {
-    PCL_INFO ("PointXYZ mode enabled.\n");
-    OpenNIIntegralImageNormalEstimation<pcl::PointXYZ> v ("");
-    v.run ();
+    PCL_INFO ("PointXYZ mode enabled crash.\n");
+    //OpenNIIntegralImageNormalEstimation<pcl::PointXYZ> v ("");
+    //v.run ();
   }
 
   return (0);
