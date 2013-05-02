@@ -360,6 +360,59 @@ class OpenNIIntegralImageNormalEstimation
 		}
 	}
 
+	vector<vector<int>> floodFillNiave() 
+	{
+		vector<vector<int>> clusters;
+		
+		int dataSize = cloud_->size();
+		vector<bool> visited(dataSize, false);
+
+		int count = 0;
+		//Should check if certain points checked
+		while ((count / dataSize) < 0.9) 
+		{
+			int seed = rand()%dataSize;
+			if (!visited[seed])
+				clusters.push_back(floodFillNiave(seed, visited, count));
+		}
+		return clusters;
+	}
+
+	vector<int> floodFillNiave (int rootNode, vector<bool> &visited, int& count) 
+	{
+		
+		vector<int> clusterPoints;
+		
+		std::queue<int> Q;
+		Q.push(rootNode);
+
+		while(!Q.empty()) {
+
+			int currentPoint = Q.back();
+			Q.pop();
+			if (samePlaneNormal(currentPoint, rootNode, 0.2)) {
+				//Add current point to cluster
+				clusterPoints.push_back(currentPoint);
+				count++;
+				Q.push(currentPoint-1);	//west
+				Q.push(currentPoint+1);	//east
+				Q.push(currentPoint-120);	//north
+				Q.push(currentPoint+120);	//south
+			}
+			
+		}
+
+		return clusterPoints;
+	}
+
+	bool samePlaneNormal(int pointOfInterest, int rootPoint, double epsilon) {
+		if	((abs(cloud_dbscanproc->points[rootPoint].normal_x - cloud_dbscanproc->points[pointOfInterest].normal_x) < epsilon) 
+		&&	(abs(cloud_dbscanproc->points[rootPoint].normal_y - cloud_dbscanproc->points[pointOfInterest].normal_y) < epsilon) 
+		&&	(abs(cloud_dbscanproc->points[rootPoint].normal_z - cloud_dbscanproc->points[pointOfInterest].normal_z) < epsilon))
+			return true;
+
+		return false;
+	}
 	//void inplace_union(std::vector<int>& a, std::vector<int>& b){
 	//	std::sort (a.begin(),a.end());
 	//	std::sort (b.begin(),b.end());
