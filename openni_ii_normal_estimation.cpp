@@ -74,17 +74,27 @@ class OpenNIIntegralImageNormalEstimation
 	typedef Cloud::Ptr CloudPtr; //typename
     typedef Cloud::ConstPtr CloudConstPtr; //typename
 
-	CloudConstPtr cloud_global;
-	CloudConstPtr cld_render_ptr;
-	pcl::PointCloud<PointType> cld_render;
+	unsigned int eventflag; 
+
+	//This is used to hold the data used by DBSCAN
+	CloudConstPtr cloud_dbscanproc;
+
+	pcl::IntegralImageNormalEstimation<PointType, pcl::Normal> ne_;
+
+    pcl::visualization::CloudViewer viewer;
+    std::string device_id_;
+    boost::mutex mtx_;
+    // Data
+    pcl::PointCloud<pcl::Normal>::Ptr normals_;
+    CloudConstPtr cloud_;
+    bool new_cloud_;
 
 
-	//For future
-	//https://code.ros.org/trac/wg-ros-pkg/browser/trunk/stacks/drivers_experimental/dp_ptu47_pan_tilt_stage/src/extract_object_roi.cpp?rev=37618
-
+	
     OpenNIIntegralImageNormalEstimation (const std::string& device_id = "")
       : viewer ("PCL OpenNI NormalEstimation Viewer")
     , device_id_(device_id)
+	, eventflag(0)
     {
       //ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::COVARIANCE_MATRIX);
       ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::SIMPLE_3D_GRADIENT);
@@ -107,21 +117,58 @@ class OpenNIIntegralImageNormalEstimation
 	  // Cloud cld (new Cloud(cloud));
 
       normals_.reset (new pcl::PointCloud<pcl::Normal>);
-	  cld_render_ptr.reset(&cld_render);
-
+	  //cld_render_ptr.reset(new pcl::PointCloud<PointType>);
+	  
       double start = pcl::getTime ();
-     ne_.setInputCloud (cloud);
+      ne_.setInputCloud (cloud);
 	  ne_.compute (*normals_); 
-	  cloud_global = cloud;
-
-	  //DBSCAN(cloud, 0.2, 10);
 
       double stop = pcl::getTime ();
       //std::cout << "Time for normal estimation: " << (stop - start) * 1000.0 << " ms" << std::endl;
-      cloud_ = cloud;
+      //cloud_ = cloud;
 
-	  cloud_global = cloud;
-      new_cloud_ = true;
+
+	  cloud_dbscanproc = cloud; //TODO unessecary copy
+
+	  static bool hasrun = false;
+	  if(eventflag & 0x1){
+		  if(!hasrun){
+				hasrun = true;
+				vector<vector<int>> clusterIndicies = DBSCAN(0.2, 10);
+
+				pcl::PointCloud<PointType> pc(*cloud_dbscanproc);
+
+				//Colour clusters
+				for(int i = 0; i < clusterIndicies.size(); i++) 
+				{
+					char r,b,g;
+					r = rand()%256;
+					g = rand()%256;
+					b = rand()%256;
+					for(int j = 0; j < clusterIndicies[i].size(); j++) {
+						pc.points[clusterIndicies[i][j]].r = r;
+						pc.points[clusterIndicies[i][j]].g = g;
+						pc.points[clusterIndicies[i][j]].b = b;
+					}
+				}
+
+				CloudConstPtr inputtmp(new pcl::PointCloud<PointType>(pc));
+				cloud_ = inputtmp;
+
+				new_cloud_ = true;
+		  }
+	  }else{
+		  cloud_ = cloud;
+		  if (!(eventflag & 0x1)){
+			  new_cloud_ = true;
+			  hasrun = false;
+		  }
+	  }
+
+		
+
+		//mtx_.unlock();
+		//while(eventflag & 0x1);
 
     }
 
@@ -152,22 +199,10 @@ class OpenNIIntegralImageNormalEstimation
       if (new_cloud_)
       {
 
-		pcl::PointCloud<PointType> pc(*cloud_global);
-
-		for (int p = 0; p < 19200; p++){
-			
-			pc.points[p].r = 255;
-			pc.points[p].g = 0;
-			pc.points[p].b = 0;
-
-		}
-
-		cld_render = pc; //warning this is a full copy!
-
         viz.removePointCloud ("normalcloud");
 		/*const pcl::PointCloud<pcl::PointXYZ>::ConstPtr p = pc;*/
 
-        viz.addPointCloudNormals<PointType, pcl::Normal> (cld_render_ptr, temp_normals, 5, 0.05f, "normalcloud");
+        viz.addPointCloudNormals<PointType, pcl::Normal> (temp_cloud, temp_normals, 5, 0.05f, "normalcloud");
         new_cloud_ = false;
 
       }
@@ -185,10 +220,10 @@ class OpenNIIntegralImageNormalEstimation
         case '1':
           //ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::COVARIANCE_MATRIX);
           //std::cout << "switched to COVARIANCE_MATRIX method\n";
-			//(cloud_global->width, cloud_global->height, cloud_global);
+			//(cloud_dbscanproc->width, cloud_dbscanproc->height, cloud_dbscanproc);
 			for (int p = 0; p <19200; p++){
 
-				MyFile << cloud_global->points[p].x << "," << cloud_global->points[p].y <<","<< cloud_global->points[p].z<<"\n";
+				MyFile << cloud_dbscanproc->points[p].x << "," << cloud_dbscanproc->points[p].y <<","<< cloud_dbscanproc->points[p].z<<"\n";
 
 			}
 
@@ -196,7 +231,10 @@ class OpenNIIntegralImageNormalEstimation
 			MyFile << "//\n"; 
           break;
         case '2':
-          DBSCAN(cloud_global, 0.2, 100);
+
+		  
+          ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::AVERAGE_3D_GRADIENT);
+          std::cout << "switched to AVERAGE_3D_GRADIENT method\n";
           break;
         case '3':
           ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::AVERAGE_DEPTH_CHANGE);
@@ -206,6 +244,11 @@ class OpenNIIntegralImageNormalEstimation
           ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::SIMPLE_3D_GRADIENT);
           std::cout << "switched to SIMPLE_3D_GRADIENT method\n";
           break;
+		case '5':
+			eventflag |= 0x1;
+			break;
+		case '6':
+			eventflag &= ~0x1;
       }
     }
 
@@ -229,117 +272,100 @@ class OpenNIIntegralImageNormalEstimation
       interface->stop ();
     }
 
+	vector<vector<int>> DBSCAN (double epsilon, int minPoints){
 
-	//void DBSCAN (pcl::PointCloud<pcl::Normal>::Ptr mynormals, double radius, int minPoints){
-	//http://www.pointclouds.org/documentation/tutorials/kdtree_search.php
-	void DBSCAN (CloudConstPtr cloudd, double radius, int minPoints){
-
-		vector<int> NeighborPts;
-	    //pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
-		pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
 		
-		//http://www.pointclouds.org/documentation/tutorials/extract_indices.php
-		pcl::PointCloud<pcl::PointXYZ>::Ptr xyzcloud (new pcl::PointCloud<pcl::PointXYZ>);
-		pcl::PCDReader reader;
-		
-		//Visited 
-		int sizeOfData = cloud_global->size();
-		vector<bool> Visited;
-		vector<bool> addedToCluster;
-		for(int i = 0; i<sizeOfData; i++) 
-		{
-			Visited.push_back(false);
-			addedToCluster.push_back(false);
-		}
+		int sizeOfData = cloud_dbscanproc->size();
+		vector<bool> Visited(sizeOfData, false);
+		vector<bool> addedToCluster(sizeOfData, false);
 
-		vector<int> currentCluster;
+		//Clusters
 		vector<vector<int>> clusters;
+		
 		int clusterInd = 0;
 
 		for(int i = 0; i<sizeOfData; i++){
 			if(Visited[i]==false){
 				Visited[i] = true;
 			
-				NeighborPts = regionQuery(cloud, i, 0.2);
-				if(NeighborPts.size()<minPoints){
-					//nothing here could call it noise explicitly
-				}
-				else{
-					expandCluster(i, NeighborPts, currentCluster, radius, minPoints, cloud, Visited, addedToCluster);
+				vector<int> NeighborPts = regionQuery(i, 0.2);
+				vector<bool> pointsInNeighborPts(sizeOfData, false);
+
+				if(!(NeighborPts.size()<minPoints))
+				{
+					vector<int> currentCluster;
+					expandCluster(i, NeighborPts, pointsInNeighborPts, currentCluster, epsilon, minPoints, Visited, addedToCluster);
 					clusters.push_back(currentCluster);
 					clusterInd++;
 				}
 			}
 		}
-		
+
 		cout << clusters.size() << " clusters found" << endl;
+
+		return clusters;
+
 	}
 
-	//pcl::Normal causes alignment error
-	vector<int> regionQuery(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, int currentPoint, double radius) {
+	//Get all points in region within esp
+	vector<int> regionQuery(int currentPoint, double epsilon) {
 		vector<int> k_indicies;
-		
-		//kdPoints.radiusSearch(cloud->points[currentPoint], radius, k_indicies, k_sqr_distances);
-		
-
-			for( int j = 0; j < 19200; j++) {
-				if	(
-						(abs(cloud_global->points[currentPoint].x - cloud_global->points[j].x) < radius) 
-					&&	(abs(cloud_global->points[currentPoint].y - cloud_global->points[j].y) < radius) 
-					&&	(abs(cloud_global->points[currentPoint].z - cloud_global->points[j].z) < radius)
-					)
-				{
-					k_indicies.push_back(j);
-				}
+		for( int j = 0; j < cloud_dbscanproc->size(); j++) {
+			if	(	(abs(cloud_dbscanproc->points[currentPoint].x - cloud_dbscanproc->points[j].x) < epsilon) 
+				&&	(abs(cloud_dbscanproc->points[currentPoint].y - cloud_dbscanproc->points[j].y) < epsilon) 
+				&&	(abs(cloud_dbscanproc->points[currentPoint].z - cloud_dbscanproc->points[j].z) < epsilon))
+			{
+				k_indicies.push_back(j);
 			}
+		}
 
 		return k_indicies;
 	}
 
-	void expandCluster(	int inputInd, vector<int> NeighborPts,vector<int> currentCluster,
-			double radius, int minPoints, pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, vector<bool> &Visited, vector<bool> &addedToCluster){
+	void expandCluster(	int inputInd, vector<int> NeighborPts, vector<bool> pointsInNeighborPts, vector<int> &currentCluster,
+						double radius, int minPoints, vector<bool> &Visited, vector<bool> &addedToCluster){
 
 		currentCluster.push_back(inputInd);
-		vector<int> secondNeighborPts;
 
 		for(int j = 0; j < NeighborPts.size(); j++){
 			if(Visited[NeighborPts[j]]==false){
 				Visited[NeighborPts[j]]=true;
-				secondNeighborPts = regionQuery(cloud,NeighborPts[j],radius);
+				vector<int> secondNeighborPts = regionQuery(NeighborPts[j],radius);
 				if(secondNeighborPts.size()>=minPoints){
-					inplace_union(NeighborPts, secondNeighborPts);
+					conditionalInsert(NeighborPts, pointsInNeighborPts, secondNeighborPts);
 				}
 			}
 			if (!addedToCluster[j])
-				currentCluster.push_back(NeighborPts[j]);//if neighborPts[j] has yet to be added to a cluster add it to this one
+				currentCluster.push_back(NeighborPts[j]);
+				//if neighborPts[j] has yet to be added to a cluster add it to this one
 		}
 
 	}
 
-	void inplace_union(std::vector<int>& a,  std::vector<int>& b){
-		std::sort (a.begin(),a.end());
-		std::sort (b.begin(),b.end());
-		int mid = a.size(); //Store the end of first sorted range
-
-		//First copy the second sorted range into the destination vector
-		std::copy(b.begin(), b.end(), std::back_inserter(a));
-
-		//Then perform the in place merge on the two sub-sorted ranges.
-		std::inplace_merge(a.begin(), a.begin() + mid, a.end());
-
-		//Remove duplicate elements from the sorted vector
-		a.erase(std::unique(a.begin(), a.end()), a.end());
+	void conditionalInsert(std::vector<int>& destination, std::vector<bool>& isInDest, std::vector<int> source){
+		for (int i = 0; i < source.size(); i++) {
+			if (!isInDest[source[i]]) {
+				destination.push_back(source[i]);
+				isInDest[source[i]] = true;
+			}
+		}
 	}
 
-    pcl::IntegralImageNormalEstimation<PointType, pcl::Normal> ne_;
+	//void inplace_union(std::vector<int>& a, std::vector<int>& b){
+	//	std::sort (a.begin(),a.end());
+	//	std::sort (b.begin(),b.end());
+	//	std::mismatch(a,b)
+	//	int mid = a.size(); //Store the end of first sorted range
 
-    pcl::visualization::CloudViewer viewer;
-    std::string device_id_;
-    boost::mutex mtx_;
-    // Data
-    pcl::PointCloud<pcl::Normal>::Ptr normals_;
-    CloudConstPtr cloud_;
-    bool new_cloud_;
+	//	//First copy the second sorted range into the destination vector
+	//	std::copy(b.begin(), b.end(), std::back_inserter(a));
+
+	//	//Then perform the in place merge on the two sub-sorted ranges.
+	//	std::inplace_merge(a.begin(), a.begin() + mid, a.end());
+
+	//	//Remove duplicate elements from the sorted vector
+	//	a.erase(std::unique(a.begin(), a.end()), a.end());
+	//}
 };
 
 void
@@ -363,8 +389,6 @@ usage (char ** argv)
     cout << "No devices connected." << endl;
 }
 
-
-
 int
 main (int argc, char ** argv)
 {
@@ -380,7 +404,7 @@ main (int argc, char ** argv)
     usage (argv);
     return 1;
   }
-
+  std::cout << "hi";
   std::cout << "Press following keys to switch to the different integral image normal estimation methods:\n";
   std::cout << "<1> COVARIANCE_MATRIX method\n";
   std::cout << "<2> AVERAGE_3D_GRADIENT method\n";
