@@ -276,31 +276,25 @@ class OpenNIIntegralImageNormalEstimation
 
 		
 		int sizeOfData = cloud_dbscanproc->size();
-		vector<bool> Visited;
-		vector<bool> addedToCluster;
-		vector<int> NeighborPts;
+		vector<bool> Visited(sizeOfData, false);
+		vector<bool> addedToCluster(sizeOfData, false);
 
 		//Clusters
 		vector<vector<int>> clusters;
 		
-		//Initialise
-		for(int i = 0; i< sizeOfData; i++) 
-		{
-			Visited.push_back(false);
-			addedToCluster.push_back(false); 
-		}
-
 		int clusterInd = 0;
 
 		for(int i = 0; i<sizeOfData; i++){
 			if(Visited[i]==false){
 				Visited[i] = true;
 			
-				NeighborPts = regionQuery(i, 0.2);
+				vector<int> NeighborPts = regionQuery(i, 0.2);
+				vector<bool> pointsInNeighborPts(sizeOfData, false);
+
 				if(!(NeighborPts.size()<minPoints))
 				{
 					vector<int> currentCluster;
-					expandCluster(i, NeighborPts, currentCluster, epsilon, minPoints, Visited, addedToCluster);
+					expandCluster(i, NeighborPts, pointsInNeighborPts, currentCluster, epsilon, minPoints, Visited, addedToCluster);
 					clusters.push_back(currentCluster);
 					clusterInd++;
 				}
@@ -328,18 +322,17 @@ class OpenNIIntegralImageNormalEstimation
 		return k_indicies;
 	}
 
-	void expandCluster(	int inputInd, vector<int> NeighborPts,vector<int> &currentCluster,
+	void expandCluster(	int inputInd, vector<int> NeighborPts, vector<bool> pointsInNeighborPts, vector<int> &currentCluster,
 						double radius, int minPoints, vector<bool> &Visited, vector<bool> &addedToCluster){
 
 		currentCluster.push_back(inputInd);
-		vector<int> secondNeighborPts;
 
 		for(int j = 0; j < NeighborPts.size(); j++){
 			if(Visited[NeighborPts[j]]==false){
 				Visited[NeighborPts[j]]=true;
-				secondNeighborPts = regionQuery(NeighborPts[j],radius);
+				vector<int> secondNeighborPts = regionQuery(NeighborPts[j],radius);
 				if(secondNeighborPts.size()>=minPoints){
-					inplace_union(NeighborPts, secondNeighborPts);
+					conditionalInsert(NeighborPts, pointsInNeighborPts, secondNeighborPts);
 				}
 			}
 			if (!addedToCluster[j])
@@ -349,20 +342,30 @@ class OpenNIIntegralImageNormalEstimation
 
 	}
 
-	void inplace_union(std::vector<int>& a,  std::vector<int>& b){
-		std::sort (a.begin(),a.end());
-		std::sort (b.begin(),b.end());
-		int mid = a.size(); //Store the end of first sorted range
-
-		//First copy the second sorted range into the destination vector
-		std::copy(b.begin(), b.end(), std::back_inserter(a));
-
-		//Then perform the in place merge on the two sub-sorted ranges.
-		std::inplace_merge(a.begin(), a.begin() + mid, a.end());
-
-		//Remove duplicate elements from the sorted vector
-		a.erase(std::unique(a.begin(), a.end()), a.end());
+	void conditionalInsert(std::vector<int>& destination, std::vector<bool>& isInDest, std::vector<int> source){
+		for (int i = 0; i < source.size(); i++) {
+			if (!isInDest[source[i]]) {
+				destination.push_back(source[i]);
+				isInDest[source[i]] = true;
+			}
+		}
 	}
+
+	//void inplace_union(std::vector<int>& a, std::vector<int>& b){
+	//	std::sort (a.begin(),a.end());
+	//	std::sort (b.begin(),b.end());
+	//	std::mismatch(a,b)
+	//	int mid = a.size(); //Store the end of first sorted range
+
+	//	//First copy the second sorted range into the destination vector
+	//	std::copy(b.begin(), b.end(), std::back_inserter(a));
+
+	//	//Then perform the in place merge on the two sub-sorted ranges.
+	//	std::inplace_merge(a.begin(), a.begin() + mid, a.end());
+
+	//	//Remove duplicate elements from the sorted vector
+	//	a.erase(std::unique(a.begin(), a.end()), a.end());
+	//}
 };
 
 void
@@ -401,7 +404,7 @@ main (int argc, char ** argv)
     usage (argv);
     return 1;
   }
-
+  std::cout << "hi";
   std::cout << "Press following keys to switch to the different integral image normal estimation methods:\n";
   std::cout << "<1> COVARIANCE_MATRIX method\n";
   std::cout << "<2> AVERAGE_3D_GRADIENT method\n";
