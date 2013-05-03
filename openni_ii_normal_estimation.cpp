@@ -48,7 +48,7 @@
 
 
 
-#define RESOLUTION_MODE pcl::OpenNIGrabber::OpenNI_QQVGA_30Hz
+#define RESOLUTION_MODE pcl::OpenNIGrabber::OpenNI_QVGA_30Hz
 
 #define FPS_CALC(_WHAT_) \
 do \
@@ -65,6 +65,11 @@ do \
     } \
 }while(false)
 
+float G_smoothsize = 20.0f;
+float G_depthdepend = 0.02f;
+float G_epsilon = 0.04f;
+int G_minpts = 60;
+
 //template <typename PointType>
 typedef pcl::PointXYZRGBA PointType;
 class OpenNIIntegralImageNormalEstimation
@@ -77,7 +82,7 @@ class OpenNIIntegralImageNormalEstimation
 	unsigned int eventflag; 
 
 	//This is used to hold the data used by DBSCAN
-	CloudConstPtr cloud_dbscanproc;
+	pcl::PointCloud<pcl::Normal>::Ptr cloud_dbscanproc;
 
 	pcl::IntegralImageNormalEstimation<PointType, pcl::Normal> ne_;
 
@@ -99,8 +104,8 @@ class OpenNIIntegralImageNormalEstimation
       //ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::COVARIANCE_MATRIX);
       ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::SIMPLE_3D_GRADIENT);
 	  ne_.setDepthDependentSmoothing(true);
-	  ne_.setMaxDepthChangeFactor (0.02f);
-      ne_.setNormalSmoothingSize (15.0);
+	  ne_.setMaxDepthChangeFactor (G_depthdepend);
+      ne_.setNormalSmoothingSize (G_smoothsize);
       new_cloud_ = false;
       viewer.registerKeyboardCallback(&OpenNIIntegralImageNormalEstimation::keyboard_callback, *this);
     }
@@ -128,15 +133,15 @@ class OpenNIIntegralImageNormalEstimation
       //cloud_ = cloud;
 
 
-	  cloud_dbscanproc = cloud; //TODO unessecary copy
+	  cloud_dbscanproc = normals_; //TODO unessecary copy
 
 	  static bool hasrun = false;
 	  if(eventflag & 0x1){
 		  if(!hasrun){
-				hasrun = true;
-				vector<vector<int>> clusterIndicies = DBSCAN(0.2, 10);
+				//hasrun = true;
+				vector<vector<int>> clusterIndicies = floodFillAll(100, 100);//DBSCAN(G_epsilon, G_minpts);
 
-				pcl::PointCloud<PointType> pc(*cloud_dbscanproc);
+				pcl::PointCloud<PointType> pc(*cloud);
 
 				//Colour clusters
 				for(int i = 0; i < clusterIndicies.size(); i++) 
@@ -221,11 +226,11 @@ class OpenNIIntegralImageNormalEstimation
           //ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::COVARIANCE_MATRIX);
           //std::cout << "switched to COVARIANCE_MATRIX method\n";
 			//(cloud_dbscanproc->width, cloud_dbscanproc->height, cloud_dbscanproc);
-			for (int p = 0; p <19200; p++){
+			/*for (int p = 0; p <19200; p++){
 
 				MyFile << cloud_dbscanproc->points[p].x << "," << cloud_dbscanproc->points[p].y <<","<< cloud_dbscanproc->points[p].z<<"\n";
 
-			}
+			}*/
 
 
 			MyFile << "//\n"; 
@@ -245,6 +250,8 @@ class OpenNIIntegralImageNormalEstimation
           std::cout << "switched to SIMPLE_3D_GRADIENT method\n";
           break;
 		case '5':
+			ne_.setMaxDepthChangeFactor (G_depthdepend);
+			ne_.setNormalSmoothingSize (G_smoothsize);
 			eventflag |= 0x1;
 			break;
 		case '6':
@@ -288,7 +295,7 @@ class OpenNIIntegralImageNormalEstimation
 			if(Visited[i]==false){
 				Visited[i] = true;
 			
-				vector<int> NeighborPts = regionQuery(i, 0.2);
+				vector<int> NeighborPts = regionQuery(i, epsilon);
 				vector<bool> pointsInNeighborPts(sizeOfData, false);
 
 				if(!(NeighborPts.size()<minPoints))
@@ -310,10 +317,12 @@ class OpenNIIntegralImageNormalEstimation
 	//Get all points in region within esp
 	vector<int> regionQuery(int currentPoint, double epsilon) {
 		vector<int> k_indicies;
+		
+
 		for( int j = 0; j < cloud_dbscanproc->size(); j++) {
-			if	(	(abs(cloud_dbscanproc->points[currentPoint].x - cloud_dbscanproc->points[j].x) < epsilon) 
-				&&	(abs(cloud_dbscanproc->points[currentPoint].y - cloud_dbscanproc->points[j].y) < epsilon) 
-				&&	(abs(cloud_dbscanproc->points[currentPoint].z - cloud_dbscanproc->points[j].z) < epsilon))
+			if	(	(abs(cloud_dbscanproc->points[currentPoint].normal_x - cloud_dbscanproc->points[j].normal_x) < epsilon) 
+				&&	(abs(cloud_dbscanproc->points[currentPoint].normal_y - cloud_dbscanproc->points[j].normal_y) < epsilon) 
+				&&	(abs(cloud_dbscanproc->points[currentPoint].normal_z - cloud_dbscanproc->points[j].normal_z) < epsilon))
 			{
 				k_indicies.push_back(j);
 			}
@@ -351,6 +360,83 @@ class OpenNIIntegralImageNormalEstimation
 		}
 	}
 
+	vector<vector<int>> floodFillAll(int minPts, int maxTries) 
+	{
+		vector<vector<int>> clusters;
+		
+		int dataSize = cloud_dbscanproc->size();
+		vector<bool> isInCluster(dataSize, false);
+
+		int count = 0;
+		//Should check if certain points checked
+		for (int tries = 0; tries < maxTries; ++tries)
+		{
+			int seed = rand()%dataSize;
+			if (!isInCluster[seed]) 
+			{
+				vector<int> x = floodFillNaive(seed, isInCluster, count);
+				if (x.size() > minPts){
+					clusters.push_back(x);
+					for (int i = 0; i < x.size(); i++){
+						isInCluster[x[i]] = true;
+					}
+				}
+			}
+		}
+
+		cout << clusters.size() << " found.";
+		
+		return clusters;
+	}
+
+	vector<int> floodFillNaive (int rootNode, vector<bool> isInClusterOrQ, int& count) 
+	{
+		
+		vector<int> clusterPoints;
+		
+		std::vector<int> Q;
+		Q.push_back(rootNode);
+
+		while(!Q.empty()) {
+
+			int currentPoint = Q.back();
+			Q.pop_back();
+			if (samePlaneNormal(currentPoint, rootNode, 0.2)) {
+				//Add current point to cluster
+				clusterPoints.push_back(currentPoint);
+				count++;
+
+				if (!isInClusterOrQ[currentPoint-1]){
+					Q.push_back(currentPoint-1);	//west
+					isInClusterOrQ[currentPoint-1] = true;
+				}
+				if (!isInClusterOrQ[currentPoint+1]){
+					Q.push_back(currentPoint+1);	//east
+					isInClusterOrQ[currentPoint+1] = true;
+				}
+				if (!isInClusterOrQ[currentPoint-320]){
+					Q.push_back(currentPoint-320);	//north
+					isInClusterOrQ[currentPoint-320] = true;
+				}
+				if (!isInClusterOrQ[currentPoint+320]){
+					Q.push_back(currentPoint+320);	//south
+					isInClusterOrQ[currentPoint+320] = true;
+				}
+			}
+			
+		}
+
+		return clusterPoints;
+	}
+
+	bool samePlaneNormal(int pointOfInterest, int rootPoint, double epsilon) {
+		if	((abs(cloud_dbscanproc->points[rootPoint].normal_x - cloud_dbscanproc->points[pointOfInterest].normal_x) < epsilon) 
+		&&	(abs(cloud_dbscanproc->points[rootPoint].normal_y - cloud_dbscanproc->points[pointOfInterest].normal_y) < epsilon) 
+		&&	(abs(cloud_dbscanproc->points[rootPoint].normal_z - cloud_dbscanproc->points[pointOfInterest].normal_z) < epsilon))
+			return true;
+
+		return false;
+	}
 	//void inplace_union(std::vector<int>& a, std::vector<int>& b){
 	//	std::sort (a.begin(),a.end());
 	//	std::sort (b.begin(),b.end());
