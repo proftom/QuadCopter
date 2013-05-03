@@ -48,7 +48,7 @@
 
 
 
-#define RESOLUTION_MODE pcl::OpenNIGrabber::OpenNI_QQVGA_30Hz
+#define RESOLUTION_MODE pcl::OpenNIGrabber::OpenNI_QVGA_30Hz
 
 #define FPS_CALC(_WHAT_) \
 do \
@@ -138,8 +138,8 @@ class OpenNIIntegralImageNormalEstimation
 	  static bool hasrun = false;
 	  if(eventflag & 0x1){
 		  if(!hasrun){
-				hasrun = true;
-				vector<vector<int>> clusterIndicies = DBSCAN(G_epsilon, G_minpts);
+				//hasrun = true;
+				vector<vector<int>> clusterIndicies = floodFillAll(100, 100);//DBSCAN(G_epsilon, G_minpts);
 
 				pcl::PointCloud<PointType> pc(*cloud);
 
@@ -360,44 +360,68 @@ class OpenNIIntegralImageNormalEstimation
 		}
 	}
 
-	vector<vector<int>> floodFillNiave() 
+	vector<vector<int>> floodFillAll(int minPts, int maxTries) 
 	{
 		vector<vector<int>> clusters;
 		
-		int dataSize = cloud_->size();
-		vector<bool> visited(dataSize, false);
+		int dataSize = cloud_dbscanproc->size();
+		vector<bool> isInCluster(dataSize, false);
 
 		int count = 0;
 		//Should check if certain points checked
-		while ((count / dataSize) < 0.9) 
+		for (int tries = 0; tries < maxTries; ++tries)
 		{
 			int seed = rand()%dataSize;
-			if (!visited[seed])
-				clusters.push_back(floodFillNiave(seed, visited, count));
+			if (!isInCluster[seed]) 
+			{
+				vector<int> x = floodFillNaive(seed, isInCluster, count);
+				if (x.size() > minPts){
+					clusters.push_back(x);
+					for (int i = 0; i < x.size(); i++){
+						isInCluster[x[i]] = true;
+					}
+				}
+			}
 		}
+
+		cout << clusters.size() << " found.";
+		
 		return clusters;
 	}
 
-	vector<int> floodFillNiave (int rootNode, vector<bool> &visited, int& count) 
+	vector<int> floodFillNaive (int rootNode, vector<bool> isInClusterOrQ, int& count) 
 	{
 		
 		vector<int> clusterPoints;
 		
-		std::queue<int> Q;
-		Q.push(rootNode);
+		std::vector<int> Q;
+		Q.push_back(rootNode);
 
 		while(!Q.empty()) {
 
 			int currentPoint = Q.back();
-			Q.pop();
+			Q.pop_back();
 			if (samePlaneNormal(currentPoint, rootNode, 0.2)) {
 				//Add current point to cluster
 				clusterPoints.push_back(currentPoint);
 				count++;
-				Q.push(currentPoint-1);	//west
-				Q.push(currentPoint+1);	//east
-				Q.push(currentPoint-120);	//north
-				Q.push(currentPoint+120);	//south
+
+				if (!isInClusterOrQ[currentPoint-1]){
+					Q.push_back(currentPoint-1);	//west
+					isInClusterOrQ[currentPoint-1] = true;
+				}
+				if (!isInClusterOrQ[currentPoint+1]){
+					Q.push_back(currentPoint+1);	//east
+					isInClusterOrQ[currentPoint+1] = true;
+				}
+				if (!isInClusterOrQ[currentPoint-320]){
+					Q.push_back(currentPoint-320);	//north
+					isInClusterOrQ[currentPoint-320] = true;
+				}
+				if (!isInClusterOrQ[currentPoint+320]){
+					Q.push_back(currentPoint+320);	//south
+					isInClusterOrQ[currentPoint+320] = true;
+				}
 			}
 			
 		}
