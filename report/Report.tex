@@ -103,4 +103,28 @@ Introduction introducing things in an introductory manner.
 
 % section introduction (end)
 
+\section{EKF} % (fold)
+\label{sec:ekf}
+
+The derivation of the rate of change of the quaternion with respect to angular velocity in the body frame can be found in \cite{MARSlab} (see equation 63). Note that they use the convetion q = q4 + q1i + q2j + q3k, while we use the convention q0 + q1i + q2j + q3k, which is the same convetion used by MATLAB's Aerospace Blockset \cite{MATLABAerospace}.
+
+The derivation of the quaternion derived rotation matrix is also shown in \cite{MARSlab} (see equation 92)
+
+% section ekf (end)
+
+\clearpage
+\begin{thebibliography}{99}
+
+\bibitem{MARSlab}
+	Nikolas Trawny and Stergios I. Roumeliotis,
+	\emph{Indirect Kalman Filter for 3D Attitude Estimation, A Tutorial for Quaternion Algebra}. \\
+	\url{http://www-users.cs.umn.edu/~trawny/Publications/Quaternions_3D.pdf}
+
+\bibitem{MATLABAerospace}
+	MathWorks,
+	\emph{Implement quaternion representation of six-degrees-of-freedom equations of motion with respect to body axes}. \\
+	\url{http://www.mathworks.co.uk/help/aeroblks/6dofquaternion.html}
+
+\end{thebibliography}
+
 \end{document}
