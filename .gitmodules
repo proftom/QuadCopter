@@ -1,0 +1,3 @@
+[submodule "R10Thalamus"]
+	path = R10Thalamus
+	url = https://github.com/madcowswe/R10Thalamus.git
