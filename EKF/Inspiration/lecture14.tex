@@ -1,0 +1,276 @@
+% Begin your document as any latex file
+\documentclass{article}
+
+\usepackage{cs294-40}
+\include{cs294-40-macros}
+\def\trans{^{\mathsf{T}}}
+
+% Begin the lecture with a line like the following:
+% \begin{lecture}{lecture number}{lecture title}{scribe name}
+% This replaces the usual \begin{document} that a latex
+% file begins with.
+\begin{lecture}{14}{Kalman Filtering, EKF, Unscented KF, Smoother, EM}{Jared Wood}{10/14/2008}
+
+
+\section{Kalman Filtering Recap}
+
+Recall the linear system
+\begin{align}
+x_{t+1} &= Ax_{t} + Bu_{t} + w_{t}\notag\\
+y_{t} &= Cx_{t} + v_{t}
+\label{eqn:system}
+\end{align}
+where $w_{t} \sim N\left(0,\Sigma_{w}\right)$, $v_{t} \sim
+N\left(0,\Sigma_{v}\right)$, and $x_{0} \sim
+N\left(x_{0|-1},P_{0|-1}\right)$. Note that $x \sim
+N\left(\mu,\Sigma\right)$ means
+
+\begin{equation}
+P\left(x\right) = \frac{1}{\left(2\pi\right){|\Sigma|}^{1/2}} e^{-\frac{1}{2}\left(x-\mu\right)\trans\Sigma^{-1}\left(x-\mu\right)}.\notag
+\end{equation}
+We also have: $Ex = \mu$ and $E\left(x-\mu\right)\left(x-\mu\right)\trans = \Sigma$.
+
+We will use the following notation:
+\begin{align}
+\hat{x}_{t|t} &= E\left[x_{t}|y_{0\colon t}\right]\notag\\
+P_{t|t} &= E\left[\left(x_{t} - \hat{x}_{t|t}\right)\left(x_{t} - \hat{x}_{t|t}\right)\trans|y_{0\colon t}\right]\notag\\
+\hat{x}_{t+1|t} &= E\left[x_{t+1}|y_{0\colon t}\right]\notag\\
+P_{t+1|t} &= E\left[\left(x_{t+1} - \hat{x}_{t+1|t}\right)\left(x_{t+1} - \hat{x}_{t+1|t}\right)\trans|y_{0\colon t}\right]\notag
+\end{align}
+
+Note that because $x_{t|\cdot}$ is a Gaussian random variable, it is
+sufficient to only keep track of the mean and covariance.  We can do
+so by the following computations at each time $t$:
+\begin{align}
+\hat{x}_{t+1|t} &= A\hat{x}_{t|t} + Bu_{t}\notag\\
+P_{t+1|t} &= AP_{t|t}A\trans +\Sigma_{w}\notag\\
+\hat{x}_{t+1|t+1} &= \hat{x}_{t+1|t} + K_{t+1}\left(y_{t+1}-C\hat{x}_{t+1|t}\right)\notag\\
+K_{t+1} &= P_{t+1|t}C\trans\left(CP_{t+1|t}C\trans + \Sigma_{v}\right)^{-1}\notag\\
+P_{t+1|t+1} &= P_{t+1|t} - P_{t+1|t}C\trans\left(CP_{t+1|t}C\trans + \Sigma_{v}\right)^{-1}CP_{t+1|t}
+\end{align}
+
+\section{Log Likelihood of the Observations}
+
+In practice, we only observe the vector $y_{0:T}$.  The state
+estimates we obtain heavily depend on our choice of the covariance
+matrices $\Sigma_w, \Sigma_v$.  How can we decide on a good choice for
+the covariance matrices?
+
+We will rely upon a very common formalism in statistics: we will
+estimate the unknown parameters (covariances) by maximizing the (log)
+likelihood of the observed data.  I.e., we find the covariances by
+solving the following optimization problem:
+
+\[
+\max_{\Sigma_w,\Sigma_v} ll(\Sigma_v, \Sigma_w) =
+\max_{\Sigma_w,\Sigma_v} \log P(y_{0:T}; \Sigma_v, \Sigma_w).
+\]
+
+First, we describe how to evaluate the log-likelihood.
+
+Recall, we have the following for the distribution of $y_{t+1}$ given the observations $y_0,\ldots,y_t$:
+\begin{equation}
+P\left(y_{t+1}|y_{0\colon t}\right) = \frac{1}{\left(2\pi\right)^{d/2}|\Sigma_{y_{t+1|t}}|^{1/2}}e^{-\frac{1}{2}\left(y_{t+1}-\hat{y}_{t+1|t}\right)\trans\Sigma_{y_{t+1|t}}\left(y_{t+1}-\hat{y}_{t+1|t}\right)}
+\end{equation}
+where
+\begin{align}
+\hat{y}_{t+1|t} &= C\hat{x}_{t+1|t}\notag\\
+\Sigma_{y_{t+1|t}} &= CP_{t+1|t}C\trans + \Sigma_{v}.
+\end{align}
+
+Using Bayes' rule, we write the likelihood of $y_{0:T}$ as
+\begin{align}
+P\left(y_{0},...,y_{T}\right) &= P\left(y_{0}\right)\prod_{t=1}^{T} P\left(y_{t}|y_{0:t-1}\right)\notag\\
+&= \prod_{t=1}^{T} \frac{1}{\left(2\pi\right)^{d/2}|\Sigma_{y_{t+1|t}}|^{1/2}}e^{-\frac{1}{2}\left(y_{t+1}-\hat{y}_{t+1|t}\right)\trans\Sigma_{y_{t+1|t}}^{-1}\left(y_{t+1}-\hat{y}_{t+1|t}\right)}\notag
+\end{align}
+Now by augmenting the Kalman filter with
+\begin{align}
+ll &= 0\notag\\
+ll &+= \log P\left(y_{t+1}|y_{0\colon t}\right)\notag
+\end{align}
+we can find $\log P\left(y_{0},...,y_{T}\right)$. 
+
+Hence we can efficiently compute the log-likelihood by adding a minor
+computation to the Kalman filter updates.  A simple method for finding
+the covariance matrices $\Sigma_w, \Sigma_v$ that maximize
+$ll(\Sigma_w, \Sigma_v)$ is to numerically compute the gradient and
+perform gradient ascent.  This works reasonably well for a small
+number of parameters, yet below we will describe an EM algorithm that
+tends to work better in practice.
+
+%% Ideally, we would choose
+%% \begin{equation}
+%% \left(\Sigma_{w},\Sigma_{v}\right) \epsilon \arg\max_{\left(\Sigma_{w},\Sigma_{v}\right)} \log P\left(y_{0},...,y_{T};\Sigma_{w},\Sigma_{v}\right)\notag
+%% \end{equation}
+%% \begin{align*}
+%% &\Leftrightarrow\left(\Sigma_{w},\Sigma_{v}\right) \epsilon \arg\max_{\left(\Sigma_{w},\Sigma_{v}\right)} \sum_{t}\log P\left(y_{t}|y_{0\colon t-1};\Sigma_{w},\Sigma_{v}\right)\\
+%% &\Leftrightarrow\left(\Sigma_{w},\Sigma_{v}\right) \epsilon \arg\max_{\left(\Sigma_{w},\Sigma_{v}\right)} \sum_{t}\log \frac{1}{\left(2\pi\right)^{d/2}|\Sigma_{y_{t+1|t}}|^{1/2}}e^{-\frac{1}{2}\left(y_{t+1}-\hat{y}_{t+1|t}\right)\trans\Sigma_{y_{t+1|t}}^{-1}\left(y_{t+1}-\hat{y}_{t+1|t}\right)}
+%% \end{align*}
+%% which can be computed efficiently at every step of the Kalman filter.
+
+\section{Kalman Smoother}
+
+So far we have only considered $P\left(x_{t}|y_{0\colon t}\right)$.
+I.e., the filtered estimate of $x_t$ only takes into account the
+``past'' information relative to $x_t$.  By incorporating the
+``future'' observations relative to $x_t$, we can obtain a more
+refined state estimate.  
+
+Estimators that take into account both past and future are often
+called ``smoothers.''  The Kalman smoother estimates
+$P\left(x_{t}|y_{0\colon T}\right)$.  
+
+Without a derivation, we state the Kalman smoother equations here:
+
+\begin{align}
+\hat{x}_{t|T} &= \hat{x}_{t|t} + L_{t}\left(x_{t+1|T}-\hat{x}_{t+1|T}\right) \label{eqn:smoother-x}\\
+P_{t|T} &= P_{t|t} + L_{t}\left(P_{t+1|T}-P_{t+1|t}\right)L_{t}\trans \label{eqn:smoother-cov} \\
+L_{t} &= P_{t|t}A\trans P_{t+1|t}^{-1}
+\end{align}
+
+Before running the smoother, we must first run the filter.
+The smoother then proceeds backward in time.
+
+Note that $P_{t+1|T}-P_{t+1|t} < 0$ as the uncertainty over $x_{t+1}$
+is smaller when conditioned on all observations, than when only
+conditioned on past observations.
+
+\section{EM Algorithm}
+
+The EM algorithm is an efficient way to find the parameters that
+maximize the log-likelihood. 
+
+Without derivation, we provide the algorithm:
+
+\begin{itemize}
+\item Initialize $\Sigma_{w}$, $\Sigma_{v}$.
+\item Iterate:
+\begin{itemize}
+\item Run Kalman filter.
+\item Run Kalman smoother.
+\item Update $\Sigma_{w}$, $\Sigma_{v}$.
+\end{itemize}
+\end{itemize}
+Here, $\Sigma_w$ and $\Sigma_v$ are updated as follows:
+\begin{align*}
+\Sigma_{w} &= \frac{1}{T} \sum_{t=0}^{T-1}
+\left(\hat{x}_{t+1|T}-A\hat{x}_{t|T}-Bu_{t}\right)\left(\hat{x}_{t+1|T}-A\hat{x}_{t|T}-Bu_{t}\right)\trans
++ A_t P_{t|T}A_t\trans + P_{t+1|T} - P_{t+1|T}L_{t}\trans A\trans -  A L_{t}P_{t+1|T} \\ 
+%
+\Sigma_{v} &= \frac{1}{T+1}
+\sum_{t=0}^{T}\left(y_{t}-C\hat{x}_{t|T}\right)\left(y_{t}-C\hat{x}_{t|T}\right)\trans
++ CP_{t|T}C\trans
+\end{align*}
+
+\section{Extended Kalman Filter}
+
+Now consider a nonlinear extension to the Kalman filter. Now the system is
+\begin{align}
+x_{t+1} &= f\left(x_{t},u_{t}\right)+w_{t} \notag \\
+y_{t} &= h\left(x_{t}\right)+v_{t}
+\end{align}
+Form an augmented system as
+\begin{align}
+\left(\begin{array}{c}
+x_{t+1}\\
+1
+\end{array}\right)
+&= A_{t}
+\left(\begin{array}{c}
+x_{t}\\
+1
+\end{array}\right)
++
+\left(\begin{array}{c}
+B_{t}\\
+0
+\end{array}\right)
++
+\left(\begin{array}{c}
+w_{t}\\
+0
+\end{array}\right)\notag\\
+y_{t} &= C_{t}
+\left(\begin{array}{c}
+x_{t}\\
+1
+\end{array}\right)
++
+\left(\begin{array}{c}
+v_{t}\\
+0
+\end{array}\right)
+\end{align}
+where
+\begin{align*}
+A_{t} &= 
+\left[\begin{array}{cc}
+\frac{\partial f}{\partial x}|_{x=\hat{x}_{t|t},u=u_{t}} & f\left(\hat{x}_{t|t},u_{t}\right) - \frac{\partial f}{\partial x}|_{x=\hat{x}_{t|t},u=u_{t}} \hat{x}_{t|t} \\
+0 & 1
+\end{array}\right]\\
+C_{t} &= 
+\left[\begin{array}{cc}
+\frac{\partial h}{\partial x}|_{x=\hat{x}_{t|t-1}} & h\left(\hat{x}_{t|t-1}\right) - \frac{\partial h}{\partial x}|_{x=\hat{x}_{t|t-1}}\hat{x}_{t|t}
+\end{array}\right]
+\end{align*}
+
+\section{Unscented Kalman Filter}
+
+High-level idea: Sample $x_{t}^{(0)},...,x_{t}^{(m)}$ from
+$P(x_{t})$. Then compute transition according to $f(x_{t})$, which
+results in ($x_{t+1}^{(0)},...,x_{t+1}^{(m)}$). You could fit Gaussian
+to these sample distribution over the state $x_{t+1}$ using weights as
+\begin{align}
+\hat{x}_{t+1|t} &= \sum_{i}w_{i}x_{t+1}^{(i)}\notag\\
+P_{t+1|t} &= \sum_{i} w_{i}(x_{t+1}^{(i)}-\hat{x}_{t+1|t})(x_{t+1}^{(i)}-\hat{x}_{t+1|t})\trans
+\end{align}
+where $\sum_{i}w_{i} = 1$.
+
+Now, with noise, $x_{t+1} = f(x_t,u_t,w_t)$. Sample from
+\begin{equation*}
+\left[\begin{array}{c}
+x_t\\
+w_t
+\end{array}\right]\sim N\left(\left[
+\begin{array}{c}
+\hat{x}_{t+1|t}\\
+0
+\end{array}\right],\left[\begin{array}{cc}
+P_{t+1|t} & 0\\
+0 & \Sigma_w
+\end{array}\right]\right)
+\end{equation*}
+which gives $(x_{t}^{(0)},w_{t}^{(0)}),...,(x_{t}^{(m)},w_{t}^{(m)})$. Then compute the transition by passing each of these samples through $f$. $\hat{x}_{t+1|t}$ and $P_{t+1|t}$ are then given by empirical estimates.
+
+The measurements are $y_t = h(x_t,v_t)$. So sample $(x_{t}^{(0)},v_{t}^{(0)}),...,(x_{t}^{(m)},v_{t}^{(m)})$ from
+\begin{equation*}
+\left[\begin{array}{c}
+x_t\\
+v_t
+\end{array}\right]\sim N\left(\left[
+\begin{array}{c}
+\hat{x}_{t|t-1}\\
+0
+\end{array}\right],\left[\begin{array}{cc}
+P_{t|t-1} & 0\\
+0 & \Sigma_v
+\end{array}\right]\right)
+\end{equation*}
+Then obtain $y_{t}^{(i)}$ by passing samples through $h$. Then
+\begin{equation*}
+\left[\begin{array}{c}
+x_t\\v_t\\y_t
+\end{array}\right]\sim N\left(\left[\begin{array}{c}
+\hat{x}_{t|t-1}\\0\\\hat{y}_{t|t-1}
+\end{array}\right],\left[\begin{array}{ccc}
+\hat{\Sigma}_{xx} & 0 & \hat{\Sigma}_{xy}\\
+0 & \hat{\Sigma}_{vv} & \hat{\Sigma}_{vx}\\
+\hat{\Sigma}_{yx} & \hat{\Sigma}_{yv} & \hat{\Sigma}_{yy}
+\end{array}\right]\right)
+\end{equation*}
+
+Note that linearization was not necessary. However, many samples were required. This leads to the question of whether the samples can be chosen wisely and thus much fewer samples are required. This is the concept of the sigma point filter. You pick $2L+1$ points and weights for an $L$ dimensional distribution. For example, a two dimensional Gaussian would require 5 points (one being the mean). The points would be chosen to preserve the covariance and mean of the distribution. If $f$ is linear or quadratic, this sampling yields the exact moment of the distribution.
+
+
+\end{lecture}
+\theend

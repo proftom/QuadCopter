@@ -106,9 +106,23 @@ Introduction introducing things in an introductory manner.
 \section{EKF} % (fold)
 \label{sec:ekf}
 
+
+We use a kalman filter... the optimal state estimator
+non linear due to rotations -- ekf
+de facto standard (cite)
+
+
 The derivation of the rate of change of the quaternion with respect to angular velocity in the body frame can be found in \cite{MARSlab} (see equation 63). Note that they use the convetion q = q4 + q1i + q2j + q3k, while we use the convention q0 + q1i + q2j + q3k, which is the same convetion used by MATLAB's Aerospace Blockset \cite{MATLABAerospace}.
 
 The derivation of the quaternion derived rotation matrix is also shown in \cite{MARSlab} (see equation 92)
+
+
+\subsection{Impementation} % (fold)
+\label{sub:impementation}
+
+We crosscheck our implementation against a similar open source implementation by the OpenPilot team \cite{OpenPilotinsgps}.
+
+% subsection impementation (end)
 
 % section ekf (end)
 
@@ -124,6 +138,11 @@ The derivation of the quaternion derived rotation matrix is also shown in \cite{
 	MathWorks,
 	\emph{Implement quaternion representation of six-degrees-of-freedom equations of motion with respect to body axes}. \\
 	\url{http://www.mathworks.co.uk/help/aeroblks/6dofquaternion.html}
+
+\bibitem{OpenPilotinsgps}
+	The OpenPilot Team,
+	\emph{Joint attitude and position estimation EKF}. \\
+	\url{http://reviews.openpilot.org/browse/OpenPilot/flight/libraries/insgps16state.c?hb=true}
 
 \end{thebibliography}
 
