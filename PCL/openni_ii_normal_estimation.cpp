@@ -48,7 +48,7 @@
 
 
 
-#define RESOLUTION_MODE pcl::OpenNIGrabber::OpenNI_QVGA_30Hz
+#define RESOLUTION_MODE pcl::OpenNIGrabber::OpenNI_QQVGA_30Hz
 
 #define FPS_CALC(_WHAT_) \
 do \
