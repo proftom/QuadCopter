@@ -230,7 +230,7 @@ class OpenNIIntegralImageNormalEstimation
     keyboard_callback (const pcl::visualization::KeyboardEvent& event, void*)
     {
 		ofstream MyFile;
-		MyFile.open ("data.csv", ios::out | ios::ate | ios::app) ;
+		MyFile.open ("data1.csv", ios::out | ios::ate | ios::app) ;
       boost::mutex::scoped_lock lock (mtx_);
       
 	  switch (event.getKeyCode ())

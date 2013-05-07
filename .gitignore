@@ -162,14 +162,13 @@ pip-log.txt
 # Mac crap
 .DS_Store
 
-*.acn
-*.acr
-*.alg
 *.aux
 *.bbl
 *.blg
+*.brf
 *.dvi
 *.fdb_latexmk
+*.fls
 *.glg
 *.glo
 *.gls
@@ -179,12 +178,16 @@ pip-log.txt
 *.ist
 *.lof
 *.log
+*.lol
 *.lot
+*.lox
 *.maf
 *.mtc
 *.mtc0
 *.nav
+*.nlg
 *.nlo
+*.nls
 *.out
 *.pdfsync
 *.ps
@@ -192,6 +195,5 @@ pip-log.txt
 *.synctex.gz
 *.toc
 *.vrb
-*.xdy
-*.tdo
 *.pdf
+report/Report.pdf

@@ -1,0 +1,9 @@
+
+threads break:
+in boost/config/stdlib/libstdcpp3.hpp
+change relevant places to:
+defined(_GLIBCXX__PTHREADS) || defined(ANDROID)
+&& !defined(_GLIBCPP__PTHREADS)  && !defined(ANDROID)
+
+internal compiler crash on narf.cpp and narf_keypoint.cpp
+change powf to std::pow

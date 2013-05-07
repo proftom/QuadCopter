@@ -1,0 +1,149 @@
+% !TEX TS-program = pdflatex
+% !TEX encoding = UTF-8 Unicode
+
+%tells you if you use obsolete packages
+%\RequirePackage[l2tabu,orthodox]{nag}
+
+\documentclass[]{article}
+
+\usepackage[utf8]{inputenc} % set input encoding (not needed with XeLaTeX)
+
+%%% PAGE DIMENSIONS
+\usepackage{geometry} % to change the page dimensions
+\geometry{a4paper} % or letterpaper (US) or a5paper or....
+% \geometry{margin=2in} % for example, change the margins to 2 inches all round
+% \geometry{landscape} % set up the page for landscape
+%   read geometry.pdf for detailed page layout information
+
+\usepackage{graphicx} % support the \includegraphics command and options
+
+% \usepackage[parfill]{parskip} % Activate to begin paragraphs with an empty line rather than an indent
+
+%%% PACKAGES
+\usepackage{booktabs} % for much better looking tables
+\usepackage{array} % for better arrays (eg matrices) in maths
+\usepackage{paralist} % very flexible & customisable lists (eg. enumerate/itemize, etc.)
+\usepackage{verbatim} % adds environment for commenting out blocks of text & for better verbatim
+\usepackage{subfig} % make it possible to include more than one captioned figure/table in a single float
+\usepackage{microtype} %makes awesome kerning and punctuation come half way out the edge of the text
+\usepackage{listings} %for code listings
+\usepackage{color} %for colored syntax highligting
+\usepackage{rotating}
+\usepackage{pdflscape}
+\usepackage[]{algorithm2e}
+\usepackage{multirow}
+\usepackage{float}
+\usepackage{mathtools}
+
+\usepackage{caption}
+\captionsetup[subfigure]{format=subfig,labelsep=colon,labelformat=simple}
+
+%%% Code listing
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+\lstset{
+basicstyle=\footnotesize\ttfamily,
+commentstyle=\color{mygreen},
+keywordstyle=\color{blue},
+numberstyle=\tiny\color{mygray},
+numbers=left,
+tabsize=2,
+frame=tb,
+aboveskip=3mm,
+belowskip=3mm,
+breaklines=true,
+breakatwhitespace=true,
+showstringspaces=false,
+columns=flexible
+}
+
+% to include a file as a listing: \lstinputlisting{intio.c}
+% inline listing: \begin{lstlisting}[frame=single]
+
+%%% HEADERS & FOOTERS
+\usepackage{fancyhdr} % This should be set AFTER setting up the page geometry
+\pagestyle{fancy} % options: empty , plain , fancy
+\renewcommand{\headrulewidth}{0pt} % customise the layout...
+\lhead{}\chead{}\rhead{}
+\lfoot{}\cfoot{\thepage}\rfoot{}
+
+%%% ToC (table of contents) APPEARANCE
+\usepackage[nottoc,notlof,notlot]{tocbibind} % Put the bibliography in the ToC
+\usepackage[titles,subfigure]{tocloft} % Alter the style of the Table of Contents
+%\renewcommand{\cftsecfont}{\rmfamily\mdseries\upshape}
+%\renewcommand{\cftsecpagefont}{\rmfamily\mdseries\upshape} % No bold!
+\usepackage{hyperref} % use hyperlinked ToC
+\hypersetup{colorlinks=true, linkcolor=black, citecolor=black, filecolor=black, urlcolor=black}
+
+%%%-------------------------------------------------------------------
+
+
+\title{Third Year Group Project \\ State Estimation for Indoor Environments}
+\author{Oskar Weigl, Ryan Savatski, Thomas Morrison, Chinemelu Ezeh, Joshua Elsdon}
+\begin{document}
+\maketitle
+\center{\textbf{\large{\emph{"...a profound trust in the advances of science."}	}}}
+
+\abstract{
+A Lovely Abstract full of insight and long words that makes it apparent we did lots of stuff 
+\tableofcontents
+\clearpage
+
+\section{Executive Summary} % (fold)
+\label{sec:executive_summary}
+
+Summarise things in a summarative way, as if one were producing a summary for an executive. 
+
+% section executive_summary (end)
+
+\section{Introduction}  % (fold)
+\label{sec:introduction}
+Introduction introducing things in an introductory manner. 
+
+% section introduction (end)
+
+\section{EKF} % (fold)
+\label{sec:ekf}
+
+
+We use a kalman filter... the optimal state estimator
+non linear due to rotations -- ekf
+de facto standard (cite)
+
+
+The derivation of the rate of change of the quaternion with respect to angular velocity in the body frame can be found in \cite{MARSlab} (see equation 63). Note that they use the convetion q = q4 + q1i + q2j + q3k, while we use the convention q0 + q1i + q2j + q3k, which is the same convetion used by MATLAB's Aerospace Blockset \cite{MATLABAerospace}.
+
+The derivation of the quaternion derived rotation matrix is also shown in \cite{MARSlab} (see equation 92)
+
+
+\subsection{Impementation} % (fold)
+\label{sub:impementation}
+
+We crosscheck our implementation against a similar open source implementation by the OpenPilot team \cite{OpenPilotinsgps}.
+
+% subsection impementation (end)
+
+% section ekf (end)
+
+\clearpage
+\begin{thebibliography}{99}
+
+\bibitem{MARSlab}
+	Nikolas Trawny and Stergios I. Roumeliotis,
+	\emph{Indirect Kalman Filter for 3D Attitude Estimation, A Tutorial for Quaternion Algebra}. \\
+	\url{http://www-users.cs.umn.edu/~trawny/Publications/Quaternions_3D.pdf}
+
+\bibitem{MATLABAerospace}
+	MathWorks,
+	\emph{Implement quaternion representation of six-degrees-of-freedom equations of motion with respect to body axes}. \\
+	\url{http://www.mathworks.co.uk/help/aeroblks/6dofquaternion.html}
+
+\bibitem{OpenPilotinsgps}
+	The OpenPilot Team,
+	\emph{Joint attitude and position estimation EKF}. \\
+	\url{http://reviews.openpilot.org/browse/OpenPilot/flight/libraries/insgps16state.c?hb=true}
+
+\end{thebibliography}
+
+\end{document}
