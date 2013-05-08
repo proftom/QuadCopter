@@ -168,11 +168,13 @@ class OpenNIIntegralImageNormalEstimation
 	  static bool hasrun = false;
 	  if(eventflag & 0x1){
 		  if(!hasrun){
-				//hasrun = true;
+				hasrun = true;
 
 				vector<vector<int>> clusterIndicies = floodFillAll(100, 100);//DBSCAN(G_epsilon, G_minpts);
 				cloud_ = cloud;
 				vector<Plane> planes = ClusterToAveragePlane(clusterIndicies);
+				planes = DBScanND(planes);
+
 				pcl::PointCloud<PointType> pc(*cloud);
 
 				//Colour clusters
@@ -342,13 +344,13 @@ class OpenNIIntegralImageNormalEstimation
 	vector<Plane> DBScanND(vector<Plane> planes) {
 		
 		//Check each planeCluster against all other clusters to see if merge is possible
-		vector<vector<bool>> mergedPlanes;
+		vector<vector<bool>> mergedPlanes(planes.size());
 		
 		//See what planes should be merged
 		//We need (n-1)n/2 comparisons => O(n²)
 		for(int i = 0; i < planes.size(); i++) 
 		{
-			for (int j = i; j < planes.size(); j++) 
+			for (int j = i + 1; j < planes.size(); j++) 
 			{
 				mergedPlanes[i].push_back(samePlane(planes[i], planes[j], 0.05));
 			}
@@ -509,13 +511,13 @@ class OpenNIIntegralImageNormalEstimation
 					Q.push_back(currentPoint+1);	//east
 					isInClusterOrQ[currentPoint+1] = true;
 				}
-				if (!isInClusterOrQ[currentPoint-320]){
-					Q.push_back(currentPoint-320);	//north
-					isInClusterOrQ[currentPoint-320] = true;
+				if (!isInClusterOrQ[currentPoint-160]){
+					Q.push_back(currentPoint-160);	//north
+					isInClusterOrQ[currentPoint-160] = true;
 				}
-				if (!isInClusterOrQ[currentPoint+320]){
-					Q.push_back(currentPoint+320);	//south
-					isInClusterOrQ[currentPoint+320] = true;
+				if (!isInClusterOrQ[currentPoint+160]){
+					Q.push_back(currentPoint+160);	//south
+					isInClusterOrQ[currentPoint+160] = true;
 				}
 			}
 			
