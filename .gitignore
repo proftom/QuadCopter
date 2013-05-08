@@ -195,5 +195,4 @@ pip-log.txt
 *.synctex.gz
 *.toc
 *.vrb
-*.pdf
 report/Report.pdf
