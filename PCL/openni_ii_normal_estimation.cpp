@@ -51,7 +51,6 @@
 #define RESOLUTION_MODE pcl::OpenNIGrabber::OpenNI_QQVGA_30Hz
 
 #define FPS_CALC(_WHAT_) \
-
 do \
 { \
     static unsigned count = 0;\
@@ -73,20 +72,35 @@ int G_minpts = 60;
 
 //template <typename PointType>
 typedef pcl::PointXYZRGBA PointType;
-//typedef NormalD PointType;
-class NormalD : private pcl::Normal {
-	
-	NormalD(float x, float y, float z) 
-	{
-		this->normal_x = x;
-		this->normal_y = y;
-		this->normal_z = z;
-	}
 
-	float normal_d;
+class Plane  {
+	
+public:
+	Plane(float x, float y, float z, float d) : A(x), B(y), C(z), D(d){}
+	Plane(float x, float y, float z, pcl::Normal &norm) 
+	{
+		A = norm.normal_x;
+		B = norm.normal_y;
+		C = norm.normal_z;
+		D = -(A * x + B * y + C * z);
+	}
+	Plane(float x, float y, float z, float a, float b, float c) {
+		A = a;
+		B = b;
+		C = c;
+		D = -(A * x + B * y + C * z);
+	}
+	
+	float A, B, C, D;
 
 };
 
+class PlaneAverage : public Plane 
+{
+public:
+	int nPoints;
+	pcl::PointCloud<PointType>::Ptr cloud;
+};
 
 class OpenNIIntegralImageNormalEstimation
 {
@@ -96,7 +110,7 @@ class OpenNIIntegralImageNormalEstimation
     typedef Cloud::ConstPtr CloudConstPtr; //typename
 
 	unsigned int eventflag; 
-	
+
 	//This is used to hold the data used by DBSCAN
 	pcl::PointCloud<pcl::Normal>::Ptr cloud_dbscanproc;
 
@@ -110,7 +124,7 @@ class OpenNIIntegralImageNormalEstimation
     CloudConstPtr cloud_;
     bool new_cloud_;
 
-
+	
 	
     OpenNIIntegralImageNormalEstimation (const std::string& device_id = "")
       : viewer ("PCL OpenNI NormalEstimation Viewer")
@@ -125,7 +139,8 @@ class OpenNIIntegralImageNormalEstimation
       new_cloud_ = false;
       viewer.registerKeyboardCallback(&OpenNIIntegralImageNormalEstimation::keyboard_callback, *this);
     }
-	
+
+
     void
     cloud_cb (const CloudConstPtr& cloud)
     {
@@ -133,6 +148,8 @@ class OpenNIIntegralImageNormalEstimation
       //lock while we set our cloud;
       FPS_CALC ("computation");
       // Estimate surface normals
+
+	  // Cloud cld (new Cloud(cloud));
 
       normals_.reset (new pcl::PointCloud<pcl::Normal>);
 	  //cld_render_ptr.reset(new pcl::PointCloud<PointType>);
@@ -145,15 +162,17 @@ class OpenNIIntegralImageNormalEstimation
       //std::cout << "Time for normal estimation: " << (stop - start) * 1000.0 << " ms" << std::endl;
       //cloud_ = cloud;
 
-
+	  
 	  cloud_dbscanproc = normals_; //TODO unessecary copy
 
 	  static bool hasrun = false;
 	  if(eventflag & 0x1){
 		  if(!hasrun){
-				hasrun = true;
-				vector<vector<int>> clusterIndicies = floodFillAll(100, 100, 0.2);//DBSCAN(G_epsilon, G_minpts);
+				//hasrun = true;
 
+				vector<vector<int>> clusterIndicies = floodFillAll(100, 100);//DBSCAN(G_epsilon, G_minpts);
+				cloud_ = cloud;
+				vector<Plane> planes = ClusterToAveragePlane(clusterIndicies);
 				pcl::PointCloud<PointType> pc(*cloud);
 
 				//Colour clusters
@@ -184,7 +203,7 @@ class OpenNIIntegralImageNormalEstimation
 	  }
 
 		
-
+	  
 		//mtx_.unlock();
 		//while(eventflag & 0x1);
 
@@ -222,7 +241,7 @@ class OpenNIIntegralImageNormalEstimation
 
         viz.addPointCloudNormals<PointType, pcl::Normal> (temp_cloud, temp_normals, 5, 0.05f, "normalcloud");
         new_cloud_ = false;
-	
+
       }
     }
 
@@ -291,47 +310,72 @@ class OpenNIIntegralImageNormalEstimation
 
       interface->stop ();
     }
-	//
-	//vector<NormalD> averageClusterNormal(vector<vector<int>> clusters) {
-	//	//pcl::PointCloud<pcl::> averagedClusters = new pcl::PointCloud<PointT>();
-	//	vector<int> averagedClusters;
-	//	vector<NormalD> av;
-	//	for(int i = 0; i < clusters.size(); i++) {
-	//		float 
-	//			accum_x = 0.0,
-	//			accum_y = 0.0,
-	//			accum_z = 0.0,
-	//			accum_d = 0.0;
-	//		
-	//		for (int j = 0; j < clusters[i].size(); j++) {
-	//			accum_x += cloud_dbscanproc->points[clusters[i][j]].normal_x;
-	//			accum_y += cloud_dbscanproc->points[clusters[i][j]].normal_y;
-	//			accum_z += cloud_dbscanproc->points[clusters[i][j]].normal_z;
-	//			//ne_.depth_data_
-	//			
-	//			//cloud_dbscanproc->points[clusters[i][j]].
-	//			//cloud_dbscanproc->points[clusters[i][j]]
-	//				//clusters[i][j]
-	//			//accum += clusters[i][j];
-	//		}
-	//		accum_x / clusters[i].size();
-	//		accum_y / clusters[i].size();
-	//		accum_z / clusters[i].size();
-	//		av.push_back(NormalD(accum_x, accum_y, accum_z));
-	//		//averagedClusters.push_back(accum);			
-	//	}
-	//	return av;
-	//}
 
+	vector<Plane> ClusterToAveragePlane(vector<vector<int>> clusters) 
+	{
+		vector<Plane> planes;
+
+		for(int i = 0; i < clusters.size(); i++) {
+						
+			float 
+				accum_x = 0.0,
+				accum_y = 0.0,
+				accum_z = 0.0,
+				accum_d = 0.0;
+
+			for (int j = 0; j < clusters[i].size(); j++) {
+
+				accum_x += cloud_dbscanproc->points[clusters[i][j]].normal_x;
+				accum_y += cloud_dbscanproc->points[clusters[i][j]].normal_y;
+				accum_z += cloud_dbscanproc->points[clusters[i][j]].normal_z;
+				accum_d -= ((cloud_->points[clusters[i][j]].x * cloud_dbscanproc->points[clusters[i][j]].normal_x)
+							+ (cloud_->points[clusters[i][j]].y * cloud_dbscanproc->points[clusters[i][j]].normal_y)
+							+ (cloud_->points[clusters[i][j]].z * cloud_dbscanproc->points[clusters[i][j]].normal_z));
+			}
+
+			planes.push_back(Plane(accum_x/clusters[i].size(), accum_y/clusters[i].size(), accum_z/clusters[i].size(), accum_d/clusters[i].size()));
+		}
+
+		return planes;
+	}
+
+	vector<Plane> DBScanND(vector<Plane> planes) {
+		
+		//Check each planeCluster against all other clusters to see if merge is possible
+		vector<vector<bool>> mergedPlanes;
+		
+		//See what planes should be merged
+		//We need (n-1)n/2 comparisons => O(n²)
+		for(int i = 0; i < planes.size(); i++) 
+		{
+			for (int j = i; j < planes.size(); j++) 
+			{
+				mergedPlanes[i].push_back(samePlane(planes[i], planes[j], 0.05));
+			}
+		}
+
+		//Now perform the merge
+
+		return planes;
+	}
+
+	bool samePlane(Plane one, Plane two, double gamma) 
+	{
+		
+		if(		(( one.A - two.A) < gamma)
+			&&	(( one.B - two.B) < gamma)
+			&&	(( one.C - two.C) < gamma)
+			&&	(( one.D - two.D) < gamma))
+		{
+			return true;
+		}
+
+		return false;
 	
-	////DBScan cluster in n-d space
-	//vector<NormalD> DensityBasedScan(vector<int>) 
-	//{
+	}
 
-	//}
-
-	//DBSCAN
 	vector<vector<int>> DBSCAN (double epsilon, int minPoints){
+
 		
 		int sizeOfData = cloud_dbscanproc->size();
 		vector<bool> Visited(sizeOfData, false);
@@ -411,9 +455,7 @@ class OpenNIIntegralImageNormalEstimation
 		}
 	}
 
-
-	//Flood fill
-	vector<vector<int>> floodFillAll(int minPts, int maxTries, double epsilon) 
+	vector<vector<int>> floodFillAll(int minPts, int maxTries) 
 	{
 		vector<vector<int>> clusters;
 		
@@ -427,7 +469,7 @@ class OpenNIIntegralImageNormalEstimation
 			int seed = rand()%dataSize;
 			if (!isInCluster[seed]) 
 			{
-				vector<int> x = floodFillNaive(seed, isInCluster, count, epsilon);
+				vector<int> x = floodFillNaive(seed, isInCluster, count);
 				if (x.size() > minPts){
 					clusters.push_back(x);
 					for (int i = 0; i < x.size(); i++){
@@ -442,7 +484,7 @@ class OpenNIIntegralImageNormalEstimation
 		return clusters;
 	}
 
-	vector<int> floodFillNaive (int rootNode, vector<bool> isInClusterOrQ, int& count, double epsilon) 
+	vector<int> floodFillNaive (int rootNode, vector<bool> isInClusterOrQ, int& count) 
 	{
 		
 		vector<int> clusterPoints;
@@ -454,7 +496,7 @@ class OpenNIIntegralImageNormalEstimation
 
 			int currentPoint = Q.back();
 			Q.pop_back();
-			if (samePlaneNormal(currentPoint, rootNode, epsilon)) {
+			if (samePlaneNormal(currentPoint, rootNode, 0.2)) {
 				//Add current point to cluster
 				clusterPoints.push_back(currentPoint);
 				count++;
@@ -467,13 +509,13 @@ class OpenNIIntegralImageNormalEstimation
 					Q.push_back(currentPoint+1);	//east
 					isInClusterOrQ[currentPoint+1] = true;
 				}
-				if (!isInClusterOrQ[currentPoint-160]){
-					Q.push_back(currentPoint-160);	//north
-					isInClusterOrQ[currentPoint-160] = true;
+				if (!isInClusterOrQ[currentPoint-320]){
+					Q.push_back(currentPoint-320);	//north
+					isInClusterOrQ[currentPoint-320] = true;
 				}
-				if (!isInClusterOrQ[currentPoint+160]){
-					Q.push_back(currentPoint+160);	//south
-					isInClusterOrQ[currentPoint+160] = true;
+				if (!isInClusterOrQ[currentPoint+320]){
+					Q.push_back(currentPoint+320);	//south
+					isInClusterOrQ[currentPoint+320] = true;
 				}
 			}
 			
@@ -490,7 +532,21 @@ class OpenNIIntegralImageNormalEstimation
 
 		return false;
 	}
+	//void inplace_union(std::vector<int>& a, std::vector<int>& b){
+	//	std::sort (a.begin(),a.end());
+	//	std::sort (b.begin(),b.end());
+	//	std::mismatch(a,b)
+	//	int mid = a.size(); //Store the end of first sorted range
 
+	//	//First copy the second sorted range into the destination vector
+	//	std::copy(b.begin(), b.end(), std::back_inserter(a));
+
+	//	//Then perform the in place merge on the two sub-sorted ranges.
+	//	std::inplace_merge(a.begin(), a.begin() + mid, a.end());
+
+	//	//Remove duplicate elements from the sorted vector
+	//	a.erase(std::unique(a.begin(), a.end()), a.end());
+	//}
 };
 
 void
