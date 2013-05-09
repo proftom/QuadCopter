@@ -34,6 +34,7 @@
 \usepackage{multirow}
 \usepackage{float}
 \usepackage{mathtools}
+\usepackage{amssymb}
 
 \usepackage{caption}
 % \captionsetup[subfigure]{format=subfig,labelsep=colon,labelformat=simple}
@@ -157,8 +158,8 @@ de facto standard (cite)
 
 
 \begin{align}
-	x_k &= f(x_{k-1}, u_{k-1}) + w_{k-1} \notag \\
-	y_k &= h(x_k) + v_k
+	x_k &= f(x_{k-1}, u_{k-1}, w_{k-1}) \notag \\
+	y_k &= h(x_k, v_k)
 	\label{eqn:system}
 \end{align}
 
@@ -181,22 +182,29 @@ where $Q_k$ and $R_k$ are the ... bla.. respectivly.
 The sucessive approximation... predict stage..
 
 \begin{align}
-	\hat{x}_{k|k-1} &= f(\hat{x}_{k-1|k-1}, u_{k-1}) \notag \\
-	P_{k|k-1} 		&\approx F_{k-1} P_{k|k} F_{k-1}^\top + Q_{k}
+	\hat{x}_{k|k-1} &= f(\hat{x}_{k-1|k-1}, u_{k-1}, \mathbb{E}(w_{k-1})) \notag \\
+	P_{k|k-1} 		&\approx F_{k-1} P_{k|k} F_{k-1}^\top + G_{k-1} Q_{k-1} G_{k-1}^\top
 \end{align}
 
 where
 
 \begin{align}
-	F_{k-1} &= \left . \frac{\partial f(x,u)}{\partial x} \right \vert _{\hat{x}_{k-1|k-1},u_{k-1}}
+	\mathbb{E}(w_{k-1}) &= 0
+\end{align}
+
+and
+
+\begin{align}
+	F_{k-1} &= \left . \frac{\partial f}{\partial x} \right \vert _{\hat{x}_{k-1|k-1},u_{k-1}} \\
+	G_{k-1} &= \left . \frac{\partial f}{\partial w} \right \vert _{\hat{x}_{k-1|k-1},u_{k-1}}
 \end{align}
 
 update stage...
 
 \begin{align}
-	z_k 		&= y_k - h(\hat{x}_{k|k-1}) \\
+	z_k 		&= y_k - h(\hat{x}_{k|k-1}, \mathbb{E}(v_k)) \\
 	S_k 			&= \operatorname{cov}(z_k) \notag \\
-	S_k 			&\approx H_k P_{k|k-1} H_k^\top + R_k \\
+	S_k 			&\approx H_k P_{k|k-1} H_k^\top + V_k R_k V_k^\top \\
 	K_k 			&= P_{k|k-1} H_k^\top S_k^{-1} \\
 	\hat{x}_{k|k} 	&= \hat{x}_{k|k-1} + K_k z_k \\
 	P_{k|k} 		&\approx (I - K_k H_k) P_{k|k-1}
@@ -205,13 +213,139 @@ update stage...
 where
 
 \begin{align}
-	H_{k} &= \left . \frac{\partial h(x)}{\partial x} \right \vert _{\hat{x}_{k|k-1}}
+	\mathbb{E}(v_k) &= 0
 \end{align}
+
+and
+
+\begin{align}
+	H_{k} &= \left . \frac{\partial h}{\partial x} \right \vert _{\hat{x}_{k|k-1}} \\
+	V_{k} &= \left . \frac{\partial h}{\partial v} \right \vert _{\hat{x}_{k|k-1}}
+\end{align}
+
+
 
 Model equations..
 
 \begin{align}
-	\Xi(\vec{q}) &=
+	x &= 
+	\left[
+	\begin{matrix}
+		r \\
+		v \\
+		q \\
+		b_\omega \\
+		b_a \\
+		\pi_0 \\
+		\vdots \\
+		\pi_{n-1}
+	\end{matrix}
+	\right]
+	&
+	\dot{x} &= 
+	\left[
+	\begin{matrix}
+		\dot{r} \\
+		\dot{v} \\
+		\dot{q} \\
+		\dot{b}_\omega \\
+		\dot{b}_a \\
+		\dot{\pi}_0 \\
+		\vdots \\
+		\dot{\pi}_{n-1}
+	\end{matrix}
+	\right]
+\end{align}
+
+where $r$ is the position of the craft in the inertial frame, $v$ is the velocity in the inertial frame, $q$ is the quaternion that represents the attitude of the craft: a rotation from the inertial frame to the body frame, $b_\omega$ and $b_a$ represent the gyro and accelerometer bias, respectively. $\pi_0 \hdots \pi_{n-1}$ are the equations of the planes currently stored in the map.
+They are each composed as follows
+
+\begin{align}
+	r &= 
+	\left[
+	\begin{matrix}
+		x \\
+		y \\
+		z
+	\end{matrix}
+	\right]
+	&
+	v &=
+	\left[
+	\begin{matrix}
+		\dot{x} \\
+		\dot{y} \\
+		\dot{z}
+	\end{matrix}
+	\right]
+	&
+	q &=
+	\left[
+	\begin{matrix}
+		q_0 \\
+		q_1 \\
+		q_2 \\
+		q_3
+	\end{matrix}
+	\right]
+	&
+	b_\omega &=
+	\left[
+	\begin{matrix}
+		b_{\omega_x} \\
+		b_{\omega_y} \\
+		b_{\omega_z} 
+	\end{matrix}
+	\right]
+	&
+	b_a &=
+	\left[
+	\begin{matrix}
+		b_{a_x} \\
+		b_{a_y} \\
+		b_{a_z} 
+	\end{matrix}
+	\right]
+	&
+	\pi &=
+	\left[
+	\begin{matrix}
+		N_x \\
+		N_y \\
+		N_z \\
+		d
+	\end{matrix}
+	\right]
+\end{align}
+
+The derivative of the state vector is computed in order to propagate the state over time.
+
+\begin{align}
+	\dot{r} &= v
+	&
+	\dot{v} &= R_{eb}(q) a
+	&
+	\dot{q} &= \frac{1}{2}\Xi(q) \omega
+	&
+	\dot{b}_\omega &= w_\omega
+	&
+	\dot{b}_a &= w_a
+	&
+	\dot{\pi} &= 0
+\end{align}
+
+where $a$ and $\omega$ are the true body frame accelerations and angular rates, respectively.
+$R_{eb}$, the body to earth rotation matrix and $\Xi$ the rate of change of quaternion with respect to body frame angular rates, are defined below.
+
+\begin{align}
+	\omega &= \omega_m + w_\omega - b_\omega \\
+	a &= a_m + w_a - b_a
+\end{align}
+
+where $a_m$ and $\omega_m$ are the measured accelerations and angular velocities in the body frame, respectively.
+
+\begin{align}
+	\Xi(q) &=
 	\left[
 	\begin{matrix}
 		-q_1 	& -q_2	& -q_3 	\\
@@ -223,7 +357,7 @@ Model equations..
 \end{align}
 
 \begin{align}
-	\Omega(\vec{\omega}) &=
+	\Omega(\omega) &=
 	\left[
 	\begin{matrix}
 		0 			& -\omega_x 	& -\omega_y	& -\omega_z	\\
@@ -239,17 +373,17 @@ Model equations..
 				&= \frac{1}{2} \Xi(q) \omega
 \end{align}
 
-The derivation of the rate of change of the quaternion with respect to angular velocity in the body frame can be found in \cite{MARSlab} (see equation 108). Note that they use the convetion q = q4 + q1i + q2j + q3k, while we use the convention q0 + q1i + q2j + q3k, which is the same convetion used by MATLAB's Aerospace Blockset \cite{MATLABAerospace}.
+The derivation of the rate of change of the quaternion with respect to angular velocity in the body frame can be found in \cite{MARSlab} (see equation 108). Note that they use the convetion q = q4 + q1i + q2j + q3k, while we use the convention q0 + q1i + q2j + q3k, which is the same convetion used by MATLAB's Aerospace Blockset \cite{MATLABAerospace}, and the OpenPilot implementation \cite{OpenPilotPaper}.
 
 \begin{align}
-	\vec{q} &= q_0 + q_1i + q_2j + q_3k
+	q &= q_0 + q_1i + q_2j + q_3k
 \end{align}
 
 Rbe (rotation of body with respect to earth)
 rotmatrix here.
 
 \begin{align}
-	R_{be}(\vec{q}) &=
+	R_{be}(q) &=
 	\left[
 	\begin{matrix}
 		2(q_0^2 + q_1^2) - 1 	& 2(q_1 q_2 + q_0 q_3) 	& 2(q_1 q_3 - q_0 q_2) \\
@@ -271,6 +405,33 @@ Linearisation: Jacobians
 
 \begin{align}
 	\frac{\partial f(x,u)}{\partial x}
+\end{align}
+
+\begin{align}
+	F_{rv} 	&= I_{3x3}
+\end{align}
+
+\begin{align}
+	F_{qq}	&= \frac{1}{2} \Omega(\omega) \notag \\
+			&= \frac{1}{2} \Omega(\omega_m - b_\omega)
+\end{align}
+
+\begin{align}
+	F_{qb_\omega} &= -\frac{1}{2} \Xi(q)
+\end{align}
+
+\begin{align}
+	G_{qw_\omega} &= \frac{1}{2} \Xi(q)
+\end{align}
+
+\begin{align}
+	G_{vw_a} &= R_{eb}(q)
+\end{align}
+
+\begin{align}
+	G_{b_\omega w_\omega} &= I_{3x3}
+	&
+	G_{b_a w_a} &= I_{3x3}
 \end{align}
 
 
