@@ -90,8 +90,15 @@ public:
 		C = c;
 		D = -(A * x + B * y + C * z);
 	}
-	
+	Plane(float a, float b, float c, float d, vector<int> ind)  {
+	A = a;
+	B = b;
+	C = c;
+	D = -(A * a + B * b + C * c);
+	indicies = ind;
+	}
 	float A, B, C, D;
+	vector<int> indicies;
 
 };
 
@@ -173,7 +180,7 @@ class OpenNIIntegralImageNormalEstimation
 				vector<vector<int>> clusterIndicies = floodFillAll(100, 100);//DBSCAN(G_epsilon, G_minpts);
 				cloud_ = cloud;
 				vector<Plane> planes = ClusterToAveragePlane(clusterIndicies);
-				planes = DBScanND(planes);
+				vector<vector<int>> h = DBScanND(planes,1,0.05);
 
 				pcl::PointCloud<PointType> pc(*cloud);
 
@@ -335,7 +342,7 @@ class OpenNIIntegralImageNormalEstimation
 							+ (cloud_->points[clusters[i][j]].z * cloud_dbscanproc->points[clusters[i][j]].normal_z));
 			}
 
-			planes.push_back(Plane(accum_x/clusters[i].size(), accum_y/clusters[i].size(), accum_z/clusters[i].size(), accum_d/clusters[i].size()));
+			planes.push_back(Plane(accum_x/clusters[i].size(), accum_y/clusters[i].size(), accum_z/clusters[i].size(), accum_d/clusters[i].size(),clusters[i]));
 		}
 
 		return planes;
@@ -344,7 +351,8 @@ class OpenNIIntegralImageNormalEstimation
 	vector<Plane> DBScanND(vector<Plane> planes) {
 		
 		//Check each planeCluster against all other clusters to see if merge is possible
-		vector<vector<bool>> mergedPlanes(planes.size());
+		vector<Plane> mergedPlanes;
+		vector<vector<bool>> b_mergedPlanes(planes.size());
 		
 		//See what planes should be merged
 		//We need (n-1)n/2 comparisons => O(n²)
@@ -352,13 +360,94 @@ class OpenNIIntegralImageNormalEstimation
 		{
 			for (int j = i + 1; j < planes.size(); j++) 
 			{
-				mergedPlanes[i].push_back(samePlane(planes[i], planes[j], 0.05));
+				b_mergedPlanes[i].push_back(samePlane(planes[i], planes[j], 0.05));
 			}
 		}
 
 		//Now perform the merge
+		for(int i = 0; i < planes.size(); i++) 
+		{
+			for (int j = i + 1; j < planes.size(); j++) 
+			{
+				vector<bool> merge;
+				if(b_mergedPlanes[i][j]) 
+				{
+
+				}
+			}
+		}
 
 		return planes;
+	}
+
+	vector<vector<int>> DBScanND(vector<Plane> planes, int minPoints, double epsilon) 
+	{
+		int sizeOfData = planes.size();
+		vector<bool> Visited(sizeOfData, false);
+		vector<bool> addedToCluster(sizeOfData, false);
+
+		//Clusters
+		vector<vector<int>> clusters;
+		
+		int clusterInd = 0;
+
+		for(int i = 0; i<sizeOfData; i++){
+			if(Visited[i]==false){
+				Visited[i] = true;
+			
+				vector<int> NeighborPts = regionQuery(planes, i, epsilon);
+				vector<bool> pointsInNeighborPts(sizeOfData, false);
+
+				if(!(NeighborPts.size()<minPoints))
+				{
+					vector<int> currentCluster;
+					expandCluster(i, NeighborPts, pointsInNeighborPts, currentCluster, epsilon, minPoints, Visited, addedToCluster, planes);
+					clusters.push_back(currentCluster);
+					clusterInd++;
+				}
+			}
+		}
+
+		cout << clusters.size() << " clusters found" << endl;
+
+		return clusters;
+	}
+
+	//Get all planes in region within epsilon
+	vector<int> regionQuery(vector<Plane> &planes, int currentPoint, double epsilon) {
+		vector<int> k_indicies;
+
+		for( int j = 0; j < planes.size(); j++) {
+			if	(	(abs(planes[currentPoint].A - planes[j].A) < epsilon) 
+				&&	(abs(planes[currentPoint].B - planes[j].B) < epsilon) 
+				&&	(abs(planes[currentPoint].C - planes[j].C) < epsilon)
+				&&	(abs(planes[currentPoint].D - planes[j].D) < epsilon)				)
+			{
+				k_indicies.push_back(j);
+			}
+		}
+
+		return k_indicies;
+	}
+
+	void expandCluster(	int inputInd, vector<int> NeighborPts, vector<bool> pointsInNeighborPts, vector<int> &currentCluster,
+					double radius, int minPoints, vector<bool> &Visited, vector<bool> &addedToCluster, vector<Plane> &planes){
+
+		currentCluster.push_back(inputInd);
+
+		for(int j = 0; j < NeighborPts.size(); j++){
+			if(Visited[NeighborPts[j]]==false){
+				Visited[NeighborPts[j]]=true;
+				vector<int> secondNeighborPts = regionQuery(planes, NeighborPts[j],radius);
+				if(secondNeighborPts.size()>=minPoints){
+					conditionalInsert(NeighborPts, pointsInNeighborPts, secondNeighborPts);
+				}
+			}
+			if (!addedToCluster[j])
+				currentCluster.push_back(NeighborPts[j]);
+				//if neighborPts[j] has yet to be added to a cluster add it to this one
+		}
+
 	}
 
 	bool samePlane(Plane one, Plane two, double gamma) 
@@ -374,78 +463,6 @@ class OpenNIIntegralImageNormalEstimation
 
 		return false;
 	
-	}
-
-	vector<vector<int>> DBSCAN (double epsilon, int minPoints){
-
-		
-		int sizeOfData = cloud_dbscanproc->size();
-		vector<bool> Visited(sizeOfData, false);
-		vector<bool> addedToCluster(sizeOfData, false);
-
-		//Clusters
-		vector<vector<int>> clusters;
-		
-		int clusterInd = 0;
-
-		for(int i = 0; i<sizeOfData; i++){
-			if(Visited[i]==false){
-				Visited[i] = true;
-			
-				vector<int> NeighborPts = regionQuery(i, epsilon);
-				vector<bool> pointsInNeighborPts(sizeOfData, false);
-
-				if(!(NeighborPts.size()<minPoints))
-				{
-					vector<int> currentCluster;
-					expandCluster(i, NeighborPts, pointsInNeighborPts, currentCluster, epsilon, minPoints, Visited, addedToCluster);
-					clusters.push_back(currentCluster);
-					clusterInd++;
-				}
-			}
-		}
-
-		cout << clusters.size() << " clusters found" << endl;
-
-		return clusters;
-
-	}
-
-	//Get all points in region within esp
-	vector<int> regionQuery(int currentPoint, double epsilon) {
-		vector<int> k_indicies;
-		
-
-		for( int j = 0; j < cloud_dbscanproc->size(); j++) {
-			if	(	(abs(cloud_dbscanproc->points[currentPoint].normal_x - cloud_dbscanproc->points[j].normal_x) < epsilon) 
-				&&	(abs(cloud_dbscanproc->points[currentPoint].normal_y - cloud_dbscanproc->points[j].normal_y) < epsilon) 
-				&&	(abs(cloud_dbscanproc->points[currentPoint].normal_z - cloud_dbscanproc->points[j].normal_z) < epsilon))
-			{
-				k_indicies.push_back(j);
-			}
-		}
-
-		return k_indicies;
-	}
-
-	void expandCluster(	int inputInd, vector<int> NeighborPts, vector<bool> pointsInNeighborPts, vector<int> &currentCluster,
-						double radius, int minPoints, vector<bool> &Visited, vector<bool> &addedToCluster){
-
-		currentCluster.push_back(inputInd);
-
-		for(int j = 0; j < NeighborPts.size(); j++){
-			if(Visited[NeighborPts[j]]==false){
-				Visited[NeighborPts[j]]=true;
-				vector<int> secondNeighborPts = regionQuery(NeighborPts[j],radius);
-				if(secondNeighborPts.size()>=minPoints){
-					conditionalInsert(NeighborPts, pointsInNeighborPts, secondNeighborPts);
-				}
-			}
-			if (!addedToCluster[j])
-				currentCluster.push_back(NeighborPts[j]);
-				//if neighborPts[j] has yet to be added to a cluster add it to this one
-		}
-
 	}
 
 	void conditionalInsert(std::vector<int>& destination, std::vector<bool>& isInDest, std::vector<int> source){
@@ -511,13 +528,13 @@ class OpenNIIntegralImageNormalEstimation
 					Q.push_back(currentPoint+1);	//east
 					isInClusterOrQ[currentPoint+1] = true;
 				}
-				if (!isInClusterOrQ[currentPoint-160]){
-					Q.push_back(currentPoint-160);	//north
-					isInClusterOrQ[currentPoint-160] = true;
+				if (!isInClusterOrQ[currentPoint-320]){
+					Q.push_back(currentPoint-320);	//north
+					isInClusterOrQ[currentPoint-320] = true;
 				}
-				if (!isInClusterOrQ[currentPoint+160]){
-					Q.push_back(currentPoint+160);	//south
-					isInClusterOrQ[currentPoint+160] = true;
+				if (!isInClusterOrQ[currentPoint+320]){
+					Q.push_back(currentPoint+320);	//south
+					isInClusterOrQ[currentPoint+320] = true;
 				}
 			}
 			
@@ -534,21 +551,6 @@ class OpenNIIntegralImageNormalEstimation
 
 		return false;
 	}
-	//void inplace_union(std::vector<int>& a, std::vector<int>& b){
-	//	std::sort (a.begin(),a.end());
-	//	std::sort (b.begin(),b.end());
-	//	std::mismatch(a,b)
-	//	int mid = a.size(); //Store the end of first sorted range
-
-	//	//First copy the second sorted range into the destination vector
-	//	std::copy(b.begin(), b.end(), std::back_inserter(a));
-
-	//	//Then perform the in place merge on the two sub-sorted ranges.
-	//	std::inplace_merge(a.begin(), a.begin() + mid, a.end());
-
-	//	//Remove duplicate elements from the sorted vector
-	//	a.erase(std::unique(a.begin(), a.end()), a.end());
-	//}
 };
 
 void
