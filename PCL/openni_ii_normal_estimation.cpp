@@ -72,6 +72,36 @@ int G_minpts = 60;
 
 //template <typename PointType>
 typedef pcl::PointXYZRGBA PointType;
+
+class Plane  {
+	
+public:
+	Plane(float x, float y, float z, float d) : A(x), B(y), C(z), D(d){}
+	Plane(float x, float y, float z, pcl::Normal &norm) 
+	{
+		A = norm.normal_x;
+		B = norm.normal_y;
+		C = norm.normal_z;
+		D = -(A * x + B * y + C * z);
+	}
+	Plane(float x, float y, float z, float a, float b, float c) {
+		A = a;
+		B = b;
+		C = c;
+		D = -(A * x + B * y + C * z);
+	}
+	
+	float A, B, C, D;
+
+};
+
+class PlaneAverage : public Plane 
+{
+public:
+	int nPoints;
+	pcl::PointCloud<PointType>::Ptr cloud;
+};
+
 class OpenNIIntegralImageNormalEstimation
 {
   public:
@@ -94,7 +124,7 @@ class OpenNIIntegralImageNormalEstimation
     CloudConstPtr cloud_;
     bool new_cloud_;
 
-
+	
 	
     OpenNIIntegralImageNormalEstimation (const std::string& device_id = "")
       : viewer ("PCL OpenNI NormalEstimation Viewer")
@@ -132,14 +162,18 @@ class OpenNIIntegralImageNormalEstimation
       //std::cout << "Time for normal estimation: " << (stop - start) * 1000.0 << " ms" << std::endl;
       //cloud_ = cloud;
 
-
+	  
 	  cloud_dbscanproc = normals_; //TODO unessecary copy
 
 	  static bool hasrun = false;
 	  if(eventflag & 0x1){
 		  if(!hasrun){
-				//hasrun = true;
+				hasrun = true;
+
 				vector<vector<int>> clusterIndicies = floodFillAll(100, 100);//DBSCAN(G_epsilon, G_minpts);
+				cloud_ = cloud;
+				vector<Plane> planes = ClusterToAveragePlane(clusterIndicies);
+				planes = DBScanND(planes);
 
 				pcl::PointCloud<PointType> pc(*cloud);
 
@@ -171,7 +205,7 @@ class OpenNIIntegralImageNormalEstimation
 	  }
 
 		
-
+	  
 		//mtx_.unlock();
 		//while(eventflag & 0x1);
 
@@ -278,6 +312,69 @@ class OpenNIIntegralImageNormalEstimation
 
       interface->stop ();
     }
+
+	vector<Plane> ClusterToAveragePlane(vector<vector<int>> clusters) 
+	{
+		vector<Plane> planes;
+
+		for(int i = 0; i < clusters.size(); i++) {
+						
+			float 
+				accum_x = 0.0,
+				accum_y = 0.0,
+				accum_z = 0.0,
+				accum_d = 0.0;
+
+			for (int j = 0; j < clusters[i].size(); j++) {
+
+				accum_x += cloud_dbscanproc->points[clusters[i][j]].normal_x;
+				accum_y += cloud_dbscanproc->points[clusters[i][j]].normal_y;
+				accum_z += cloud_dbscanproc->points[clusters[i][j]].normal_z;
+				accum_d -= ((cloud_->points[clusters[i][j]].x * cloud_dbscanproc->points[clusters[i][j]].normal_x)
+							+ (cloud_->points[clusters[i][j]].y * cloud_dbscanproc->points[clusters[i][j]].normal_y)
+							+ (cloud_->points[clusters[i][j]].z * cloud_dbscanproc->points[clusters[i][j]].normal_z));
+			}
+
+			planes.push_back(Plane(accum_x/clusters[i].size(), accum_y/clusters[i].size(), accum_z/clusters[i].size(), accum_d/clusters[i].size()));
+		}
+
+		return planes;
+	}
+
+	vector<Plane> DBScanND(vector<Plane> planes) {
+		
+		//Check each planeCluster against all other clusters to see if merge is possible
+		vector<vector<bool>> mergedPlanes(planes.size());
+		
+		//See what planes should be merged
+		//We need (n-1)n/2 comparisons => O(n²)
+		for(int i = 0; i < planes.size(); i++) 
+		{
+			for (int j = i + 1; j < planes.size(); j++) 
+			{
+				mergedPlanes[i].push_back(samePlane(planes[i], planes[j], 0.05));
+			}
+		}
+
+		//Now perform the merge
+
+		return planes;
+	}
+
+	bool samePlane(Plane one, Plane two, double gamma) 
+	{
+		
+		if(		(( one.A - two.A) < gamma)
+			&&	(( one.B - two.B) < gamma)
+			&&	(( one.C - two.C) < gamma)
+			&&	(( one.D - two.D) < gamma))
+		{
+			return true;
+		}
+
+		return false;
+	
+	}
 
 	vector<vector<int>> DBSCAN (double epsilon, int minPoints){
 
@@ -414,13 +511,13 @@ class OpenNIIntegralImageNormalEstimation
 					Q.push_back(currentPoint+1);	//east
 					isInClusterOrQ[currentPoint+1] = true;
 				}
-				if (!isInClusterOrQ[currentPoint-320]){
-					Q.push_back(currentPoint-320);	//north
-					isInClusterOrQ[currentPoint-320] = true;
+				if (!isInClusterOrQ[currentPoint-160]){
+					Q.push_back(currentPoint-160);	//north
+					isInClusterOrQ[currentPoint-160] = true;
 				}
-				if (!isInClusterOrQ[currentPoint+320]){
-					Q.push_back(currentPoint+320);	//south
-					isInClusterOrQ[currentPoint+320] = true;
+				if (!isInClusterOrQ[currentPoint+160]){
+					Q.push_back(currentPoint+160);	//south
+					isInClusterOrQ[currentPoint+160] = true;
 				}
 			}
 			
