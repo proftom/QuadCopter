@@ -76,6 +76,7 @@ columns=flexible
 %\renewcommand{\cftsecpagefont}{\rmfamily\mdseries\upshape} % No bold!
 \usepackage{hyperref} % use hyperlinked ToC
 \hypersetup{colorlinks=true, linkcolor=black, citecolor=black, filecolor=black, urlcolor=black}
+\graphicspath{ {ImageLib/}{other_folder/}{third_folder/} }
 
 %%%-------------------------------------------------------------------
 
@@ -103,18 +104,36 @@ Summarise things in a summarative way, as if one were producing a summary for an
 Introduction introducing things in an introductory manner. 
 
 % section introduction (end)
+\section{Sensor Calibration} % (fold)
+\label{sec:sensor_calibration}
+\begin{figure}[htb]
+	\begin{center}
+		\includegraphics[width = 0.8\textwidth]{uncal5m.PNG}
+	\end{center}
+	\caption{A MATLAB plot showing a plane as viewed from above. Actual distance to plane is 5m}
+	\label{fig:uncal5m}
+\end{figure}
 
+Apon inspecting the output of the Xtion Pro from Asus it became apparent that the accuracy of the data was poor. At short ranges things appeared normal, and planes were indeed flat. At distance more than 2m planes quickly became warped (see Figure~\ref{fig:uncal5m}). This issue will corrupt the accuracy of planes that we extract from the cloud data, rendering the extra sensor of little use. 
+
+To attempt to counteract this issue we collected cloud data from when the sensor is facing a large plane, in this case a wall, at a number of distances (from 0.8m to 5m). This cloud data included lots of objects that are of no use to the calibration, so these data points were written to \verb"NaN" in the analysis to avoid corruption of our results. This was achieved by using the data written to an image file, with the z distance (down range from the camera) encoding the grey-scale. Then, by hand, we masked with black all the unwanted areas. This is then easy to correlate against the original data in MATLAB. 
+
+Now with the clean data we know that all the data points must belong to a plane with distance to the plane being the calibration distance. For now we assume that the x and y directions are not in need of calibration, as objects in the visualisations do not too distorted in these directions. Therefore we only need to find the difference between measured data and the calibration distance. Mapping these correction vectors into a 3D space that later we can look up in to correct new data. 
+
+In order to have the 3D correction field be continuous we must smooth and interpolate the data in all 3 dimensions. One significant issue is that all of our correction vectors fall into quite thin regions in the 3D space along the z axis, and within those areas the data is very dense in the x and y dimensions. Therefore our task is to preform smoothing in the x and y directions to remove the signal noise and to find a good interpolation scheme looking in the z direction. The interpolation should be smooth to avoid damaging the flatness of planes. 
+% section sensor_calibration (end)
+=======
 \section{Feature Extraction} % (fold)
 \label{sec:feature_extraction}
 
-\subsection{Sensor Calibration} % (fold)
-\label{sub:sensor_calibration}
+% \subsection{Sensor Calibration} % (fold)
+% \label{sub:sensor_calibration}
 
-Multidimensional least squares correction
-measure a plane at a known distance (d)
-least squares establish the observed plane that matches this distance d
-	(or just least squares the plane first??)
-the distance of each point from the plane is the true calibration vector field projected onto the normal of the observed plane (in the camera's coordinate system)
+% Multidimensional least squares correction
+% measure a plane at a known distance (d)
+% least squares establish the observed plane that matches this distance d
+% 	(or just least squares the plane first??)
+% the distance of each point from the plane is the true calibration vector field projected onto the normal of the observed plane (in the camera's coordinate system)
 
 % subsection sensor_calibration (end)
 
@@ -469,3 +488,4 @@ We crosscheck our implementation against a similar open source implementation by
 \end{thebibliography}
 
 \end{document}
+
