@@ -76,7 +76,7 @@ typedef pcl::PointXYZRGBA PointType;
 class Plane  {
 	
 public:
-	Plane(float x, float y, float z, float d) : A(x), B(y), C(z), D(d){}
+	Plane(float a, float b, float c, float d) : A(a), B(b), C(c), D(d){}
 	Plane(float x, float y, float z, pcl::Normal &norm) 
 	{
 		A = norm.normal_x;
@@ -94,19 +94,12 @@ public:
 	A = a;
 	B = b;
 	C = c;
-	D = -(A * a + B * b + C * c);
+	D = d;
 	indicies = ind;
 	}
 	float A, B, C, D;
 	vector<int> indicies;
 
-};
-
-class PlaneAverage : public Plane 
-{
-public:
-	int nPoints;
-	pcl::PointCloud<PointType>::Ptr cloud;
 };
 
 class OpenNIIntegralImageNormalEstimation
@@ -131,9 +124,7 @@ class OpenNIIntegralImageNormalEstimation
     CloudConstPtr cloud_;
     bool new_cloud_;
 
-	
-	
-    OpenNIIntegralImageNormalEstimation (const std::string& device_id = "")
+	OpenNIIntegralImageNormalEstimation (const std::string& device_id = "")
       : viewer ("PCL OpenNI NormalEstimation Viewer")
     , device_id_(device_id)
 	, eventflag(0)
@@ -146,9 +137,8 @@ class OpenNIIntegralImageNormalEstimation
       new_cloud_ = false;
       viewer.registerKeyboardCallback(&OpenNIIntegralImageNormalEstimation::keyboard_callback, *this);
     }
-
-
-    void
+	
+	void
     cloud_cb (const CloudConstPtr& cloud)
     {
       boost::mutex::scoped_lock lock (mtx_);
@@ -180,7 +170,7 @@ class OpenNIIntegralImageNormalEstimation
 				vector<vector<int>> clusterIndicies = floodFillAll(100, 100);//DBSCAN(G_epsilon, G_minpts);
 				cloud_ = cloud;
 				vector<Plane> planes = ClusterToAveragePlane(clusterIndicies);
-				vector<vector<int>> h = DBScanND(planes,1,0.05);
+				vector<Plane> h = DBScanND(planes,1,0.05);
 
 				pcl::PointCloud<PointType> pc(*cloud);
 
@@ -348,39 +338,7 @@ class OpenNIIntegralImageNormalEstimation
 		return planes;
 	}
 
-	vector<Plane> DBScanND(vector<Plane> planes) {
-		
-		//Check each planeCluster against all other clusters to see if merge is possible
-		vector<Plane> mergedPlanes;
-		vector<vector<bool>> b_mergedPlanes(planes.size());
-		
-		//See what planes should be merged
-		//We need (n-1)n/2 comparisons => O(n²)
-		for(int i = 0; i < planes.size(); i++) 
-		{
-			for (int j = i + 1; j < planes.size(); j++) 
-			{
-				b_mergedPlanes[i].push_back(samePlane(planes[i], planes[j], 0.05));
-			}
-		}
-
-		//Now perform the merge
-		for(int i = 0; i < planes.size(); i++) 
-		{
-			for (int j = i + 1; j < planes.size(); j++) 
-			{
-				vector<bool> merge;
-				if(b_mergedPlanes[i][j]) 
-				{
-
-				}
-			}
-		}
-
-		return planes;
-	}
-
-	vector<vector<int>> DBScanND(vector<Plane> planes, int minPoints, double epsilon) 
+	vector<Plane> DBScanND(vector<Plane> planes, int minPoints, double epsilon) 
 	{
 		int sizeOfData = planes.size();
 		vector<bool> Visited(sizeOfData, false);
@@ -408,9 +366,33 @@ class OpenNIIntegralImageNormalEstimation
 			}
 		}
 
-		cout << clusters.size() << " clusters found" << endl;
+		cout << "Planes merging from " << planes.size() << " to " << clusters.size() << endl;
+		
 
-		return clusters;
+		//Now create a structure with the planes averaged according to how many elements are within the plane
+		//Make each element unique
+		std::vector<Plane> mergedPlanes;
+		for (int i = 0; i < clusters.size(); i++) {
+
+			//O(n log n)
+			std::set<int> unique (clusters[i].begin(), clusters[i].end());
+			Plane mergingPlane(0,0,0,0);
+			int nTotalIndicies = 0;
+			for (set<int>::iterator it=unique.begin() ; it != unique.end(); it++ ) {
+
+				mergingPlane.A += (planes[(*it)].A * planes[(*it)].indicies.size());
+				mergingPlane.B += (planes[(*it)].B * planes[(*it)].indicies.size());
+				mergingPlane.C += (planes[(*it)].C * planes[(*it)].indicies.size());
+				mergingPlane.D += (planes[(*it)].D * planes[(*it)].indicies.size());
+				mergingPlane.indicies.insert(mergingPlane.indicies.end(), planes[(*it)].indicies.begin(), planes[(*it)].indicies.end());
+				nTotalIndicies += planes[(*it)].indicies.size();
+			}
+			mergingPlane.A /= nTotalIndicies; mergingPlane.B /= nTotalIndicies; mergingPlane.C /= nTotalIndicies; mergingPlane.D /= nTotalIndicies;
+			mergedPlanes.push_back(mergingPlane);
+
+		}
+
+		return mergedPlanes;
 	}
 
 	//Get all planes in region within epsilon
@@ -435,7 +417,8 @@ class OpenNIIntegralImageNormalEstimation
 
 		currentCluster.push_back(inputInd);
 
-		for(int j = 0; j < NeighborPts.size(); j++){
+		for(int j = 0; j < NeighborPts.size(); j++)
+		{
 			if(Visited[NeighborPts[j]]==false){
 				Visited[NeighborPts[j]]=true;
 				vector<int> secondNeighborPts = regionQuery(planes, NeighborPts[j],radius);
@@ -450,21 +433,6 @@ class OpenNIIntegralImageNormalEstimation
 
 	}
 
-	bool samePlane(Plane one, Plane two, double gamma) 
-	{
-		
-		if(		(( one.A - two.A) < gamma)
-			&&	(( one.B - two.B) < gamma)
-			&&	(( one.C - two.C) < gamma)
-			&&	(( one.D - two.D) < gamma))
-		{
-			return true;
-		}
-
-		return false;
-	
-	}
-
 	void conditionalInsert(std::vector<int>& destination, std::vector<bool>& isInDest, std::vector<int> source){
 		for (int i = 0; i < source.size(); i++) {
 			if (!isInDest[source[i]]) {
@@ -473,7 +441,8 @@ class OpenNIIntegralImageNormalEstimation
 			}
 		}
 	}
-
+	
+	//Flood fill
 	vector<vector<int>> floodFillAll(int minPts, int maxTries) 
 	{
 		vector<vector<int>> clusters;
@@ -505,7 +474,7 @@ class OpenNIIntegralImageNormalEstimation
 
 	vector<int> floodFillNaive (int rootNode, vector<bool> isInClusterOrQ, int& count) 
 	{
-		
+		const int row = 320;
 		vector<int> clusterPoints;
 		
 		std::vector<int> Q;
@@ -528,16 +497,15 @@ class OpenNIIntegralImageNormalEstimation
 					Q.push_back(currentPoint+1);	//east
 					isInClusterOrQ[currentPoint+1] = true;
 				}
-				if (!isInClusterOrQ[currentPoint-320]){
-					Q.push_back(currentPoint-320);	//north
-					isInClusterOrQ[currentPoint-320] = true;
+				if (!isInClusterOrQ[currentPoint-row]){
+					Q.push_back(currentPoint-row);	//north
+					isInClusterOrQ[currentPoint-row] = true;
 				}
-				if (!isInClusterOrQ[currentPoint+320]){
-					Q.push_back(currentPoint+320);	//south
-					isInClusterOrQ[currentPoint+320] = true;
+				if (!isInClusterOrQ[currentPoint+row]){
+					Q.push_back(currentPoint+row);	//south
+					isInClusterOrQ[currentPoint+row] = true;
 				}
 			}
-			
 		}
 
 		return clusterPoints;
