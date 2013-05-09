@@ -121,6 +121,23 @@ Now with the clean data we know that all the data points must belong to a plane 
 
 In order to have the 3D correction field be continuous we must smooth and interpolate the data in all 3 dimensions. One significant issue is that all of our correction vectors fall into quite thin regions in the 3D space along the z axis, and within those areas the data is very dense in the x and y dimensions. Therefore our task is to preform smoothing in the x and y directions to remove the signal noise and to find a good interpolation scheme looking in the z direction. The interpolation should be smooth to avoid damaging the flatness of planes. 
 % section sensor_calibration (end)
+=======
+\section{Feature Extraction} % (fold)
+\label{sec:feature_extraction}
+
+% \subsection{Sensor Calibration} % (fold)
+% \label{sub:sensor_calibration}
+
+% Multidimensional least squares correction
+% measure a plane at a known distance (d)
+% least squares establish the observed plane that matches this distance d
+% 	(or just least squares the plane first??)
+% the distance of each point from the plane is the true calibration vector field projected onto the normal of the observed plane (in the camera's coordinate system)
+
+% subsection sensor_calibration (end)
+
+% section feature_extraction (end)
+
 \clearpage %temp!
 \section{EKF} % (fold)
 \label{sec:ekf}
@@ -143,19 +160,21 @@ de facto standard (cite)
 	\label{eqn:system}
 \end{align}
 
-where
-
-\begin{align}
-	w_k &\sim N(0,Q_k) \notag \\
-	v_k &\sim N(0,R_k) \notag \\
-	x_0 &\sim N(0,P_0)
-\end{align}
-
-and let
+and define
 
 \begin{align}
 	P_{k|i} &= \operatorname{cov}(x_k - \hat{x}_{k|i})
 \end{align}
+
+we also have that
+
+\begin{align}
+	w_k &\sim N(0,Q_k) \notag \\
+	v_k &\sim N(0,R_k) \notag \\
+	x_0 &\sim N(\hat{x}_0,P_0)
+\end{align}
+
+where $Q_k$ and $R_k$ are the ... bla.. respectivly.
 
 The sucessive approximation... predict stage..
 
@@ -173,11 +192,11 @@ where
 update stage...
 
 \begin{align}
-	\Delta y_k 		&= y_k - h(\hat{x}_{k|k-1}) \\
-	S_k 			&= \operatorname{cov}(\Delta y_k) \notag \\
+	z_k 		&= y_k - h(\hat{x}_{k|k-1}) \\
+	S_k 			&= \operatorname{cov}(z_k) \notag \\
 	S_k 			&\approx H_k P_{k|k-1} H_k^\top + R_k \\
 	K_k 			&= P_{k|k-1} H_k^\top S_k^{-1} \\
-	\hat{x}_{k|k} 	&= \hat{x}_{k|k-1} + K_k \Delta y_k \\
+	\hat{x}_{k|k} 	&= \hat{x}_{k|k-1} + K_k z_k \\
 	P_{k|k} 		&\approx (I - K_k H_k) P_{k|k-1}
 \end{align}
 
@@ -214,16 +233,54 @@ Model equations..
 \end{align}
 
 \begin{align}
-	\dot{\vec{q}} 	&= \frac{1}{2} \Omega(\vec{\omega}) \vec{q} \\
-					&= \frac{1}{2} \Xi(\vec{q}) \vec{\omega}
+	\dot{q} 	&= \frac{1}{2} \Omega(\omega) q \\
+				&= \frac{1}{2} \Xi(q) \omega
 \end{align}
 
 The derivation of the rate of change of the quaternion with respect to angular velocity in the body frame can be found in \cite{MARSlab} (see equation 108). Note that they use the convetion q = q4 + q1i + q2j + q3k, while we use the convention q0 + q1i + q2j + q3k, which is the same convetion used by MATLAB's Aerospace Blockset \cite{MATLABAerospace}.
 
+\begin{align}
+	\vec{q} &= q_0 + q_1i + q_2j + q_3k
+\end{align}
+
+Rbe (rotation of body with respect to earth)
 rotmatrix here.
 
-The derivation of the quaternion derived rotation matrix is also shown in \cite{MARSlab} (see equation 92)
+\begin{align}
+	R_{be}(\vec{q}) &=
+	\left[
+	\begin{matrix}
+		2(q_0^2 + q_1^2) - 1 	& 2(q_1 q_2 + q_0 q_3) 	& 2(q_1 q_3 - q_0 q_2) \\
+		2(q_1 q_2 - q_0 q_3) 	& 2(q_0^2 + q_2^2) - 1 	& 2(q_2 q_3 + q_0 q_1) \\
+		2(q_1 q_3 + q_0 q_2)	& 2(q_2 q_3 - q_0 q_1)	& 2(q_0^2 + q_3^2) - 1
+	\end{matrix}
+	\right]
+\end{align}
 
+The derivation of the quaternion derived rotation matrix is also shown in \cite{MARSlab} (see equation 91)
+
+as a rotation matrix is orthogonal, we have that
+
+\begin{align}
+	R_{eb} &= R_{be}^\top
+\end{align}
+
+Linearisation: Jacobians
+
+\begin{align}
+	\frac{\partial f(x,u)}{\partial x}
+\end{align}
+
+
+SerialUpdate: \cite{OpenPilotPaper} and chapter 4.2.2 of \cite{KFBookSerialupdate}
+The referenced papers perform an optimization which assumes an entirerly uncorrelated measurment noise covariance matrix. That is the $R$ matrix is purely diagonal.
+We, on the other hand, use a measurment model that includes the measurment of planes. These measurements consist of the estimated plane equation in hessian normal form. As the plane is in a three dimensional space, and thus the measurment error will have three degrees of freedom, and this form has four dimensions, the covariance matrix cannot be uncorrelated.
+That is, as the hessian normal form uses a unit vector, the length of this vector is bound to unity. As such, the probability distrubution of the error of the components of this normal vector cannot be spherical.
+In fact, after linearization, this distrubution is projected onto a plane tangential to the actual distrubution. 
+%TODO: insert picture of distrubution projected onto plane
+
+While we cannot serialise the individual componets of a plane measurment, the measurment error between planes are uncorrelated, so we can still make use of the serial update strategy. As such, at each time there is a new frame that has finished feature extraction, we serially apply the measurment updates for each plane, without running the predict loop in-between.
+That means the update stage will only have to invert $v 4\times4$ matricies, instead of inverting a $4v \times 4v$ matrix.
 
 \subsection{Impementation} % (fold)
 \label{sub:impementation}
@@ -246,6 +303,16 @@ We crosscheck our implementation against a similar open source implementation by
 	MathWorks,
 	\emph{Implement quaternion representation of six-degrees-of-freedom equations of motion with respect to body axes}. \\
 	\url{http://www.mathworks.co.uk/help/aeroblks/6dofquaternion.html}
+
+\bibitem{OpenPilotPaper}
+	Dale E. Schinstock,
+	\emph{GPS-aided INS Solution for OpenPilot}. \\
+	\url{http://wiki.openpilot.org/download/attachments/950387/INSGPSAlg.pdf}
+
+\bibitem{KFBookSerialupdate}
+	Grewal, M.S., A.P. Andrews,
+	\emph{Kalman Filtering, Theory and Practice Using MATLAB}. \\
+	\url{http://www.control.aau.dk/~obin03/ESIF/Grewal,%20Andrews%20Kalman%20Filtering%20Theory%20And%20Practice%20Using%20Matlab%20(2Ed%20,%20Wiley,%202001)(410S).pdf}
 
 \bibitem{OpenPilotinsgps}
 	The OpenPilot Team,
