@@ -335,8 +335,14 @@ The derivative of the state vector is computed in order to propagate the state o
 where $a$ and $\omega$ are the true body frame accelerations and angular rates, respectively.
 $R_{eb}$, the body to earth rotation matrix and $\Xi$ the rate of change of quaternion with respect to body frame angular rates, are defined below.
 
+$f$ operates in discrete time, but we have established our model in continous time. As such, we perform a first order approximation to the continous time system:
+
 \begin{align}
-	\omega &= \omega_m + w_\omega - b_\omega \\
+	f &= I + \Delta T \dot{x}
+\end{align}
+
+\begin{align}
+	\omega &= \omega_m + w_\omega - b_\omega &
 	a &= a_m + w_a - b_a
 \end{align}
 
@@ -402,7 +408,12 @@ as a rotation matrix is orthogonal, we have that
 Linearisation: Jacobians
 
 \begin{align}
-	\frac{\partial f(x,u)}{\partial x}
+	\frac{\partial f}{\partial x} &=
+	\left[
+	\begin{matrix}
+		todo
+	\end{matrix}
+	\right]
 \end{align}
 
 \begin{align}
@@ -410,25 +421,61 @@ Linearisation: Jacobians
 \end{align}
 
 \begin{align}
-	F_{qq}	&= \frac{1}{2} \Omega(\omega) \notag \\
-			&= \frac{1}{2} \Omega(\omega_m - b_\omega)
+	F_{vq} 	&= 2
+	\left[
+	\begin{matrix}
+		F_{vq1} 	& F_{vq0} 	& F_{vq3} 	& F_{vq2} \\
+		-F_{vq2} 	& -F_{vq3} 	& F_{vq0} 	& F_{vq1} \\
+		F_{vq3} 	& -F_{vq2} 	& -F_{vq1} 	& F_{vq0}
+	\end{matrix}
+	\right]
 \end{align}
 
+where
+
 \begin{align}
+	a &= a_m - b_a 							\notag 	\\
+	F_{vq0} &= q_1 a_x + q_2 a_y + q_3 a_z	\notag 	\\
+	F_{vq1} &= q_0 a_x - q_3 a_y + q_2 a_z 	\notag	\\
+	F_{vq2} &= -q_3 a_x - q_0 a_y + q_1 a_z \notag	\\
+	F_{vq3} &= -q_2 a_x + q_1 a_y + q_0 a_z
+\end{align}
+
+%\begin{align}
+%	&= 2
+%	\left[
+%	\begin{matrix}
+%		q_0 a_x - q_3 a_y + q_2 a_z 	& q_1 a_x + q_2 a_y + q_3 a_z 	& -q_2 a_x + q_1 a_y + q_0 a_z 	& -q_3 a_x - q_0 a_y + q_1 a_z 	\\
+%		q_3 a_x + q_0 a_y - q_1 a_z 	& q_2 a_x - q_1 a_y - q_0 a_z 	& q_1 a_x + q_2 a_y + q_3 a_z 	& q_0 a_x - q_3 a_y + q_2 a_z 	\\
+%		-q_2 a_x + q_1 a_y + q_0 a_z 	& q_3 a_x + q_0 a_y - q_1 a_z 	& -q_0 a_x + q_3 a_y - q_2 a_z 	& q_1 a_x + q_2 a_y + q_3 a_z 	\\
+%	\end{matrix}
+%	\right]
+%\end{align}
+
+\begin{align}
+	F_{vb_a} &= -R_{eb}(q)
+%\end{align}
+&
+%\begin{align}
+	F_{qq}	&= \frac{1}{2} \Omega(\omega)
+			 = \frac{1}{2} \Omega(\omega_m - b_\omega)
+%\end{align}
+&
+%\begin{align}
 	F_{qb_\omega} &= -\frac{1}{2} \Xi(q)
 \end{align}
-
-\begin{align}
-	G_{qw_\omega} &= \frac{1}{2} \Xi(q)
-\end{align}
-
+%\\
 \begin{align}
 	G_{vw_a} &= R_{eb}(q)
-\end{align}
-
-\begin{align}
+%\end{align}
+&
+%\begin{align}
+	G_{qw_\omega} &= \frac{1}{2} \Xi(q)
+%\end{align}
+&
+%\begin{align}
 	G_{b_\omega w_\omega} &= I_{3x3}
-	&
+&
 	G_{b_a w_a} &= I_{3x3}
 \end{align}
 
@@ -441,7 +488,7 @@ In fact, after linearization, this distrubution is projected onto a plane tangen
 %TODO: insert picture of distrubution projected onto plane
 
 While we cannot serialise the individual componets of a plane measurment, the measurment error between planes are uncorrelated, so we can still make use of the serial update strategy. As such, at each time there is a new frame that has finished feature extraction, we serially apply the measurment updates for each plane, without running the predict loop in-between.
-That means the update stage will only have to invert $v 4\times4$ matricies, instead of inverting a $4v \times 4v$ matrix.
+That means the update stage will only have to invert $v$ matricies of size $4\times4$, instead of inverting a $4v \times 4v$ matrix.
 
 \subsection{Impementation} % (fold)
 \label{sub:impementation}
