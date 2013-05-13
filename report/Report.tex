@@ -119,11 +119,22 @@ Introduction introducing things in an introductory manner.
 
 Apon inspecting the output of the Xtion Pro from Asus it became apparent that the accuracy of the data was poor. At short ranges things appeared normal, and planes were indeed flat. At distance more than 2m planes quickly became warped (see Figure~\ref{fig:uncal5m}). This issue will corrupt the accuracy of planes that we extract from the cloud data, rendering the extra sensor of little use. 
 
-To attempt to counteract this issue we collected cloud data from when the sensor is facing a large plane, in this case a wall, at a number of distances (from 0.8m to 5m). This cloud data included lots of objects that are of no use to the calibration, so these data points were written to \verb"NaN" in the analysis to avoid corruption of our results. This was achieved by using the data written to an image file, with the z distance (down range from the camera) encoding the grey-scale. Then, by hand, we masked with black all the unwanted areas. This is then easy to correlate against the original data in MATLAB. 
+To attempt to counteract this issue we collected cloud data from when the sensor is facing a large plane, in this case a wall, at a number of distances (from 0.8m to 4m). This cloud data included lots of objects that are of no use to the calibration, so these data points were written to \verb"NaN" in the analysis to avoid corruption of our results. This was achieved by using the data written to an image file, with the z distance (down range from the camera) encoding the grey-scale. Then, by hand, we masked with black all the unwanted areas. This is then easy to correlate against the original data in MATLAB. 
+
+Figure~\ref{fig:avDist} shows the average measurement across all of the frame for a range of distances. This represents another mode of inaccuracy not only is the image distorted, the distance measurement is very poor. At 4m the average distance measured was 3.32m, which represents a 17\% error. Though the maximum error is 0.941m at 4m, which represents a huge 23.5\% error. 
+
+\begin{figure}[htb]
+	\begin{center}
+		\includegraphics[width = 0.8\textwidth]{avDist}
+	\end{center}
+	\caption{Measured distance vs set distance. This is the average of all the pixels in the frames at a range of distances, the blue line shows the data. Green shows the target line.}
+	\label{fig:avDist}
+\end{figure}
 
 Now with the clean data we know that all the data points must belong to a plane with distance to the plane being the calibration distance. For now we assume that the x and y directions are not in need of calibration, as objects in the visualisations do not too distorted in these directions. Therefore we only need to find the difference between measured data and the calibration distance. Mapping these correction vectors into a 3D space that later we can look up in to correct new data. 
 
 In order to have the 3D correction field be continuous we must smooth and interpolate the data in all 3 dimensions. One significant issue is that all of our correction vectors fall into quite thin regions in the 3D space along the z axis, and within those areas the data is very dense in the x and y dimensions. Therefore our task is to preform smoothing in the x and y directions to remove the signal noise and to find a good interpolation scheme looking in the z direction. The interpolation should be smooth to avoid damaging the flatness of planes. 
+\clearpage
 
 \section{Feature Extraction} % (fold)
 \label{sec:feature_extraction}
