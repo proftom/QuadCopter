@@ -112,10 +112,22 @@ Introduction introducing things in an introductory manner.
 \label{sec:acronyms}
 \begin{acronym}
 	\acro{EKF}{Extended Kalman Filter}
+	\acro{DoF}{Degrees of Freedom}
 \end{acronym}
 % section acronyms (end)
 
 \clearpage
+
+\section{Problem Specification} % (fold)
+\label{sec:problem_specification}
+
+\begin{itemize}
+	\item What are we trying to achive
+	\item Why is this a good idea to achive
+	\item how are we going to achive it
+\end{itemize}
+
+% section problem_specification (end)
 
 \section{Sensor Calibration} % (fold)
 
@@ -176,11 +188,30 @@ non linear due to rotations -- ekf
 		euler is fine if sampling fast enough
 			if deltaT is small
 
+
+
+We chose to use an approach that does not rely on an aerodynamic model of the craft, similar to the approach in \cite{OpenPilotPaper}. This has the advantage that modelling errors are minimised, and the time required for system identification is reduced.
+Complex phenomena such as the turbulence caused by the thrust channelled around in the confined space would be close to impossible to model.
+As we elect to use a model-less approach
+	any system/craft
+	decoupled control inputs
+	good for our case
+
+As such, while the system is modelled as a six \ac{DoF} rigid body system with Newtonian mechanics, this is not how it is tracked.
+As we assume no model of how the control inputs are translated to actuation, we cannot integrate the forces of the system. Instead, we rely on the inertial sensors to inform us of the evolution of the system.
+That is, the 
+
+as such we cannot anticipate 
+
 de facto standard (cite)\cite{todo}
 
 
 
 The \ac{EKF} is the non-linear version of the regular Kalman Filter, (linearises the system around the current estimate)
+
+
+
+The filter is based on the following descrete time update model
 
 \begin{align}
 	x_k &= f(x_{k-1}, u_{k-1}, w_{k-1}) \notag \\
@@ -188,7 +219,9 @@ The \ac{EKF} is the non-linear version of the regular Kalman Filter, (linearises
 	\label{eqn:system}
 \end{align}
 
-and we have that
+where $x_k$ is the state vector at time $k$, $f$ is the state transition function, $u$ is the control input vector at time $k$, $w_k$ is the process noise vector at time $k$, $y_k$ is the measurment vector at time $k$, $h$ is the function that maps the state space to the observed space, and $v_k$ is the measurment noise vector.
+
+We also have that
 
 \begin{align}
 	w_k &\sim N(0,Q_k) \notag \\
@@ -196,13 +229,15 @@ and we have that
 	x_0 &\sim N(\hat{x}_0,P_0)
 \end{align}
 
-where $Q_k$ and $R_k$ are the ... bla.. respectivly.
+where $Q_k$ and $R_k$ are the process noise and measurment noise covariance matricies, at time $k$, respectivly. The initial state estimate error is 
 
-and define
+
+
+We define
 
 \begin{align}
 	\hat{x}_{k|i} &= \mathbb{E}[x_k|y_0 \hdots y_i] \\
-	P_{k|i} &= \operatorname{cov}(x_k - \hat{x}_{k|i}) \\
+	P_{k|i} &= \operatorname{cov}(x_k - \hat{x}_{k|i}) \notag \\
 			&= \mathbb{E}[ (x_k-\hat{x}_{k|i}) (x_k-\hat{x}_{k|i})^\top | y_0 \hdots y_i]
 \end{align}
 
@@ -519,8 +554,6 @@ In fact, after linearization, this distrubution is projected onto a plane tangen
 
 While we cannot serialise the individual componets of a plane measurment, the measurment error between planes are uncorrelated, so we can still make use of the serial update strategy. As such, at each time there is a new frame that has finished feature extraction, we serially apply the measurment updates for each plane, without running the predict loop in-between.
 That means the update stage will only have to invert $v$ matricies of size $4\times4$, instead of inverting a $4v \times 4v$ matrix.
-
-acronymtest \ac{EKF}
 
 \subsection{Impementation} % (fold)
 \label{sub:impementation}
