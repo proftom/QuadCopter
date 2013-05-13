@@ -254,14 +254,14 @@ class OpenNIIntegralImageNormalEstimation
 	  switch (event.getKeyCode ())
       {
         case '1':
-          //ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::COVARIANCE_MATRIX);
-          //std::cout << "switched to COVARIANCE_MATRIX method\n";
-			//(cloud_dbscanproc->width, cloud_dbscanproc->height, cloud_dbscanproc);
-			/*for (int p = 0; p <19200; p++){
+       /*   ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::COVARIANCE_MATRIX);
+          std::cout << "switched to COVARIANCE_MATRIX method\n";
+			(cloud_dbscanproc->width, cloud_dbscanproc->height, cloud_dbscanproc);*/
+			for (int p = 0; p <19200; p++){
 
-				MyFile << cloud_dbscanproc->points[p].x << "," << cloud_dbscanproc->points[p].y <<","<< cloud_dbscanproc->points[p].z<<"\n";
+				MyFile << cloud_->points[p].x << "," << cloud_->points[p].y <<","<< cloud_->points[p].z<<"\n";
 
-			}*/
+			}
 
 
 			MyFile << "//\n"; 
