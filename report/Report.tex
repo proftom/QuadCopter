@@ -122,9 +122,26 @@ Introduction introducing things in an introductory manner.
 \label{sec:problem_specification}
 
 \begin{itemize}
-	\item What are we trying to achive
-	\item Why is this a good idea to achive
-	\item how are we going to achive it
+	\item What are we trying to achieve
+	\item Why is this a good idea to achieve
+	\begin{itemize}
+		\item why indoor navigation
+		\item why are mavrx interested in this
+		\item financial rundown (note that mavrx are intersted in a prototype consulting job, not a financial feasability report)
+		\item discuss some of mavrx's buisiness model (if we are allowed)
+	\end{itemize}
+	\item What have other people done in this field
+	\begin{itemize}
+		\item insert papers here
+	\end{itemize}
+	\item how are we going to achieve it
+	\item Why did we chose to do it that way
+	\begin{itemize}
+		\item why planes
+		\item why xtion
+		\item why arndale
+		\item why quadcopter
+	\end{itemize}
 \end{itemize}
 
 % section problem_specification (end)
@@ -179,18 +196,19 @@ In order to have the 3D correction field be continuous we must smooth and interp
 \section{EKF} % (fold)
 \label{sec:ekf}
 
+To estimate the state of the system we employ an \ac{EKF}. This filter is the nonlinear version of the regular Kalman Filter: the optimal state estimation filter \cite{todo}. This filter will, when supplied with an accurate sytem model, and its statistical properties, provide the state estimate with the minimum mean-squared error.
+The \ac{EKF} provides a near-optimal estimate of the system's state by linearising it around the current state estimate. The reason why we need the nonlinear version of the filter is due to the fact that the model includes rotations, which are nonlinear in nature.
 
-We use a kalman filter... the optimal state estimator
-non linear due to rotations -- ekf
-	euler vs runge kutta integrator
-		very complicated linearization equations
-			can be overcome with unscented kalman
-		euler is fine if sampling fast enough
-			if deltaT is small
+% We use a kalman filter... the optimal state estimator
+% non linear due to rotations -- ekf
+% 	euler vs runge kutta integrator
+% 		very complicated linearization equations
+% 			can be overcome with unscented kalman
+% 		euler is fine if sampling fast enough
+% 			if deltaT is small
 
-
-
-We chose to use an approach that does not rely on an aerodynamic model of the craft, similar to the approach in \cite{OpenPilotPaper}. This has the advantage that modelling errors are minimised, and the time required for system identification is reduced.
+When deriving the system model, we chose to use an approach that does not rely on an aerodynamic model of the craft, similar to the approach in \cite{OpenPilotPaper}.
+This has the advantage that modelling errors are minimised, and the time required for system identification is reduced.
 Complex phenomena such as the turbulence caused by the thrust channelled around in the confined space would be close to impossible to model.
 As we elect to use a model-less approach
 	any system/craft
@@ -199,19 +217,10 @@ As we elect to use a model-less approach
 
 As such, while the system is modelled as a six \ac{DoF} rigid body system with Newtonian mechanics, this is not how it is tracked.
 As we assume no model of how the control inputs are translated to actuation, we cannot integrate the forces of the system. Instead, we rely on the inertial sensors to inform us of the evolution of the system.
-That is, the 
-
-as such we cannot anticipate 
-
-de facto standard (cite)\cite{todo}
 
 
 
-The \ac{EKF} is the non-linear version of the regular Kalman Filter, (linearises the system around the current estimate)
-
-
-
-The filter is based on the following descrete time update model
+The filter is based on the following discrete time update model
 
 \begin{align}
 	x_k &= f(x_{k-1}, u_{k-1}, w_{k-1}) \notag \\
