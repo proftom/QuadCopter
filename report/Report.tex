@@ -80,6 +80,8 @@ columns=flexible
 \hypersetup{colorlinks=true, linkcolor=black, citecolor=black, filecolor=black, urlcolor=black}
 \graphicspath{ {ImageLib/}{other_folder/}{third_folder/} }
 
+\usepackage[printonlyused]{acronym}
+
 %%%-------------------------------------------------------------------
 
 
@@ -104,8 +106,17 @@ Summarise things in a summarative way, as if one were producing a summary for an
 \section{Introduction}  % (fold)
 \label{sec:introduction}
 Introduction introducing things in an introductory manner. 
-\clearpage
 % section introduction (end)
+
+\section{Acronyms} % (fold)
+\label{sec:acronyms}
+\begin{acronym}
+	\acro{EKF}{Extended Kalman Filter}
+\end{acronym}
+% section acronyms (end)
+
+\clearpage
+
 \section{Sensor Calibration} % (fold)
 
 \begin{figure}
@@ -154,8 +165,11 @@ non linear due to rotations -- ekf
 		euler is fine if sampling fast enough
 			if deltaT is small
 
-de facto standard (cite)
+de facto standard (cite)\cite{todo}
 
+
+
+The \ac{EKF} is the non-linear version of the regular Kalman Filter, (linearises the system around the current estimate)
 
 \begin{align}
 	x_k &= f(x_{k-1}, u_{k-1}, w_{k-1}) \notag \\
@@ -163,13 +177,7 @@ de facto standard (cite)
 	\label{eqn:system}
 \end{align}
 
-and define
-
-\begin{align}
-	P_{k|i} &= \operatorname{cov}(x_k - \hat{x}_{k|i})
-\end{align}
-
-we also have that
+and we have that
 
 \begin{align}
 	w_k &\sim N(0,Q_k) \notag \\
@@ -179,17 +187,26 @@ we also have that
 
 where $Q_k$ and $R_k$ are the ... bla.. respectivly.
 
+and define
+
+\begin{align}
+	\hat{x}_{k|i} &= \mathbb{E}[x_k|y_0 \hdots y_i] \\
+	P_{k|i} &= \operatorname{cov}(x_k - \hat{x}_{k|i}) \\
+			&= \mathbb{E}[ (x_k-\hat{x}_{k|i}) (x_k-\hat{x}_{k|i})^\top | y_0 \hdots y_i]
+\end{align}
+
 The sucessive approximation... predict stage..
 
 \begin{align}
-	\hat{x}_{k|k-1} &= f(\hat{x}_{k-1|k-1}, u_{k-1}, \mathbb{E}(w_{k-1})) \notag \\
+	\hat{x}_{k|k-1} &= f(\hat{x}_{k-1|k-1}, u_{k-1}, \mathbb{E}[w_{k-1}]) \notag \\
 	P_{k|k-1} 		&\approx F_{k-1} P_{k|k} F_{k-1}^\top + G_{k-1} Q_{k-1} G_{k-1}^\top
+	\label{eqn:predict}
 \end{align}
 
 where
 
 \begin{align}
-	\mathbb{E}(w_{k-1}) &= 0
+	\mathbb{E}[w_{k-1}] &= 0
 \end{align}
 
 and
@@ -202,7 +219,7 @@ and
 update stage...
 
 \begin{align}
-	z_k 		&= y_k - h(\hat{x}_{k|k-1}, \mathbb{E}(v_k)) \\
+	z_k 		&= y_k - h(\hat{x}_{k|k-1}, \mathbb{E}[v_k]) \\
 	S_k 			&= \operatorname{cov}(z_k) \notag \\
 	S_k 			&\approx H_k P_{k|k-1} H_k^\top + V_k R_k V_k^\top \\
 	K_k 			&= P_{k|k-1} H_k^\top S_k^{-1} \\
@@ -213,7 +230,7 @@ update stage...
 where
 
 \begin{align}
-	\mathbb{E}(v_k) &= 0
+	\mathbb{E}[v_k] &= 0
 \end{align}
 
 and
@@ -258,7 +275,7 @@ Model equations..
 \end{align}
 
 where $r$ is the position of the craft in the inertial frame, $v$ is the velocity in the inertial frame, $q$ is the quaternion that represents the attitude of the craft: a rotation from the inertial frame to the body frame, $b_\omega$ and $b_a$ represent the gyro and accelerometer bias, respectively. $\pi_0 \hdots \pi_{n-1}$ are the equations of the planes currently stored in the map.
-They are each composed as follows
+The state vector components are each composed as follows
 
 \begin{align}
 	r &= 
@@ -335,9 +352,9 @@ The derivative of the state vector is computed in order to propagate the state o
 \end{align}
 
 where $a$ and $\omega$ are the true body frame accelerations and angular rates, respectively.
-$R_{eb}$, the body to earth rotation matrix and $\Xi$ the rate of change of quaternion with respect to body frame angular rates, are defined below.
+$R_{eb}$, the body to earth rotation matrix and $\Xi$ is the matrix that maps the body frame angular rates to the rate of change of quaternion. Both matricies are a function of the current quarternion and are defined below.
 
-$f$ operates in discrete time, but we have established our model in continous time. As such, we perform a first order approximation to the continous time system:
+$f$ in equation (\ref{eqn:system}) and (\ref{eqn:predict}) operates in discrete time, but we have established our model in continous time. As such, we perform a first order approximation to the continous time system:
 
 \begin{align}
 	f &= I + \Delta T \dot{x}
@@ -460,7 +477,7 @@ where
 &
 %\begin{align}
 	F_{qq}	&= \frac{1}{2} \Omega(\omega)
-			 = \frac{1}{2} \Omega(\omega_m - b_\omega)
+			 %= \frac{1}{2} \Omega(\omega_m - b_\omega)
 %\end{align}
 &
 %\begin{align}
@@ -492,6 +509,8 @@ In fact, after linearization, this distrubution is projected onto a plane tangen
 While we cannot serialise the individual componets of a plane measurment, the measurment error between planes are uncorrelated, so we can still make use of the serial update strategy. As such, at each time there is a new frame that has finished feature extraction, we serially apply the measurment updates for each plane, without running the predict loop in-between.
 That means the update stage will only have to invert $v$ matricies of size $4\times4$, instead of inverting a $4v \times 4v$ matrix.
 
+acronymtest \ac{EKF}
+
 \subsection{Impementation} % (fold)
 \label{sub:impementation}
 
@@ -503,6 +522,9 @@ We crosscheck our implementation against a similar open source implementation by
 
 \clearpage
 \begin{thebibliography}{99}
+
+\bibitem{todo}
+	THIS REFERENCE IS MISSING!
 
 \bibitem{MARSlab}
 	Nikolas Trawny and Stergios I. Roumeliotis,
@@ -533,6 +555,12 @@ We crosscheck our implementation against a similar open source implementation by
 	Alessandro Astolfi,
 	\emph{Systems and Control Theory - An Introduction}. \\
 	\url{http://www3.imperial.ac.uk/pls/portallive/docs/1/31851696.PDF}
+
+\bibitem{BerkelyCourse}
+	Pieter Abbeel,
+	\emph{Learning for robotics and control}. \\
+	\url{http://inst.eecs.berkeley.edu/~cs294-40/fa08/#syllabus}
+
 
 \end{thebibliography}
 
