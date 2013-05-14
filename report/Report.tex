@@ -219,8 +219,6 @@ As we elect to use a model-less approach
 As such, while the system is modelled as a six \ac{DoF} rigid body system with Newtonian mechanics, this is not how it is tracked.
 As we assume no model of how the control inputs are translated to actuation, we cannot integrate the forces of the system. Instead, we rely on the inertial sensors to inform us of the evolution of the system.
 
-
-
 The filter is based on the following discrete time update model
 \begin{align}
 	x_k &= f(x_{k-1}, u_{k-1}, w_{k-1}) \notag \\
@@ -417,10 +415,10 @@ $f$ in equation (\ref{eqn:system}) and (\ref{eqn:predictx}) operates in discrete
 
 \begin{align}
 	\omega &= \omega_m + w_\omega - b_\omega &
-	a &= a_m + w_a - b_a
+	a &= a_m + w_a - b_a + g_b
 \end{align}
+where $a_m$ and $\omega_m$ are the measured accelerations and angular velocities in the body frame, respectively, and $g_b$ is the acceleration due to gravity in the body frame.
 
-where $a_m$ and $\omega_m$ are the measured accelerations and angular velocities in the body frame, respectively.
 \begin{align}
 	\Xi(q) &=
 	\left[
