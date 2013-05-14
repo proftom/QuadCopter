@@ -113,6 +113,7 @@ Introduction introducing things in an introductory manner.
 \begin{acronym}
 	\acro{EKF}{Extended Kalman Filter}
 	\acro{DoF}{Degrees of Freedom}
+	\acro{MMSE}{minimum mean square error}
 \end{acronym}
 % section acronyms (end)
 
@@ -221,84 +222,86 @@ As we assume no model of how the control inputs are translated to actuation, we 
 
 
 The filter is based on the following discrete time update model
-
 \begin{align}
 	x_k &= f(x_{k-1}, u_{k-1}, w_{k-1}) \notag \\
 	y_k &= h(x_k, v_k)
 	\label{eqn:system}
 \end{align}
-
 where $x_k$ is the state vector at time $k$, $f$ is the state transition function, $u$ is the control input vector at time $k$, $w_k$ is the process noise vector at time $k$, $y_k$ is the measurment vector at time $k$, $h$ is the function that maps the state space to the observed space, and $v_k$ is the measurment noise vector.
 
-We also have that
-
+The noise in the system is assumed to be gaussian white noise as follows
 \begin{align}
 	w_k &\sim N(0,Q_k) \notag \\
 	v_k &\sim N(0,R_k) \notag \\
 	x_0 &\sim N(\hat{x}_0,P_0)
+	\label{eqn:noisedef}
 \end{align}
-
-where $Q_k$ and $R_k$ are the process noise and measurment noise covariance matricies, at time $k$, respectivly. The initial state estimate error is 
-
-
+where $Q_k$ and $R_k$ are the process noise and measurment noise covariance matricies, at time $k$, respectivly. The initial state estimate error is assumed to be drawn from a normal distrubution with covariance $P_0$.
 
 We define
-
 \begin{align}
-	\hat{x}_{k|i} &= \mathbb{E}[x_k|y_0 \hdots y_i] \\
-	P_{k|i} &= \operatorname{cov}(x_k - \hat{x}_{k|i}) \notag \\
-			&= \mathbb{E}[ (x_k-\hat{x}_{k|i}) (x_k-\hat{x}_{k|i})^\top | y_0 \hdots y_i]
+	\hat{x}_{k|i} 	&= \mathbb{E}[x_k|y_0 \hdots y_i] \\
+	P_{k|i} 		&= \operatorname{cov}(x_k - \hat{x}_{k|i}) \notag \\
+					&= \mathbb{E}[ (x_k-\hat{x}_{k|i}) (x_k-\hat{x}_{k|i})^\top | y_0 \hdots y_i]
 \end{align}
+where $\hat{x}_{k|i}$ is the state estimate at time $k$ given observations of the system output up to and including time $i$, and $P_{k|i}$ is the covariance matrix associated with the error of the state estimate at time $k$ given given observations of the system output up to and including time $i$.
 
-The sucessive approximation... predict stage..
-
+Given the above defenitions and assumptions, we can predict the evolution of the system as follows
 \begin{align}
-	\hat{x}_{k|k-1} &= f(\hat{x}_{k-1|k-1}, u_{k-1}, \mathbb{E}[w_{k-1}]) \notag \\
-	P_{k|k-1} 		&\approx F_{k-1} P_{k|k} F_{k-1}^\top + G_{k-1} Q_{k-1} G_{k-1}^\top
-	\label{eqn:predict}
+	\hat{x}_{k|k-1} &= f(\hat{x}_{k-1|k-1}, u_{k-1}, \mathbb{E}[w_{k-1}])
+	\label{eqn:predictx}
 \end{align}
-
-where
-
+where whe assume that the noise has zero mean:
 \begin{align}
 	\mathbb{E}[w_{k-1}] &= 0
 \end{align}
 
-and
-
+We transform the state error covariance matrix using a linear approximation to the transformation imposed by the state transition function $f$ as follows:
+\begin{align}
+	P_{k|k-1} &\approx F_{k-1} P_{k|k} F_{k-1}^\top + G_{k-1} Q_{k-1} G_{k-1}^\top
+\end{align}
+where
 \begin{align}
 	F_{k-1} &= \left . \frac{\partial f}{\partial x} \right \vert _{\hat{x}_{k-1|k-1},u_{k-1}} \\
 	G_{k-1} &= \left . \frac{\partial f}{\partial w} \right \vert _{\hat{x}_{k-1|k-1},u_{k-1}}
 \end{align}
 
-update stage...
+--------------------------------------------------------------------------------
 
+In order to correct for errors accumulated by the state transition function we incorporate corrections based on measurments made from the output of the system. To do this, we use the \ac{EKF} update equations.
+%todo: more flesh here
+
+For each measurement, we compute the expected measurment given our current state estimate using $h$, and compute the difference $z_k$, and estimate the associated covariance matrix using a linear approximation:
 \begin{align}
-	z_k 		&= y_k - h(\hat{x}_{k|k-1}, \mathbb{E}[v_k]) \\
-	S_k 			&= \operatorname{cov}(z_k) \notag \\
-	S_k 			&\approx H_k P_{k|k-1} H_k^\top + V_k R_k V_k^\top \\
-	K_k 			&= P_{k|k-1} H_k^\top S_k^{-1} \\
-	\hat{x}_{k|k} 	&= \hat{x}_{k|k-1} + K_k z_k \\
-	P_{k|k} 		&\approx (I - K_k H_k) P_{k|k-1}
+	z_k &= y_k - h(\hat{x}_{k|k-1}, \mathbb{E}[v_k]) \\
+	S_k &= \operatorname{cov}(z_k) \notag \\
+		&\approx H_k P_{k|k-1} H_k^\top + V_k R_k V_k^\top
 \end{align}
-
-where
-
+where $P$ and $R$ are defined in equation (\ref{eqn:noisedef}), and where whe assume that the noise has zero mean:
 \begin{align}
 	\mathbb{E}[v_k] &= 0
 \end{align}
-
-and
-
+and where
 \begin{align}
 	H_{k} &= \left . \frac{\partial h}{\partial x} \right \vert _{\hat{x}_{k|k-1}} \\
 	V_{k} &= \left . \frac{\partial h}{\partial v} \right \vert _{\hat{x}_{k|k-1}}
 \end{align}
 
+We define the Kalman gain as follows:
+\begin{align}
+	K_k &= P_{k|k-1} H_k^\top S_k^{-1}
+\end{align}
+which is the gain that yields the \ac{MMSE} estimates when used \cite{BerkelyCourse}. Using this gain, we compute the updated state estimate as follows:
+\begin{align}
+	\hat{x}_{k|k} 	&= \hat{x}_{k|k-1} + K_k z_k \\
+	P_{k|k} 		&\approx (I - K_k H_k) P_{k|k-1}
+\end{align}
 
+
+--------------------------------------------------------------------------------
+\clearpage
 
 Model equations..
-
 \begin{align}
 	x &= 
 	\left[
@@ -331,7 +334,6 @@ Model equations..
 
 where $r$ is the position of the craft in the inertial frame, $v$ is the velocity in the inertial frame, $q$ is the quaternion that represents the attitude of the craft: a rotation from the inertial frame to the body frame, $b_\omega$ and $b_a$ represent the gyro and accelerometer bias, respectively. $\pi_0 \hdots \pi_{n-1}$ are the equations of the planes currently stored in the map.
 The state vector components are each composed as follows
-
 \begin{align}
 	r &= 
 	\left[
@@ -391,7 +393,6 @@ The state vector components are each composed as follows
 \end{align}
 
 The derivative of the state vector is computed in order to propagate the state over time.
-
 \begin{align}
 	\dot{r} &= v
 	&
@@ -409,8 +410,7 @@ The derivative of the state vector is computed in order to propagate the state o
 where $a$ and $\omega$ are the true body frame accelerations and angular rates, respectively.
 $R_{eb}$, the body to earth rotation matrix and $\Xi$ is the matrix that maps the body frame angular rates to the rate of change of quaternion. Both matricies are a function of the current quarternion and are defined below.
 
-$f$ in equation (\ref{eqn:system}) and (\ref{eqn:predict}) operates in discrete time, but we have established our model in continous time. As such, we perform a first order approximation to the continous time system:
-
+$f$ in equation (\ref{eqn:system}) and (\ref{eqn:predictx}) operates in discrete time, but we have established our model in continous time. As such, we perform a first order approximation to the continous time system:
 \begin{align}
 	f &= I + \Delta T \dot{x}
 \end{align}
@@ -421,7 +421,6 @@ $f$ in equation (\ref{eqn:system}) and (\ref{eqn:predict}) operates in discrete 
 \end{align}
 
 where $a_m$ and $\omega_m$ are the measured accelerations and angular velocities in the body frame, respectively.
-
 \begin{align}
 	\Xi(q) &=
 	\left[
@@ -452,14 +451,12 @@ where $a_m$ and $\omega_m$ are the measured accelerations and angular velocities
 \end{align}
 
 The derivation of the rate of change of the quaternion with respect to angular velocity in the body frame can be found in \cite{MARSlab} (see equation 108). Note that they use the convetion q = q4 + q1i + q2j + q3k, while we use the convention q0 + q1i + q2j + q3k, which is the same convetion used by MATLAB's Aerospace Blockset \cite{MATLABAerospace}, and the OpenPilot implementation \cite{OpenPilotPaper}.
-
 \begin{align}
 	q &= q_0 + q_1i + q_2j + q_3k
 \end{align}
 
 Rbe (rotation of body with respect to earth)
 rotmatrix here.
-
 \begin{align}
 	R_{be}(q) &=
 	\left[
@@ -474,13 +471,11 @@ rotmatrix here.
 The derivation of the quaternion derived rotation matrix is also shown in \cite{MARSlab} (see equation 91)
 
 as a rotation matrix is orthogonal, we have that
-
 \begin{align}
 	R_{eb} &= R_{be}^\top
 \end{align}
 
 Linearisation: Jacobians
-
 \begin{align}
 	\frac{\partial f}{\partial x} &=
 	\left[
@@ -506,7 +501,6 @@ Linearisation: Jacobians
 \end{align}
 
 where
-
 \begin{align}
 	a &= a_m - b_a 							\notag 	\\
 	F_{vq0} &= q_1 a_x + q_2 a_y + q_3 a_z	\notag 	\\
