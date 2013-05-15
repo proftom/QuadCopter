@@ -80,6 +80,8 @@ columns=flexible
 \hypersetup{colorlinks=true, linkcolor=black, citecolor=black, filecolor=black, urlcolor=black}
 \graphicspath{ {ImageLib/}{other_folder/}{third_folder/} }
 
+\usepackage[printonlyused]{acronym}
+
 %%%-------------------------------------------------------------------
 
 
@@ -104,8 +106,47 @@ Summarise things in a summarative way, as if one were producing a summary for an
 \section{Introduction}  % (fold)
 \label{sec:introduction}
 Introduction introducing things in an introductory manner. 
-\clearpage
 % section introduction (end)
+
+\section{Acronyms} % (fold)
+\label{sec:acronyms}
+\begin{acronym}
+	\acro{EKF}{Extended Kalman Filter}
+	\acro{DoF}{Degrees of Freedom}
+	\acro{MMSE}{minimum mean square error}
+\end{acronym}
+% section acronyms (end)
+
+\clearpage
+
+\section{Problem Specification} % (fold)
+\label{sec:problem_specification}
+
+\begin{itemize}
+	\item What are we trying to achieve
+	\item Why is this a good idea to achieve
+	\begin{itemize}
+		\item why indoor navigation
+		\item why are mavrx interested in this
+		\item financial rundown (note that mavrx are intersted in a prototype consulting job, not a financial feasability report)
+		\item discuss some of mavrx's buisiness model (if we are allowed)
+	\end{itemize}
+	\item What have other people done in this field
+	\begin{itemize}
+		\item insert papers here
+	\end{itemize}
+	\item how are we going to achieve it
+	\item Why did we chose to do it that way
+	\begin{itemize}
+		\item why planes
+		\item why xtion
+		\item why arndale
+		\item why quadcopter
+	\end{itemize}
+\end{itemize}
+
+% section problem_specification (end)
+
 \section{Sensor Calibration} % (fold)
 
 \begin{figure}
@@ -119,11 +160,22 @@ Introduction introducing things in an introductory manner.
 
 Apon inspecting the output of the Xtion Pro from Asus it became apparent that the accuracy of the data was poor. At short ranges things appeared normal, and planes were indeed flat. At distance more than 2m planes quickly became warped (see Figure~\ref{fig:uncal5m}). This issue will corrupt the accuracy of planes that we extract from the cloud data, rendering the extra sensor of little use. 
 
-To attempt to counteract this issue we collected cloud data from when the sensor is facing a large plane, in this case a wall, at a number of distances (from 0.8m to 5m). This cloud data included lots of objects that are of no use to the calibration, so these data points were written to \verb"NaN" in the analysis to avoid corruption of our results. This was achieved by using the data written to an image file, with the z distance (down range from the camera) encoding the grey-scale. Then, by hand, we masked with black all the unwanted areas. This is then easy to correlate against the original data in MATLAB. 
+To attempt to counteract this issue we collected cloud data from when the sensor is facing a large plane, in this case a wall, at a number of distances (from 0.8m to 4m). This cloud data included lots of objects that are of no use to the calibration, so these data points were written to \verb"NaN" in the analysis to avoid corruption of our results. This was achieved by using the data written to an image file, with the z distance (down range from the camera) encoding the grey-scale. Then, by hand, we masked with black all the unwanted areas. This is then easy to correlate against the original data in MATLAB. 
+
+Figure~\ref{fig:avDist} shows the average measurement across all of the frame for a range of distances. This represents another mode of inaccuracy not only is the image distorted, the distance measurement is very poor. At 4m the average distance measured was 3.32m, which represents a 17\% error. Though the maximum error is 0.941m at 4m, which represents a huge 23.5\% error. 
+
+\begin{figure}[htb]
+	\begin{center}
+		\includegraphics[width = 0.8\textwidth]{avDist}
+	\end{center}
+	\caption{Measured distance vs set distance. This is the average of all the pixels in the frames at a range of distances, the blue line shows the data. Green shows the target line.}
+	\label{fig:avDist}
+\end{figure}
 
 Now with the clean data we know that all the data points must belong to a plane with distance to the plane being the calibration distance. For now we assume that the x and y directions are not in need of calibration, as objects in the visualisations do not too distorted in these directions. Therefore we only need to find the difference between measured data and the calibration distance. Mapping these correction vectors into a 3D space that later we can look up in to correct new data. 
 
 In order to have the 3D correction field be continuous we must smooth and interpolate the data in all 3 dimensions. One significant issue is that all of our correction vectors fall into quite thin regions in the 3D space along the z axis, and within those areas the data is very dense in the x and y dimensions. Therefore our task is to preform smoothing in the x and y directions to remove the signal noise and to find a good interpolation scheme looking in the z direction. The interpolation should be smooth to avoid damaging the flatness of planes. 
+\clearpage
 
 \section{Feature Extraction} % (fold)
 \label{sec:feature_extraction}
@@ -145,88 +197,115 @@ In order to have the 3D correction field be continuous we must smooth and interp
 \section{EKF} % (fold)
 \label{sec:ekf}
 
+To estimate the state of the system we employ an \ac{EKF}. This filter is the nonlinear version of the regular Kalman Filter: the optimal state estimation filter \cite{todo}. This filter will, when supplied with an accurate sytem model, and its statistical properties, provide the state estimate with the minimum mean-squared error.
+The \ac{EKF} provides a near-optimal estimate of the system's state by linearising it around the current state estimate. The reason why we need the nonlinear version of the filter is due to the fact that the model includes rotations, which are nonlinear in nature.
 
-We use a kalman filter... the optimal state estimator
-non linear due to rotations -- ekf
-	euler vs runge kutta integrator
-		very complicated linearization equations
-			can be overcome with unscented kalman
-		euler is fine if sampling fast enough
-			if deltaT is small
+% We use a kalman filter... the optimal state estimator
+% non linear due to rotations -- ekf
+% 	euler vs runge kutta integrator
+% 		very complicated linearization equations
+% 			can be overcome with unscented kalman
+% 		euler is fine if sampling fast enough
+% 			if deltaT is small
 
-de facto standard (cite)
+When deriving the system model, we chose to use an approach that does not rely on an aerodynamic model of the craft, similar to the approach in \cite{OpenPilotPaper}.
+This has the advantage that modelling errors are minimised, and the time required for system identification is reduced.
+Complex phenomena such as the turbulence caused by the thrust channelled around in the confined space would be close to impossible to model.
+As we elect to use a model-less approach
+	any system/craft
+	decoupled control inputs
+	good for our case
 
+As such, while the system is modelled as a six \ac{DoF} rigid body system with Newtonian mechanics, this is not how it is tracked.
+As we assume no model of how the control inputs are translated to actuation, we cannot integrate the forces of the system. Instead, we rely on the inertial sensors to inform us of the evolution of the system.
 
+\subsection{Filter Equations} % (fold)
+\label{sub:filter_equations}
+
+The filter is based on the following discrete time update model
 \begin{align}
 	x_k &= f(x_{k-1}, u_{k-1}, w_{k-1}) \notag \\
 	y_k &= h(x_k, v_k)
 	\label{eqn:system}
 \end{align}
+where $x_k$ is the state vector at time $k$, $f$ is the state transition function, $u$ is the control input vector at time $k$, $w_k$ is the process noise vector at time $k$, $y_k$ is the measurment vector at time $k$, $h$ is the function that maps the state space to the observed space, and $v_k$ is the measurment noise vector.
 
-and define
-
-\begin{align}
-	P_{k|i} &= \operatorname{cov}(x_k - \hat{x}_{k|i})
-\end{align}
-
-we also have that
-
+The noise in the system is assumed to be gaussian white noise as follows
 \begin{align}
 	w_k &\sim N(0,Q_k) \notag \\
 	v_k &\sim N(0,R_k) \notag \\
 	x_0 &\sim N(\hat{x}_0,P_0)
+	\label{eqn:noisedef}
 \end{align}
+where $Q_k$ and $R_k$ are the process noise and measurment noise covariance matricies, at time $k$, respectivly. The initial state estimate error is assumed to be drawn from a normal distrubution with covariance $P_0$.
 
-where $Q_k$ and $R_k$ are the ... bla.. respectivly.
-
-The sucessive approximation... predict stage..
-
+We define
 \begin{align}
-	\hat{x}_{k|k-1} &= f(\hat{x}_{k-1|k-1}, u_{k-1}, \mathbb{E}(w_{k-1})) \notag \\
-	P_{k|k-1} 		&\approx F_{k-1} P_{k|k} F_{k-1}^\top + G_{k-1} Q_{k-1} G_{k-1}^\top
+	\hat{x}_{k|i} 	&= \mathbb{E}[x_k|y_0 \hdots y_i] \\
+	P_{k|i} 		&= \operatorname{cov}(x_k - \hat{x}_{k|i}) \notag \\
+					&= \mathbb{E}[ (x_k-\hat{x}_{k|i}) (x_k-\hat{x}_{k|i})^\top | y_0 \hdots y_i]
+\end{align}
+where $\hat{x}_{k|i}$ is the state estimate at time $k$ given observations of the system output up to and including time $i$, and $P_{k|i}$ is the covariance matrix associated with the error of the state estimate at time $k$ given given observations of the system output up to and including time $i$.
+
+Given the above defenitions and assumptions, we can predict the evolution of the system as follows
+\begin{align}
+	\hat{x}_{k|k-1} &= f(\hat{x}_{k-1|k-1}, u_{k-1}, \mathbb{E}[w_{k-1}])
+	\label{eqn:predictx}
+\end{align}
+where whe assume that the noise has zero mean:
+\begin{align}
+	\mathbb{E}[w_{k-1}] &= 0
 \end{align}
 
+We transform the state error covariance matrix using a linear approximation to the transformation imposed by the state transition function $f$ as follows:
+\begin{align}
+	P_{k|k-1} &\approx F_{k-1} P_{k|k} F_{k-1}^\top + G_{k-1} Q_{k-1} G_{k-1}^\top
+	\label{eqn:predictP}
+\end{align}
 where
-
-\begin{align}
-	\mathbb{E}(w_{k-1}) &= 0
-\end{align}
-
-and
-
 \begin{align}
 	F_{k-1} &= \left . \frac{\partial f}{\partial x} \right \vert _{\hat{x}_{k-1|k-1},u_{k-1}} \\
 	G_{k-1} &= \left . \frac{\partial f}{\partial w} \right \vert _{\hat{x}_{k-1|k-1},u_{k-1}}
 \end{align}
 
-update stage...
+--------------------------------------------------------------------------------
 
+In order to correct for errors accumulated by the state transition function we incorporate corrections based on measurments made from the output of the system. To do this, we use the \ac{EKF} update equations.
+%todo: more flesh here
+
+For each measurement, we compute the expected measurment given our current state estimate using $h$, and compute the difference $z_k$, and estimate the associated covariance matrix using a linear approximation:
 \begin{align}
-	z_k 		&= y_k - h(\hat{x}_{k|k-1}, \mathbb{E}(v_k)) \\
-	S_k 			&= \operatorname{cov}(z_k) \notag \\
-	S_k 			&\approx H_k P_{k|k-1} H_k^\top + V_k R_k V_k^\top \\
-	K_k 			&= P_{k|k-1} H_k^\top S_k^{-1} \\
-	\hat{x}_{k|k} 	&= \hat{x}_{k|k-1} + K_k z_k \\
-	P_{k|k} 		&\approx (I - K_k H_k) P_{k|k-1}
+	z_k &= y_k - h(\hat{x}_{k|k-1}, \mathbb{E}[v_k]) \\
+	S_k &= \operatorname{cov}(z_k) \notag \\
+		&\approx H_k P_{k|k-1} H_k^\top + V_k R_k V_k^\top
 \end{align}
-
-where
-
+where $P$ and $R$ are defined in equation (\ref{eqn:noisedef}), and where whe assume that the noise has zero mean:
 \begin{align}
-	\mathbb{E}(v_k) &= 0
+	\mathbb{E}[v_k] &= 0
 \end{align}
-
-and
-
+and where
 \begin{align}
 	H_{k} &= \left . \frac{\partial h}{\partial x} \right \vert _{\hat{x}_{k|k-1}} \\
 	V_{k} &= \left . \frac{\partial h}{\partial v} \right \vert _{\hat{x}_{k|k-1}}
 \end{align}
 
+We define the Kalman gain as follows:
+\begin{align}
+	K_k &= P_{k|k-1} H_k^\top S_k^{-1}
+\end{align}
+which is the gain that yields the \ac{MMSE} estimates when used \cite{BerkelyCourse}. Using this gain, we compute the updated state estimate as follows:
+\begin{align}
+	\hat{x}_{k|k} 	&= \hat{x}_{k|k-1} + K_k z_k \\
+	P_{k|k} 		&\approx (I - K_k H_k) P_{k|k-1}
+\end{align}
 
+% subsubsection filter_equations (end)
+\clearpage
 
-Model equations..
+\subsection{System Model} % (fold)
+\label{sub:system_model}
 
+In order to evaluate the equations from the previous section, we need to establish a model of the system. This involves establishing what 
 \begin{align}
 	x &= 
 	\left[
@@ -258,8 +337,7 @@ Model equations..
 \end{align}
 
 where $r$ is the position of the craft in the inertial frame, $v$ is the velocity in the inertial frame, $q$ is the quaternion that represents the attitude of the craft: a rotation from the inertial frame to the body frame, $b_\omega$ and $b_a$ represent the gyro and accelerometer bias, respectively. $\pi_0 \hdots \pi_{n-1}$ are the equations of the planes currently stored in the map.
-They are each composed as follows
-
+The state vector components are each composed as follows
 \begin{align}
 	r &= 
 	\left[
@@ -319,7 +397,6 @@ They are each composed as follows
 \end{align}
 
 The derivative of the state vector is computed in order to propagate the state over time.
-
 \begin{align}
 	\dot{r} &= v
 	&
@@ -327,28 +404,39 @@ The derivative of the state vector is computed in order to propagate the state o
 	&
 	\dot{q} &= \frac{1}{2}\Xi(q) \omega
 	&
-	\dot{b}_\omega &= w_\omega
+	\dot{b}_\omega &= w_{b\omega}
 	&
-	\dot{b}_a &= w_a
+	\dot{b}_a &= w_{ba}
 	&
 	\dot{\pi} &= 0
 \end{align}
 
 where $a$ and $\omega$ are the true body frame accelerations and angular rates, respectively.
-$R_{eb}$, the body to earth rotation matrix and $\Xi$ the rate of change of quaternion with respect to body frame angular rates, are defined below.
-
-$f$ operates in discrete time, but we have established our model in continous time. As such, we perform a first order approximation to the continous time system:
-
-\begin{align}
-	f &= I + \Delta T \dot{x}
-\end{align}
+$R_{eb}$, the body to earth rotation matrix and $\Xi$ is the matrix that maps the body frame angular rates to the rate of change of quaternion. Both matricies are a function of the current quarternion and are defined below.
 
 \begin{align}
 	\omega &= \omega_m + w_\omega - b_\omega &
-	a &= a_m + w_a - b_a
+	a &= a_m + w_a - b_a + g_b
+\end{align}
+where $a_m$ and $\omega_m$ are the measured accelerations and angular velocities in the body frame, respectively, and $g_b$ is the acceleration due to gravity in the body frame.
+
+The process nosie is defined as follows
+\begin{align}
+	x &= 
+	\left[
+	\begin{matrix}
+		w_\omega \\
+		w_a \\
+		w_{ba} \\
+		w_{b\omega}
+	\end{matrix}
+	\right]
 \end{align}
 
-where $a_m$ and $\omega_m$ are the measured accelerations and angular velocities in the body frame, respectively.
+$f$ in equation (\ref{eqn:system}) and (\ref{eqn:predictx}) operates in discrete time, but we have established our model in continous time. As such, we perform a first order approximation to the continous time system:
+\begin{align}
+	f &= I + \Delta T \dot{x}
+\end{align}
 
 \begin{align}
 	\Xi(q) &=
@@ -380,14 +468,12 @@ where $a_m$ and $\omega_m$ are the measured accelerations and angular velocities
 \end{align}
 
 The derivation of the rate of change of the quaternion with respect to angular velocity in the body frame can be found in \cite{MARSlab} (see equation 108). Note that they use the convetion q = q4 + q1i + q2j + q3k, while we use the convention q0 + q1i + q2j + q3k, which is the same convetion used by MATLAB's Aerospace Blockset \cite{MATLABAerospace}, and the OpenPilot implementation \cite{OpenPilotPaper}.
-
 \begin{align}
 	q &= q_0 + q_1i + q_2j + q_3k
 \end{align}
 
 Rbe (rotation of body with respect to earth)
 rotmatrix here.
-
 \begin{align}
 	R_{be}(q) &=
 	\left[
@@ -402,46 +488,76 @@ rotmatrix here.
 The derivation of the quaternion derived rotation matrix is also shown in \cite{MARSlab} (see equation 91)
 
 as a rotation matrix is orthogonal, we have that
-
 \begin{align}
 	R_{eb} &= R_{be}^\top
 \end{align}
 
 Linearisation: Jacobians
-
 \begin{align}
-	\frac{\partial f}{\partial x} &=
+	F &= \frac{\partial f}{\partial x} \notag \\
+	&=
+	I + \frac{\partial \dot{x}}{\partial x} \Delta T \notag \\
+	% &= 
+	% I_{16+4n \times 16+4n} +
+	% \left[
+	% \begin{matrix}
+	% 	0_{3\times3} 	& I_{3\times3} 	& 0_{3\times4} 	& 0_{3\times3} 		& 0_{3\times3} 	& 0_{3\times4n} \\
+	% 	0_{3\times3}		& 0_{3\times3} 	& F_{vq}	& 0_{3\times3} 		& F_{vb_a} 	& 0_{3\times4n} \\
+	% 	0_{4\times3}		& 0_{4\times3} 	& F_{qq}	& F_{qb_\omega}	& 0_{4\times3}	& 0_{4\times4n} \\
+	% 	0_{3\times3}		& 0_{3\times3}	& 0_{3\times4} 	& 0_{3\times3} 		& 0_{3\times3} 	& 0_{3\times4n} \\
+	% 	0_{3\times3}		& 0_{3\times3}	& 0_{3\times4} 	& 0_{3\times3}		& 0_{3\times3}	& 0_{3\times4n} \\
+	% 	0_{4n\times3} 		& 0_{4n\times3} 	& 0_{4n\times4} 	& 0_{4n\times3}		& 0_{4n3\times3} 	& 0_{4n\times4n}
+	% \end{matrix}
+	% \right] 
+	% \Delta T
+	% \\
+	&=
+	I_{16+4n \times 16+4n} +
+	%\left[
+	%\begin{matrix}
+	%	I_{16 \times 16} 	& 0_{16 \times 4n} \\
+	%	0_{4n \times 16}	& I_{4n \times 4n}
+	%\end{matrix}
+	%\right]
+	%+
 	\left[
 	\begin{matrix}
-		todo
+		\cdot 		& I_{3x3} 	& \cdot	 	& \cdot		 	& \cdot		& \cdot \\
+		\cdot		& \cdot	 	& F_{vq}	& \cdot		 	& F_{vb_a} 	& \cdot \\
+		\cdot		& \cdot	 	& F_{qq}	& F_{qb_\omega}	& \cdot		& \cdot \\
+		\cdot		& \cdot		& \cdot	 	& \cdot		 	& \cdot		& \cdot \\
+		\cdot		& \cdot		& \cdot	 	& \cdot			& \cdot		& \cdot \\
+		\cdot		& \cdot		& \cdot	 	& \cdot			& \cdot		& \cdot
+		%\dots 		& \vdots	& \vdots 	& \vdots		& \vdots	& \ddots
 	\end{matrix}
 	\right]
+	\Delta T
+	\label{eqn:F}
 \end{align}
-
-\begin{align}
-	F_{rv} 	&= I_{3x3}
-\end{align}
-
+where
 \begin{align}
 	F_{vq} 	&= 2
 	\left[
 	\begin{matrix}
-		F_{vq1} 	& F_{vq0} 	& F_{vq3} 	& F_{vq2} \\
-		-F_{vq2} 	& -F_{vq3} 	& F_{vq0} 	& F_{vq1} \\
-		F_{vq3} 	& -F_{vq2} 	& -F_{vq1} 	& F_{vq0}
+		F_{vq1} 	& -F_{vq0} 	& F_{vq3} 	& -F_{vq2} \\
+		F_{vq2} 	& -F_{vq3} 	& -F_{vq0} 	& F_{vq1} \\
+		F_{vq3} 	& F_{vq2} 	& -F_{vq1} 	& -F_{vq0}
 	\end{matrix}
 	\right]
 \end{align}
-
 where
-
 \begin{align}
-	a &= a_m - b_a 							\notag 	\\
-	F_{vq0} &= q_1 a_x + q_2 a_y + q_3 a_z	\notag 	\\
-	F_{vq1} &= q_0 a_x - q_3 a_y + q_2 a_z 	\notag	\\
-	F_{vq2} &= -q_3 a_x - q_0 a_y + q_1 a_z \notag	\\
-	F_{vq3} &= -q_2 a_x + q_1 a_y + q_0 a_z
+	F_{vq(0\cdots3)} &= \Xi(q) a
 \end{align}
+% that is
+% \begin{align}
+% 	%a &= a_m - b_a 							\notag 	\\
+% 	F_{vq0} &= -q_1 a_x - q_2 a_y - q_3 a_z	\notag 	\\
+% 	F_{vq1} &= q_0 a_x - q_3 a_y + q_2 a_z 	\notag	\\
+% 	F_{vq2} &= q_3 a_x + q_0 a_y - q_1 a_z \notag	\\
+% 	F_{vq3} &= -q_2 a_x + q_1 a_y + q_0 a_z
+% \end{align}
+
 
 %\begin{align}
 %	&= 2
@@ -454,19 +570,38 @@ where
 %	\right]
 %\end{align}
 
+and further
 \begin{align}
 	F_{vb_a} &= -R_{eb}(q)
 %\end{align}
 &
 %\begin{align}
 	F_{qq}	&= \frac{1}{2} \Omega(\omega)
-			 = \frac{1}{2} \Omega(\omega_m - b_\omega)
+			 %= \frac{1}{2} \Omega(\omega_m - b_\omega)
 %\end{align}
 &
 %\begin{align}
 	F_{qb_\omega} &= -\frac{1}{2} \Xi(q)
 \end{align}
-%\\
+
+We also have that
+\begin{align}
+	G &= \frac{\partial f}{\partial w} \notag \\
+	&=
+	\frac{\partial f}{\partial w_k} \Delta T \notag \\
+	&=
+	\left[
+	\begin{matrix}
+		\cdot 			& \cdot 	& \cdot 		& \cdot \\
+		\cdot 			& G_{vw_a} 	& \cdot 		& \cdot \\
+		G_{qw_\omega}	& \cdot 	& \cdot 		& \cdot \\
+		\cdot 			& \cdot 	& I_{3\times3}	& \cdot \\
+		\cdot 			& \cdot 	& \cdot 		& I_{3\times3}
+	\end{matrix}
+	\right]
+	\Delta T
+\end{align}
+where $w_k$ is the discrete time noise, and where
 \begin{align}
 	G_{vw_a} &= R_{eb}(q)
 %\end{align}
@@ -474,13 +609,17 @@ where
 %\begin{align}
 	G_{qw_\omega} &= \frac{1}{2} \Xi(q)
 %\end{align}
-&
+%&
 %\begin{align}
-	G_{b_\omega w_\omega} &= I_{3x3}
-&
-	G_{b_a w_a} &= I_{3x3}
+%	G_{b_\omega w_{b\omega}} &= I_{3x3}
+%&
+%	G_{b_a w_{ba}} &= I_{3x3}
 \end{align}
 
+% subsection system_model (end)
+
+\subsection{Impementation} % (fold)
+\label{sub:impementation}
 
 SerialUpdate: \cite{OpenPilotPaper} and chapter 4.2.2 of \cite{KFBookSerialupdate}
 The referenced papers perform an optimization which assumes an entirerly uncorrelated measurment noise covariance matrix. That is the $R$ matrix is purely diagonal.
@@ -492,8 +631,11 @@ In fact, after linearization, this distrubution is projected onto a plane tangen
 While we cannot serialise the individual componets of a plane measurment, the measurment error between planes are uncorrelated, so we can still make use of the serial update strategy. As such, at each time there is a new frame that has finished feature extraction, we serially apply the measurment updates for each plane, without running the predict loop in-between.
 That means the update stage will only have to invert $v$ matricies of size $4\times4$, instead of inverting a $4v \times 4v$ matrix.
 
-\subsection{Impementation} % (fold)
-\label{sub:impementation}
+As a further optimization, we find that the equation that transforms the state covariance matrix (\ref{eqn:predictP}) forms a seperable system. That is, the Jacobian matrix $F$ as defined in (\ref{eqn:F}) does not carry any information regarding the craft to the planes, and vica versa.
+In fact, all terms in $F$ regarding the planes are zero, execpt the main diagonal, which is unity. This means that not only is it a seperable system, but the plane subsystem is fully static.
+Because the system is seperable, and because the second half is static, we can ignore the second half of the system when computing (\ref{eqn:predictP}).
+This makes an enormous difference in the scalability of the kalman filter approach. If the entire matrix-matrix multiplication is required, then the algorithm will scale like $O(n^3)$ where $n$ is the number of planes in the state vector. Now that this cubic dependence on $n$ is removed, only $O(n^2)$ terms remain, along with other terms.
+%TODO: explore complexity
 
 We crosscheck our implementation against a similar open source implementation by the OpenPilot team \cite{OpenPilotinsgps}.
 
@@ -503,6 +645,9 @@ We crosscheck our implementation against a similar open source implementation by
 
 \clearpage
 \begin{thebibliography}{99}
+
+\bibitem{todo}
+	THIS REFERENCE IS MISSING!
 
 \bibitem{MARSlab}
 	Nikolas Trawny and Stergios I. Roumeliotis,
@@ -533,6 +678,12 @@ We crosscheck our implementation against a similar open source implementation by
 	Alessandro Astolfi,
 	\emph{Systems and Control Theory - An Introduction}. \\
 	\url{http://www3.imperial.ac.uk/pls/portallive/docs/1/31851696.PDF}
+
+\bibitem{BerkelyCourse}
+	Pieter Abbeel,
+	\emph{Learning for robotics and control}. \\
+	\url{http://inst.eecs.berkeley.edu/~cs294-40/fa08/#syllabus}
+
 
 \end{thebibliography}
 

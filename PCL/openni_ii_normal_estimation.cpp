@@ -14,7 +14,7 @@
 #include <pcl/kdtree/kdtree.h>
 #include <iostream>
 #include <fstream>
-#include "build/Plane.h"
+#include "Plane.h"
 
 
 #define RESOLUTION_MODE pcl::OpenNIGrabber::OpenNI_QQVGA_30Hz
@@ -209,14 +209,15 @@ class OpenNIIntegralImageNormalEstimation
 	  switch (event.getKeyCode ())
       {
         case '1':
-          //ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::COVARIANCE_MATRIX);
-          //std::cout << "switched to COVARIANCE_MATRIX method\n";
-			//(cloudNormals_->width, cloudNormals_->height, cloudNormals_);
-			/*for (int p = 0; p <19200; p++){
 
-				MyFile << cloudNormals_->points[p].x << "," << cloudNormals_->points[p].y <<","<< cloudNormals_->points[p].z<<"\n";
+       /*   ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::COVARIANCE_MATRIX);
+          std::cout << "switched to COVARIANCE_MATRIX method\n";
+			(cloud_dbscanproc->width, cloud_dbscanproc->height, cloud_dbscanproc);*/
+			for (int p = 0; p <19200; p++){
 
-			}*/
+				MyFile << cloud_->points[p].x << "," << cloud_->points[p].y <<","<< cloud_->points[p].z<<"\n";
+
+			}
 
 
 			MyFile << "//\n"; 
