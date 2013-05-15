@@ -1,38 +1,5 @@
-/*
- * Software License Agreement (BSD License)
- *
- *  Copyright (c) 2011, Willow Garage, Inc.
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
- *  are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of Willow Garage, Inc. nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- *
- */
-
+#ifndef _ONI
+#define _ONI
 #include <boost/thread/thread.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <pcl/point_cloud.h>
@@ -45,7 +12,9 @@
 #include <pcl/common/time.h>
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/kdtree/kdtree.h>
-
+#include <iostream>
+#include <fstream>
+#include "build/Plane.h"
 
 
 #define RESOLUTION_MODE pcl::OpenNIGrabber::OpenNI_QQVGA_30Hz
@@ -69,38 +38,11 @@ float G_smoothsize = 20.0f;
 float G_depthdepend = 0.02f;
 float G_epsilon = 0.04f;
 int G_minpts = 60;
-
+#endif
 //template <typename PointType>
 typedef pcl::PointXYZRGBA PointType;
 
-class Plane  {
-	
-public:
-	Plane(float a, float b, float c, float d) : A(a), B(b), C(c), D(d){}
-	Plane(float x, float y, float z, pcl::Normal &norm) 
-	{
-		A = norm.normal_x;
-		B = norm.normal_y;
-		C = norm.normal_z;
-		D = -(A * x + B * y + C * z);
-	}
-	Plane(float x, float y, float z, float a, float b, float c) {
-		A = a;
-		B = b;
-		C = c;
-		D = -(A * x + B * y + C * z);
-	}
-	Plane(float a, float b, float c, float d, vector<int> ind)  {
-	A = a;
-	B = b;
-	C = c;
-	D = d;
-	indicies = ind;
-	}
-	float A, B, C, D;
-	vector<int> indicies;
 
-};
 
 class OpenNIIntegralImageNormalEstimation
 {
@@ -110,18 +52,18 @@ class OpenNIIntegralImageNormalEstimation
     typedef Cloud::ConstPtr CloudConstPtr; //typename
 
 	unsigned int eventflag; 
-
-	//This is used to hold the data used by DBSCAN
-	pcl::PointCloud<pcl::Normal>::Ptr cloud_dbscanproc;
-
-	pcl::IntegralImageNormalEstimation<PointType, pcl::Normal> ne_;
-
+	
     pcl::visualization::CloudViewer viewer;
     std::string device_id_;
     boost::mutex mtx_;
+
     // Data
     pcl::PointCloud<pcl::Normal>::Ptr normals_;
     CloudConstPtr cloud_;
+	CloudConstPtr cloudXYZ_;
+	pcl::IntegralImageNormalEstimation<PointType, pcl::Normal> ne_;
+	pcl::PointCloud<pcl::Normal>::Ptr cloudNormals_;
+	vector<Plane> planes_;
     bool new_cloud_;
 
 	OpenNIIntegralImageNormalEstimation (const std::string& device_id = "")
@@ -136,6 +78,7 @@ class OpenNIIntegralImageNormalEstimation
       ne_.setNormalSmoothingSize (G_smoothsize);
       new_cloud_ = false;
       viewer.registerKeyboardCallback(&OpenNIIntegralImageNormalEstimation::keyboard_callback, *this);
+	  planes_.assign(19200, Plane(0,0,0,0));
     }
 	
 	void
@@ -157,21 +100,33 @@ class OpenNIIntegralImageNormalEstimation
 
       double stop = pcl::getTime ();
       //std::cout << "Time for normal estimation: " << (stop - start) * 1000.0 << " ms" << std::endl;
-      //cloud_ = cloud;
+      cloudXYZ_ = cloud;
 
 	  
-	  cloud_dbscanproc = normals_; //TODO unessecary copy
+	  cloudNormals_ = normals_; //TODO unessecary copy
 
 	  static bool hasrun = false;
 	  if(eventflag & 0x1){
 		  if(!hasrun){
 				hasrun = true;
 
-				vector<vector<int>> clusterIndicies = floodFillAll(100, 100);//DBSCAN(G_epsilon, G_minpts);
+				vector<vector<int>> clusterIndicies = floodFillAll(1000, 500);//DBSCAN(G_epsilon, G_minpts);
 				cloud_ = cloud;
 				vector<Plane> planes = ClusterToAveragePlane(clusterIndicies);
-				vector<Plane> h = DBScanND(planes,1,0.05);
 
+				ofstream myfile;
+				myfile.open("planes.txt",ios::app);
+
+				for (int i = 0; i < planes.size(); i++) {
+					planes[i].calculateCovarianceMatrix(planes_);
+					myfile << planes[i].A << " " << planes[i].D << " " << planes[i].C << " " << planes[i].D << endl;
+					for (int j = 0; j < planes[i].covariance.size(); j++) {
+						myfile << planes[i].covariance[j][0] << " " << planes[i].covariance[j][1] << " " << planes[i].covariance[j][2] << " " << planes[i].covariance[j][3] << endl; 
+					}
+					
+				}
+				//vector<Plane> h = DBScanND(planes,1,0.05);
+				//
 				pcl::PointCloud<PointType> pc(*cloud);
 
 				//Colour clusters
@@ -256,10 +211,10 @@ class OpenNIIntegralImageNormalEstimation
         case '1':
           //ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::COVARIANCE_MATRIX);
           //std::cout << "switched to COVARIANCE_MATRIX method\n";
-			//(cloud_dbscanproc->width, cloud_dbscanproc->height, cloud_dbscanproc);
+			//(cloudNormals_->width, cloudNormals_->height, cloudNormals_);
 			/*for (int p = 0; p <19200; p++){
 
-				MyFile << cloud_dbscanproc->points[p].x << "," << cloud_dbscanproc->points[p].y <<","<< cloud_dbscanproc->points[p].z<<"\n";
+				MyFile << cloudNormals_->points[p].x << "," << cloudNormals_->points[p].y <<","<< cloudNormals_->points[p].z<<"\n";
 
 			}*/
 
@@ -309,7 +264,7 @@ class OpenNIIntegralImageNormalEstimation
 
       interface->stop ();
     }
-
+	
 	vector<Plane> ClusterToAveragePlane(vector<vector<int>> clusters) 
 	{
 		vector<Plane> planes;
@@ -324,12 +279,12 @@ class OpenNIIntegralImageNormalEstimation
 
 			for (int j = 0; j < clusters[i].size(); j++) {
 
-				accum_x += cloud_dbscanproc->points[clusters[i][j]].normal_x;
-				accum_y += cloud_dbscanproc->points[clusters[i][j]].normal_y;
-				accum_z += cloud_dbscanproc->points[clusters[i][j]].normal_z;
-				accum_d -= ((cloud_->points[clusters[i][j]].x * cloud_dbscanproc->points[clusters[i][j]].normal_x)
-							+ (cloud_->points[clusters[i][j]].y * cloud_dbscanproc->points[clusters[i][j]].normal_y)
-							+ (cloud_->points[clusters[i][j]].z * cloud_dbscanproc->points[clusters[i][j]].normal_z));
+				accum_x += cloudNormals_->points[clusters[i][j]].normal_x;
+				accum_y += cloudNormals_->points[clusters[i][j]].normal_y;
+				accum_z += cloudNormals_->points[clusters[i][j]].normal_z;
+				accum_d -= ((cloud_->points[clusters[i][j]].x * cloudNormals_->points[clusters[i][j]].normal_x)
+							+ (cloud_->points[clusters[i][j]].y * cloudNormals_->points[clusters[i][j]].normal_y)
+							+ (cloud_->points[clusters[i][j]].z * cloudNormals_->points[clusters[i][j]].normal_z));
 			}
 
 			planes.push_back(Plane(accum_x/clusters[i].size(), accum_y/clusters[i].size(), accum_z/clusters[i].size(), accum_d/clusters[i].size(),clusters[i]));
@@ -364,6 +319,7 @@ class OpenNIIntegralImageNormalEstimation
 					clusterInd++;
 				}
 			}
+
 		}
 
 		cout << "Planes merging from " << planes.size() << " to " << clusters.size() << endl;
@@ -386,11 +342,19 @@ class OpenNIIntegralImageNormalEstimation
 				mergingPlane.D += (planes[(*it)].D * planes[(*it)].indicies.size());
 				mergingPlane.indicies.insert(mergingPlane.indicies.end(), planes[(*it)].indicies.begin(), planes[(*it)].indicies.end());
 				nTotalIndicies += planes[(*it)].indicies.size();
+			
 			}
 			mergingPlane.A /= nTotalIndicies; mergingPlane.B /= nTotalIndicies; mergingPlane.C /= nTotalIndicies; mergingPlane.D /= nTotalIndicies;
+			mergingPlane.calculateCovarianceMatrix(planes_);
 			mergedPlanes.push_back(mergingPlane);
 
 		}
+
+		//mergeMelo(mergedPlanes[0], mergedPlanes[1]);
+
+		//myfile << mergedPlanes.size() << endl;
+		
+
 
 		return mergedPlanes;
 	}
@@ -447,7 +411,10 @@ class OpenNIIntegralImageNormalEstimation
 	{
 		vector<vector<int>> clusters;
 		
-		int dataSize = cloud_dbscanproc->size();
+		//Calculate planes for each point with normal. Required for checking if 2 points lie within the same plane
+		calculatePlanes_();
+
+		int dataSize = cloudNormals_->size();
 		vector<bool> isInCluster(dataSize, false);
 
 		int count = 0;
@@ -474,7 +441,7 @@ class OpenNIIntegralImageNormalEstimation
 
 	vector<int> floodFillNaive (int rootNode, vector<bool> isInClusterOrQ, int& count) 
 	{
-		const int row = 320;
+		const int row = 160;
 		vector<int> clusterPoints;
 		
 		std::vector<int> Q;
@@ -511,18 +478,57 @@ class OpenNIIntegralImageNormalEstimation
 		return clusterPoints;
 	}
 
-	bool samePlaneNormal(int pointOfInterest, int rootPoint, double epsilon) {
-		if	((abs(cloud_dbscanproc->points[rootPoint].normal_x - cloud_dbscanproc->points[pointOfInterest].normal_x) < epsilon) 
-		&&	(abs(cloud_dbscanproc->points[rootPoint].normal_y - cloud_dbscanproc->points[pointOfInterest].normal_y) < epsilon) 
-		&&	(abs(cloud_dbscanproc->points[rootPoint].normal_z - cloud_dbscanproc->points[pointOfInterest].normal_z) < epsilon))
-			return true;
+	void calculatePlanes_() 
+	{
+		for (int i = 0; i < 19200; i++) {
+			planes_[i].A = cloudNormals_->points[i].normal_x;
+			planes_[i].B = cloudNormals_->points[i].normal_y;
+			planes_[i].C = cloudNormals_->points[i].normal_z;
+			planes_[i].D = -1 * ( planes_[i].A * cloudXYZ_->points[i].x + planes_[i].B * cloudXYZ_->points[i].y + planes_[i].C * cloudXYZ_->points[i].z);
+		}
 
+	}
+
+	bool samePlaneNormal(int pointOfInterest, int rootPoint, double epsilon) {
+		if	((abs(planes_[rootPoint].A - planes_[pointOfInterest].A) < epsilon) 
+		&&	(abs(planes_[rootPoint].B - planes_[pointOfInterest].B) < epsilon) 
+		&&	(abs(planes_[rootPoint].C - planes_[pointOfInterest].C) < epsilon)
+		&&	(abs(planes_[rootPoint].D - planes_[pointOfInterest].D) < 
+					(
+					abs(cloudNormals_->points[rootPoint].normal_z * cloudXYZ_->points[rootPoint].z * cloudXYZ_->points[rootPoint].z)
+				+	abs(cloudNormals_->points[pointOfInterest].normal_z * cloudXYZ_->points[pointOfInterest].z * cloudXYZ_->points[pointOfInterest].z)
+					) * epsilon
+			)) 
+			return true;
+		
 		return false;
 	}
-};
 
-void
-usage (char ** argv)
+	void mergeMelo(Plane one, Plane two) {
+
+		Plane newPlane = two - one;
+		vector<vector<double>> covariances(4); 
+		covariances[0].push_back(one.covariance[0][0] + two.covariance[0][0]); covariances[0].push_back(one.covariance[0][1] + two.covariance[0][1]); covariances[0].push_back(one.covariance[0][2] + two.covariance[0][2]); covariances[0].push_back(one.covariance[0][3] + two.covariance[0][3]);
+		covariances[1].push_back(one.covariance[1][0] + two.covariance[1][0]); covariances[0].push_back(one.covariance[0][1] + two.covariance[1][1]); covariances[0].push_back(one.covariance[1][2] + two.covariance[1][2]); covariances[0].push_back(one.covariance[1][3] + two.covariance[1][3]);
+		covariances[2].push_back(one.covariance[2][0] + two.covariance[2][0]); covariances[0].push_back(one.covariance[0][1] + two.covariance[2][1]); covariances[0].push_back(one.covariance[2][2] + two.covariance[2][2]); covariances[0].push_back(one.covariance[2][3] + two.covariance[2][3]);
+		covariances[3].push_back(one.covariance[3][0] + two.covariance[3][0]); covariances[0].push_back(one.covariance[0][1] + two.covariance[3][1]); covariances[0].push_back(one.covariance[3][2] + two.covariance[3][2]); covariances[0].push_back(one.covariance[3][3] + two.covariance[3][3]);
+		
+		vector<int> intermeddiate; 
+		intermeddiate.push_back(newPlane.A * covariances[0][0] + newPlane.B * covariances[1][0]  + newPlane.C * covariances[2][0] + newPlane.D * covariances[3][0]);
+		intermeddiate.push_back(newPlane.A * covariances[0][1] + newPlane.B * covariances[1][1]  + newPlane.C * covariances[2][1] + newPlane.D * covariances[3][1]);
+		intermeddiate.push_back(newPlane.A * covariances[0][2] + newPlane.B * covariances[1][2]  + newPlane.C * covariances[2][2] + newPlane.D * covariances[3][2]);
+		intermeddiate.push_back(newPlane.A * covariances[0][3] + newPlane.B * covariances[1][3]  + newPlane.C * covariances[2][3] + newPlane.D * covariances[3][3]);
+
+		Plane mDistanceSquared(intermeddiate[0] * newPlane.A, intermeddiate[1] * newPlane.B, intermeddiate[2] * newPlane.C, intermeddiate[3] * newPlane.D); 
+
+		return;
+	}
+};
+void printPlanes(std::vector<Plane> planes){
+	//Open file
+
+}
+void usage (char ** argv)
 {
   std::cout << "usage: " << argv[0] << " [<device_id>]\n\n";
 
@@ -542,8 +548,7 @@ usage (char ** argv)
     cout << "No devices connected." << endl;
 }
 
-int
-main (int argc, char ** argv)
+int main (int argc, char ** argv)
 {
 
 
