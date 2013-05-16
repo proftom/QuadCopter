@@ -174,6 +174,53 @@ Figure~\ref{fig:avDist} shows the average measurement across all of the frame fo
 Now with the clean data we know that all the data points must belong to a plane with distance to the plane being the calibration distance. For now we assume that the x and y directions are not in need of calibration, as objects in the visualisations do not too distorted in these directions. Therefore we only need to find the difference between measured data and the calibration distance. Mapping these correction vectors into a 3D space that later we can look up in to correct new data. 
 
 In order to have the 3D correction field be continuous we must smooth and interpolate the data in all 3 dimensions. One significant issue is that all of our correction vectors fall into quite thin regions in the 3D space along the z axis, and within those areas the data is very dense in the x and y dimensions. Therefore our task is to preform smoothing in the x and y directions to remove the signal noise and to find a good interpolation scheme looking in the z direction. The interpolation should be smooth to avoid damaging the flatness of planes. 
+
+In order to avoid large computation times on the embedded device it is important that we must invert the correction function. As it stands for each data point at the input we would have to search for the two closest calibration measurements for that pixel doing this for every pixel will be very time consuming. With an inverted correction lookup table it is possible to go directly to the correct entries in the table. Assuming we would have done the search on each pixel using binary search, this is a saving of at least 3 times for this section of the algorithm. 
+
+\subsection{Results of calibration} % (fold)
+ \label{sub:results_of_calibration}
+ After performing the calculations described above we are left with 19200 look up tables (one for each pixel), each of these contain the real depth value for a given depth measurement. This correction lookup was applied to the point cloud data of uninterrupted planes. The results are very good, Figure~\ref{fig:beforeAfter} shows the point cloud data before and after correction, where both images are produced by subtracting the images average distance from all pixels and setting the dynamic range to be from -10\% of the average to +10\%. Therefore an ideal image of a plane should be a pure grey. As you can see the image before has a large area of distortion in the upper right hand corner, this is almost completely removed after correction. Table~\ref{tab:averages} shows the average distance measured over the whole plane for a range of measurements and their respective corrections, this shows that we have also corrected effectively for the absolute inaccuracy found with the Xtion sensor. 
+
+\begin{figure}[htb]
+\centering     %%% not \center
+\subfloat[Before correction]{\label{fig:preflat8}\includegraphics[width=60mm]{preflat8}} \,\,\,\,
+\subfloat[After correction]{\label{fig:postflat8}\includegraphics[width=60mm]{postflat8}}
+\caption{Example of the correction function in action. Images show divergence from the measurements average distance, white is +10\% and black is -10\% of the average respectively.}
+\label{fig:beforeAfter}
+\end{figure}
+
+\begin{figure}[htb]
+	\begin{center}
+	\begin{tabular}{|c|c|c|}
+	\hline
+Set Distance& Measured Distance& Corrected Distance\\ \hline
+0.8		& 0.773	& 0.800\\ \hline
+1.0		& 0.960	& 1.002\\ \hline
+1.2 	& 1.138	& 1.201\\ \hline
+1.6 	& 1.483	& 1.601\\ \hline
+1.8 	& 1.655	& 1.800\\ \hline
+2.0 	& 1.826	& 2.001\\ \hline
+2.2 	& 1.976	& 2.186\\ \hline
+2.4 	& 2.146	& 2.415\\ \hline
+2.6 	& 2.299	& 2.590\\ \hline
+2.8 	& 2.465	& 2.804\\ \hline
+3.0 	& 2.614	& 2.988\\ \hline
+3.2 	& 2.751	& 3.158\\ \hline
+3.4 	& 2.895	& 3.370\\ \hline
+3.6 	& 3.045	& 3.591\\ \hline
+3.8 	& 3.198	& 3.815\\ \hline
+4.0 	& 3.341	& 3.993\\ \hline
+
+
+\end{tabular}
+		
+	\end{center}
+	\caption{Table showing the performance of the correction function, all units in meters}
+	\label{tab:averages}
+\end{figure}
+
+
+ % subsection results_of_calibration (end) 
 \clearpage
 
 \section{Feature Extraction} % (fold)
@@ -184,10 +231,8 @@ In order to have the 3D correction field be continuous we must smooth and interp
 
 % Multidimensional least squares correction
 % measure a plane at a known distance (d)
-% least squares establish the observed plane that matches this distance d
-% 	(or just least squares the plane first??)
+% least squares establish the observed plane that matches this distance d % 	(or just least squares the plane first??)
 % the distance of each point from the plane is the true calibration vector field projected onto the normal of the observed plane (in the camera's coordinate system)
-
 % subsection sensor_calibration (end)
 
 % section feature_extraction (end)
