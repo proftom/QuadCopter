@@ -422,7 +422,7 @@ where $a_m$ and $\omega_m$ are the measured accelerations and angular velocities
 
 The process nosie is defined as follows
 \begin{align}
-	x &= 
+	w &= 
 	\left[
 	\begin{matrix}
 		w_\omega \\
@@ -588,7 +588,7 @@ We also have that
 \begin{align}
 	G &= \frac{\partial f}{\partial w} \notag \\
 	&=
-	\frac{\partial f}{\partial w_k} \Delta T \notag \\
+	\frac{\partial \dot{x}}{\partial w} \Delta T \notag \\
 	&=
 	\left[
 	\begin{matrix}
@@ -601,7 +601,7 @@ We also have that
 	\right]
 	\Delta T
 \end{align}
-where $w_k$ is the discrete time noise, and where
+where
 \begin{align}
 	G_{vw_a} &= R_{eb}(q)
 %\end{align}
