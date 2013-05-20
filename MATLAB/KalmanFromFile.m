@@ -23,13 +23,13 @@ Q = blkdiag(Qgyro, Qacc, Qgyrobias, Qaccbias);
 
 Ts = 0.01;
 
-X = [0 0 0, 0 0 0, 1 0 0 0, 0 0 0, 0 0 0].'; %-0.1013 -0.0674 -0.0336].';
+X = [0 0 0, 0 0 0, 1 0 0 0, 0 0 0, 0,0,0].'; %-0.0336 0.1013 0.0674].'; %-0.1013 -0.0674 -0.0336].';
 
 P0r = zeros(3);
 P0v = zeros(3);
 P0q = zeros(4);
 P0wb = eye(3) * 0.001;
-P0ab = eye(3) * 0.1;
+P0ab = eye(3) * 1;
 
 P = blkdiag(P0r, P0v, P0q, P0wb, P0ab);
 
@@ -41,7 +41,7 @@ for k = 1:N
     
     wm = Gyro(k,:).' ./ 818.51113590117601252569;
     am = Accel(k,:).' .* (9.816/(2^14));
-    am = [am(1) am(3) -am(2)].'; %TODO temp hack
+    am = [am(3) -am(1) -am(2)].'; %TODO temp hack
 
     w = wm - X(11:13);
     a = am - X(14:16);
@@ -117,6 +117,24 @@ for k = 1:N
               zeros(3,9) eye(3)];
 
     P = F*P*F.' + G*Q*G.';
+    
+    
+    %-------------------
+    
+    if (k <= 5000)
+        z = [0 0 0 0 0 0 1 0 0 0].';
+        H = blkdiag([eye(10) zeros(10,6)]);
+        y = z - H*X;
+        R = eye(10) .* 0.0001;
+
+        S = H*P*H.' + R;
+        K = P*H.'*inv(S);
+
+        X = X + K*y;
+        P = (eye(16) - K*H)*P;
+    end
+    
+    
     
 end
 
