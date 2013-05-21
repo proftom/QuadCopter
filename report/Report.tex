@@ -218,12 +218,22 @@ In order to avoid large computation times on the embedded device it is important
  \label{sub:results_of_calibration}
  After performing the calculations described above we are left with 19200 look up tables (one for each pixel), each of these contain the real depth value for a given depth measurement. This correction lookup was applied to the point cloud data of uninterrupted planes. The results are very good, Figure~\ref{fig:beforeAfter} shows the point cloud data before and after correction, where both images are produced by subtracting the images average distance from all pixels and setting the dynamic range to be from -10\% of the average to +10\%. Therefore an ideal image of a plane should be a pure grey. As you can see the image before has a large area of distortion in the upper right hand corner, this is almost completely removed after correction. Table~\ref{tab:averages} shows the average distance measured over the whole plane for a range of measurements and their respective corrections, this shows that we have also corrected effectively for the absolute inaccuracy found with the Xtion sensor. 
 
+ Figure~\ref{fig:outputTest} shows very clearly how important the calibration of the sensor was. The camera took the data points while pointing at a flat wall, a small section of orthogonal flat wall is also visible. Pre-calibration the walls are curved and the data points describing them are dispersed, this would make finding planes very difficult. After processing the image shows the walls being properly orthogonal and flat. Also the grouping of the data points to the surface is much better.
+
+
 \begin{figure}[htb]
 \centering     %%% not \center
 \subfloat[Before correction]{\label{fig:preflat8}\includegraphics[width=60mm]{preflat8}} \,\,\,\,
 \subfloat[After correction]{\label{fig:postflat8}\includegraphics[width=60mm]{postflat8}}
 \caption{Example of the correction function in action. Images show divergence from the measurements average distance, white is +10\% and black is -10\% of the average respectively.}
 \label{fig:beforeAfter}
+\end{figure}
+ \begin{figure}[htb]
+\centering     %%% not \center
+\subfloat[Before processing]{\label{fig:NewBeforeMatlab}\includegraphics[width=60mm]{NewBeforeMatlab.PNG}} \,\,\,\,
+\subfloat[After processing]{\label{fig:NewAfterMatlab}\includegraphics[width=60mm]{NewAfterMatlab}}
+\caption{A demonstration of the correction removing curvature from the Xtion data}
+\label{fig:outputTest}
 \end{figure}
 
 \begin{figure}[htb]
