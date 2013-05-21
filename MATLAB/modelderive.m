@@ -53,7 +53,7 @@ Xdot(1:3) = X(4:6);
 
 %vel
 Xdot(4:6) = DCMderiv.' * a;
-%Xdot(6) = Xdot(6) + 0;% 9.816;
+Xdot(6) = Xdot(6) + 9.816;
 
 %quat
 Xdot(7:10) = 0.5 .* Xi * w;
