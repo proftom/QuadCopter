@@ -37,12 +37,10 @@ do \
 
 float G_smoothsize = 20.0f;
 float G_depthdepend = 0.02f;
-float G_epsilon = 0.04f;
-int G_minpts = 60;
 #endif
 
 typedef pcl::PointXYZRGBA PointType;
-class OpenNIIntegralImageNormalEstimation
+class QCVision
 {
 
   private:
@@ -68,7 +66,7 @@ class OpenNIIntegralImageNormalEstimation
 	vector<Plane> planes_;
 
 
-	OpenNIIntegralImageNormalEstimation (const std::string& device_id = "")
+	QCVision (const std::string& device_id = "")
       : viewer ("PCL OpenNI NormalEstimation Viewer")
     , device_id_(device_id)
 	, eventflag(0)
@@ -79,7 +77,7 @@ class OpenNIIntegralImageNormalEstimation
 	  ne_.setMaxDepthChangeFactor (G_depthdepend);
       ne_.setNormalSmoothingSize (G_smoothsize);
       new_cloud_ = false;
-      viewer.registerKeyboardCallback(&OpenNIIntegralImageNormalEstimation::keyboard_callback, *this);
+      viewer.registerKeyboardCallback(&QCVision::keyboard_callback, *this);
 	  planes_.assign(19200, Plane(0,0,0,0));
 
     }
@@ -119,10 +117,6 @@ class OpenNIIntegralImageNormalEstimation
 				cloud_ = cloud;
 				vector<Plane> planes = ClusterToAveragePlane(clusterIndicies);
 
-				//if (planes.size() > 0)
-				//	cout << endl << planes[0].D << endl;
-
-
 				//ofstream myfile;
 				//myfile.open("planes.txt",ios::app);
 				//myfile << planes.size() << endl;
@@ -147,27 +141,8 @@ class OpenNIIntegralImageNormalEstimation
 				//For displaying coloured planes
 
 				 pcl::PointCloud<PointType> pc(*cloud);
+				 correctDistances(cloud, &pc);
 
-				 for(int i = 0; i < 19200; i++) {
-
-					if (cloud->points[i].z > 0.5) {
-						int index = (cloud->points[i].z * 10) - 4;
-						int index1 = index + 1;
-
-						 
-						float zRatiof = 
-							((correction_table[i/160][i%160][(int) index1] - correction_table[i/160][i%160][(int) index])
-							/(((index1 + 4.0) / 10.0) - ((index + 4.0) / 10.0))
-							* (cloud->points[i].z - ((index + 4.0) / 10.0)) 
-							+ correction_table[i/160][i%160][(int) index]) / pc.points[i].z;
-						
-						pc.points[i].z *= zRatiof;
-						pc.points[i].y *= zRatiof;
-						pc.points[i].x *= zRatiof;
-			
-					}
-
-				}
 
 				//Colour clusters
 				//for(int i = 0; i < clusterIndicies.size(); i++) 
@@ -195,12 +170,6 @@ class OpenNIIntegralImageNormalEstimation
 			  hasrun = false;
 		  }
 	  }
-
-		
-	  
-		//mtx_.unlock();
-		//while(eventflag & 0x1);
-
     }
 
     void viz_cb (pcl::visualization::PCLVisualizer& viz)
@@ -231,9 +200,8 @@ class OpenNIIntegralImageNormalEstimation
       {
 
         viz.removePointCloud ("normalcloud");
-		/*const pcl::PointCloud<pcl::PointXYZ>::ConstPtr p = pc;*/
 
-        viz.addPointCloudNormals<PointType, pcl::Normal> (temp_cloud, temp_normals, 5, 0.05f, "normalcloud");
+        //viz.addPointCloudNormals<PointType, pcl::Normal> (temp_cloud, temp_normals, 5, 0.05f, "normalcloud");
         new_cloud_ = false;
 
       }
@@ -289,10 +257,10 @@ class OpenNIIntegralImageNormalEstimation
     {
       pcl::Grabber* interface = new pcl::OpenNIGrabber (device_id_, RESOLUTION_MODE, RESOLUTION_MODE);
 
-      boost::function<void (const CloudConstPtr&)> f = boost::bind (&OpenNIIntegralImageNormalEstimation::cloud_cb, this, _1);
+      boost::function<void (const CloudConstPtr&)> f = boost::bind (&QCVision::cloud_cb, this, _1);
       boost::signals2::connection c = interface->registerCallback (f);
 
-      viewer.runOnVisualizationThread (boost::bind(&OpenNIIntegralImageNormalEstimation::viz_cb, this, _1), "viz_cb");
+      viewer.runOnVisualizationThread (boost::bind(&QCVision::viz_cb, this, _1), "viz_cb");
 
       interface->start ();
 
@@ -564,9 +532,28 @@ class OpenNIIntegralImageNormalEstimation
 	}
 
 	//Correction
-	void correctDistances() {
+	void correctDistances(pcl::PointCloud<PointType>::ConstPtr cloud, pcl::PointCloud<PointType>* mutable_cloud) {
+		for(int i = 0; i < 19200; i++) {
 
-return;
+			if (cloud->points[i].z > 0.5) {
+				int index = (cloud->points[i].z * 10) - 4;
+				int index1 = index + 1;
+
+						 
+				float zRatiof = 
+					((correction_table[i/160][i%160][(int) index1] - correction_table[i/160][i%160][(int) index])
+					/(((index1 + 4.0) / 10.0) - ((index + 4.0) / 10.0))
+					* (cloud->points[i].z - ((index + 4.0) / 10.0)) 
+					+ correction_table[i/160][i%160][(int) index]) / cloud->points[i].z;
+						
+				mutable_cloud->points[i].z *= zRatiof;
+				mutable_cloud->points[i].y *= zRatiof;
+				mutable_cloud->points[i].x *= zRatiof;
+			
+			}
+
+		}
+		return;
 
 	}
 };
@@ -622,13 +609,13 @@ int main (int argc, char ** argv)
   if (grabber.providesCallback<pcl::OpenNIGrabber::sig_cb_openni_point_cloud_rgba> ())
   {
     PCL_INFO ("PointXYZRGBA mode enabled.\n");
-    OpenNIIntegralImageNormalEstimation v ("");
+    QCVision v ("");
     v.run ();
   }
   else
   {
     PCL_INFO ("PointXYZ mode enabled crash.\n");
-    //OpenNIIntegralImageNormalEstimation<pcl::PointXYZ> v ("");
+    //QCVision<pcl::PointXYZ> v ("");
     //v.run ();
   }
 
