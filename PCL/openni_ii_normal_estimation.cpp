@@ -15,7 +15,8 @@
 #include <iostream>
 #include <fstream>
 #include "Plane.h"
-
+#include <time.h>
+#include "C:\Users\Prof\Documents\GitHub\QuadCopter\MATLAB\CorrectIMage\CArray.txt"
 
 #define RESOLUTION_MODE pcl::OpenNIGrabber::OpenNI_QQVGA_30Hz
 
@@ -39,13 +40,15 @@ float G_depthdepend = 0.02f;
 float G_epsilon = 0.04f;
 int G_minpts = 60;
 #endif
-//template <typename PointType>
+
 typedef pcl::PointXYZRGBA PointType;
-
-
-
 class OpenNIIntegralImageNormalEstimation
 {
+
+  private:
+	clock_t t1, t2;
+    bool new_cloud_;
+
   public:
     typedef pcl::PointCloud<PointType> Cloud;
 	typedef Cloud::Ptr CloudPtr; //typename
@@ -58,13 +61,12 @@ class OpenNIIntegralImageNormalEstimation
     boost::mutex mtx_;
 
     // Data
-    pcl::PointCloud<pcl::Normal>::Ptr normals_;
-    CloudConstPtr cloud_;
-	CloudConstPtr cloudXYZ_;
+    
+    CloudConstPtr cloud_;						//Raw cloud
+	pcl::PointCloud<pcl::Normal>::Ptr normals_; //Normal estimation
 	pcl::IntegralImageNormalEstimation<PointType, pcl::Normal> ne_;
-	pcl::PointCloud<pcl::Normal>::Ptr cloudNormals_;
 	vector<Plane> planes_;
-    bool new_cloud_;
+
 
 	OpenNIIntegralImageNormalEstimation (const std::string& device_id = "")
       : viewer ("PCL OpenNI NormalEstimation Viewer")
@@ -79,12 +81,14 @@ class OpenNIIntegralImageNormalEstimation
       new_cloud_ = false;
       viewer.registerKeyboardCallback(&OpenNIIntegralImageNormalEstimation::keyboard_callback, *this);
 	  planes_.assign(19200, Plane(0,0,0,0));
+
     }
 	
-	void
-    cloud_cb (const CloudConstPtr& cloud)
+	void cloud_cb (const CloudConstPtr& cloud)
     {
-      boost::mutex::scoped_lock lock (mtx_);
+	  t2 = clock(); 
+	  boost::mutex::scoped_lock lock (mtx_);
+ 
       //lock while we set our cloud;
       FPS_CALC ("computation");
       // Estimate surface normals
@@ -100,48 +104,84 @@ class OpenNIIntegralImageNormalEstimation
 
       double stop = pcl::getTime ();
       //std::cout << "Time for normal estimation: " << (stop - start) * 1000.0 << " ms" << std::endl;
-      cloudXYZ_ = cloud;
+      cloud_ = cloud;
 
 	  
-	  cloudNormals_ = normals_; //TODO unessecary copy
+	  normals_ = normals_; //TODO unessecary copy
 
 	  static bool hasrun = false;
 	  if(eventflag & 0x1){
 		  if(!hasrun){
-				hasrun = true;
-
-				vector<vector<int>> clusterIndicies = floodFillAll(1000, 500);//DBSCAN(G_epsilon, G_minpts);
+				//hasrun = true;
+				
+				
+				vector<vector<int>> clusterIndicies = floodFillAll(1000, 20);//DBSCAN(G_epsilon, G_minpts);
 				cloud_ = cloud;
 				vector<Plane> planes = ClusterToAveragePlane(clusterIndicies);
 
-				ofstream myfile;
-				myfile.open("planes.txt",ios::app);
+				//if (planes.size() > 0)
+				//	cout << endl << planes[0].D << endl;
 
-				for (int i = 0; i < planes.size(); i++) {
-					planes[i].calculateCovarianceMatrix(planes_);
-					myfile << planes[i].A << " " << planes[i].D << " " << planes[i].C << " " << planes[i].D << endl;
-					for (int j = 0; j < planes[i].covariance.size(); j++) {
-						myfile << planes[i].covariance[j][0] << " " << planes[i].covariance[j][1] << " " << planes[i].covariance[j][2] << " " << planes[i].covariance[j][3] << endl; 
-					}
-					
-				}
-				//vector<Plane> h = DBScanND(planes,1,0.05);
+
+				//ofstream myfile;
+				//myfile.open("planes.txt",ios::app);
+				//myfile << planes.size() << endl;
+
+				//for (int i = 0; i < planes.size(); i++) {
+				//	planes[i].calculateCovarianceMatrix(planes_);
+				//	double dist = sqrt( (planes[i].A * planes[i].A) + (planes[i].B * planes[i].B) + (planes[i].C * planes[i].C));
+
+				//	myfile << planes[i].A * (1.0 / dist) << " " << planes[i].B * (1.0 / dist) << " " << planes[i].C * (1.0 / dist) << " " << planes[i].D << endl;
+				//	for (int j = 0; j < planes[i].covariance.size(); j++) {
+				//		myfile << planes[i].covariance[j][0] << " " << planes[i].covariance[j][1] << " " << planes[i].covariance[j][2] << " " << planes[i].covariance[j][3] << endl;
+				//	}
+				//	myfile << planes[i].indicies.size() << endl;
+				//	
+				//}
 				//
-				pcl::PointCloud<PointType> pc(*cloud);
+				//myfile << t2 << endl;
+				//myfile << "<<<" << endl; 
+				
+				//vector<Plane> h = DBScanND(planes,1,0.05);
+
+				//For displaying coloured planes
+
+				 pcl::PointCloud<PointType> pc(*cloud);
+
+				 for(int i = 0; i < 19200; i++) {
+
+					if (cloud->points[i].z > 0.5) {
+						int index = (cloud->points[i].z * 10) - 4;
+						int index1 = index + 1;
+
+						 
+						float zRatiof = 
+							((correction_table[i/160][i%160][(int) index1] - correction_table[i/160][i%160][(int) index])
+							/(((index1 + 4.0) / 10.0) - ((index + 4.0) / 10.0))
+							* (cloud->points[i].z - ((index + 4.0) / 10.0)) 
+							+ correction_table[i/160][i%160][(int) index]) / pc.points[i].z;
+						
+						pc.points[i].z *= zRatiof;
+						pc.points[i].y *= zRatiof;
+						pc.points[i].x *= zRatiof;
+			
+					}
+
+				}
 
 				//Colour clusters
-				for(int i = 0; i < clusterIndicies.size(); i++) 
-				{
-					char r,b,g;
-					r = rand()%256;
-					g = rand()%256;
-					b = rand()%256;
-					for(int j = 0; j < clusterIndicies[i].size(); j++) {
-						pc.points[clusterIndicies[i][j]].r = r;
-						pc.points[clusterIndicies[i][j]].g = g;
-						pc.points[clusterIndicies[i][j]].b = b;
-					}
-				}
+				//for(int i = 0; i < clusterIndicies.size(); i++) 
+				//{
+				//	char r,b,g;
+				//	r = rand()%256;
+				//	g = rand()%256;
+				//	b = rand()%256;
+				//	for(int j = 0; j < clusterIndicies[i].size(); j++) {
+				//		pc.points[clusterIndicies[i][j]].r = r;
+				//		pc.points[clusterIndicies[i][j]].g = g;
+				//		pc.points[clusterIndicies[i][j]].b = b;
+				//	}
+				//}
 
 				CloudConstPtr inputtmp(new pcl::PointCloud<PointType>(pc));
 				cloud_ = inputtmp;
@@ -163,8 +203,7 @@ class OpenNIIntegralImageNormalEstimation
 
     }
 
-    void
-    viz_cb (pcl::visualization::PCLVisualizer& viz)
+    void viz_cb (pcl::visualization::PCLVisualizer& viz)
     {
       mtx_.lock ();
       if (!cloud_ || !normals_)
@@ -176,6 +215,7 @@ class OpenNIIntegralImageNormalEstimation
 
       CloudConstPtr temp_cloud;
       pcl::PointCloud<pcl::Normal>::Ptr temp_normals;
+
       temp_cloud.swap (cloud_); //here we set cloud_ to null, so that
       temp_normals.swap (normals_);
       mtx_.unlock ();
@@ -199,8 +239,7 @@ class OpenNIIntegralImageNormalEstimation
       }
     }
 
-    void
-    keyboard_callback (const pcl::visualization::KeyboardEvent& event, void*)
+    void keyboard_callback (const pcl::visualization::KeyboardEvent& event, void*)
     {
 		ofstream MyFile;
 		MyFile.open ("data1.csv", ios::out | ios::ate | ios::app) ;
@@ -246,8 +285,7 @@ class OpenNIIntegralImageNormalEstimation
       }
     }
 
-    void
-    run ()
+    void run ()
     {
       pcl::Grabber* interface = new pcl::OpenNIGrabber (device_id_, RESOLUTION_MODE, RESOLUTION_MODE);
 
@@ -280,12 +318,12 @@ class OpenNIIntegralImageNormalEstimation
 
 			for (int j = 0; j < clusters[i].size(); j++) {
 
-				accum_x += cloudNormals_->points[clusters[i][j]].normal_x;
-				accum_y += cloudNormals_->points[clusters[i][j]].normal_y;
-				accum_z += cloudNormals_->points[clusters[i][j]].normal_z;
-				accum_d -= ((cloud_->points[clusters[i][j]].x * cloudNormals_->points[clusters[i][j]].normal_x)
-							+ (cloud_->points[clusters[i][j]].y * cloudNormals_->points[clusters[i][j]].normal_y)
-							+ (cloud_->points[clusters[i][j]].z * cloudNormals_->points[clusters[i][j]].normal_z));
+				accum_x += normals_->points[clusters[i][j]].normal_x;
+				accum_y += normals_->points[clusters[i][j]].normal_y;
+				accum_z += normals_->points[clusters[i][j]].normal_z;
+				accum_d -= ((cloud_->points[clusters[i][j]].x * normals_->points[clusters[i][j]].normal_x)
+							+ (cloud_->points[clusters[i][j]].y * normals_->points[clusters[i][j]].normal_y)
+							+ (cloud_->points[clusters[i][j]].z * normals_->points[clusters[i][j]].normal_z));
 			}
 
 			planes.push_back(Plane(accum_x/clusters[i].size(), accum_y/clusters[i].size(), accum_z/clusters[i].size(), accum_d/clusters[i].size(),clusters[i]));
@@ -415,7 +453,7 @@ class OpenNIIntegralImageNormalEstimation
 		//Calculate planes for each point with normal. Required for checking if 2 points lie within the same plane
 		calculatePlanes_();
 
-		int dataSize = cloudNormals_->size();
+		int dataSize = normals_->size();
 		vector<bool> isInCluster(dataSize, false);
 
 		int count = 0;
@@ -482,10 +520,10 @@ class OpenNIIntegralImageNormalEstimation
 	void calculatePlanes_() 
 	{
 		for (int i = 0; i < 19200; i++) {
-			planes_[i].A = cloudNormals_->points[i].normal_x;
-			planes_[i].B = cloudNormals_->points[i].normal_y;
-			planes_[i].C = cloudNormals_->points[i].normal_z;
-			planes_[i].D = -1 * ( planes_[i].A * cloudXYZ_->points[i].x + planes_[i].B * cloudXYZ_->points[i].y + planes_[i].C * cloudXYZ_->points[i].z);
+			planes_[i].A = normals_->points[i].normal_x;
+			planes_[i].B = normals_->points[i].normal_y;
+			planes_[i].C = normals_->points[i].normal_z;
+			planes_[i].D = -1 * ( planes_[i].A * cloud_->points[i].x + planes_[i].B * cloud_->points[i].y + planes_[i].C * cloud_->points[i].z);
 		}
 
 	}
@@ -496,8 +534,8 @@ class OpenNIIntegralImageNormalEstimation
 		&&	(abs(planes_[rootPoint].C - planes_[pointOfInterest].C) < epsilon)
 		&&	(abs(planes_[rootPoint].D - planes_[pointOfInterest].D) < 
 					(
-					abs(cloudNormals_->points[rootPoint].normal_z * cloudXYZ_->points[rootPoint].z * cloudXYZ_->points[rootPoint].z)
-				+	abs(cloudNormals_->points[pointOfInterest].normal_z * cloudXYZ_->points[pointOfInterest].z * cloudXYZ_->points[pointOfInterest].z)
+					abs(normals_->points[rootPoint].normal_z * cloud_->points[rootPoint].z * cloud_->points[rootPoint].z)
+				+	abs(normals_->points[pointOfInterest].normal_z * cloud_->points[pointOfInterest].z * cloud_->points[pointOfInterest].z)
 					) * epsilon
 			)) 
 			return true;
@@ -523,6 +561,13 @@ class OpenNIIntegralImageNormalEstimation
 		Plane mDistanceSquared(intermeddiate[0] * newPlane.A, intermeddiate[1] * newPlane.B, intermeddiate[2] * newPlane.C, intermeddiate[3] * newPlane.D); 
 
 		return;
+	}
+
+	//Correction
+	void correctDistances() {
+
+return;
+
 	}
 };
 void printPlanes(std::vector<Plane> planes){
@@ -570,6 +615,8 @@ int main (int argc, char ** argv)
   std::cout << "<3> AVERAGE_DEPTH_CHANGE method\n";
   std::cout << "<4> SIMPLE_3D_GRADIENT method\n";
   std::cout << "<Q,q> quit\n\n";
+
+
 
   pcl::OpenNIGrabber grabber("", RESOLUTION_MODE, RESOLUTION_MODE);
   if (grabber.providesCallback<pcl::OpenNIGrabber::sig_cb_openni_point_cloud_rgba> ())
