@@ -1,4 +1,4 @@
-fid = fopen('linedup_slow.txt');
+fid = fopen('startatzero222.txt');
 
 nument = 0;
 tline = fgetl(fid);
