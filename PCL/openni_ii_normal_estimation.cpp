@@ -16,7 +16,8 @@
 #include <fstream>
 #include "Plane.h"
 #include <time.h>
-#include "C:\Users\Prof\Documents\GitHub\QuadCopter\MATLAB\CorrectIMage\CArray.txt"
+//#include "C:/Users/Prof/Documents/GitHub/QuadCopter/PCL/tvmet/include/tvmet/Matrix.h"
+#include "C:\Users\Prof\Documents\GitHub\QuadCopter\MATLAB\CorrectIMage\Depth_Correction_Array.txt"
 
 #define RESOLUTION_MODE pcl::OpenNIGrabber::OpenNI_QQVGA_30Hz
 
@@ -29,7 +30,7 @@ do \
     ++count; \
     if (now - last >= 1.0) \
     { \
-      std::cout << "Average framerate("<< _WHAT_ << "): " << double(count)/double(now - last) << " Hz" <<  std::endl; \
+      std::cout << "Average framerate("<< _WHAT_ << "): " << double(count)/double(now - last) << " Hz" <<   std::endl; \
       count = 0; \
       last = now; \
     } \
@@ -59,11 +60,10 @@ class QCVision
     boost::mutex mtx_;
 
     // Data
-    
     CloudConstPtr cloud_;						//Raw cloud
-	pcl::PointCloud<pcl::Normal>::Ptr normals_; //Normal estimation
-	pcl::IntegralImageNormalEstimation<PointType, pcl::Normal> ne_;
-	vector<Plane> planes_;
+	pcl::PointCloud<pcl::Normal>::Ptr normals_; //Normal cloud
+	pcl::IntegralImageNormalEstimation<PointType, pcl::Normal> ne_; //Normal estimation object
+	vector<Plane> planes_;						//Found planes
 
 
 	QCVision (const std::string& device_id = "")
@@ -106,16 +106,14 @@ class QCVision
 
 	  
 	  normals_ = normals_; //TODO unessecary copy
-
+	  
+	  
 	  static bool hasrun = false;
 	  if(eventflag & 0x1){
 		  if(!hasrun){
 				//hasrun = true;
-				
-				
-				vector<vector<int>> clusterIndicies = floodFillAll(1000, 20);//DBSCAN(G_epsilon, G_minpts);
-				cloud_ = cloud;
-				vector<Plane> planes = ClusterToAveragePlane(clusterIndicies);
+
+
 
 				//ofstream myfile;
 				//myfile.open("planes.txt",ios::app);
@@ -143,20 +141,24 @@ class QCVision
 				 pcl::PointCloud<PointType> pc(*cloud);
 				 correctDistances(cloud, &pc);
 
+				 				
+				vector<vector<int>> clusterIndicies = floodFillAll(1000, 20);//DBSCAN(G_epsilon, G_minpts);
+				cloud_ = cloud;
+				vector<Plane> planes = ClusterToAveragePlane(clusterIndicies);
 
 				//Colour clusters
-				//for(int i = 0; i < clusterIndicies.size(); i++) 
-				//{
-				//	char r,b,g;
-				//	r = rand()%256;
-				//	g = rand()%256;
-				//	b = rand()%256;
-				//	for(int j = 0; j < clusterIndicies[i].size(); j++) {
-				//		pc.points[clusterIndicies[i][j]].r = r;
-				//		pc.points[clusterIndicies[i][j]].g = g;
-				//		pc.points[clusterIndicies[i][j]].b = b;
-				//	}
-				//}
+				for(int i = 0; i < clusterIndicies.size(); i++) 
+				{
+					char r,b,g;
+					r = rand()%256;
+					g = rand()%256;
+					b = rand()%256;
+					for(int j = 0; j < clusterIndicies[i].size(); j++) {
+						pc.points[clusterIndicies[i][j]].r = r;
+						pc.points[clusterIndicies[i][j]].g = g;
+						pc.points[clusterIndicies[i][j]].b = b;
+					}
+				}
 
 				CloudConstPtr inputtmp(new pcl::PointCloud<PointType>(pc));
 				cloud_ = inputtmp;
@@ -201,7 +203,7 @@ class QCVision
 
         viz.removePointCloud ("normalcloud");
 
-        //viz.addPointCloudNormals<PointType, pcl::Normal> (temp_cloud, temp_normals, 5, 0.05f, "normalcloud");
+        viz.addPointCloudNormals<PointType, pcl::Normal> (temp_cloud, temp_normals, 5, 0.05f, "normalcloud");
         new_cloud_ = false;
 
       }
@@ -511,40 +513,18 @@ class QCVision
 		return false;
 	}
 
-	void mergeMelo(Plane one, Plane two) {
-
-		Plane newPlane = two - one;
-		vector<vector<double>> covariances(4); 
-		covariances[0].push_back(one.covariance[0][0] + two.covariance[0][0]); covariances[0].push_back(one.covariance[0][1] + two.covariance[0][1]); covariances[0].push_back(one.covariance[0][2] + two.covariance[0][2]); covariances[0].push_back(one.covariance[0][3] + two.covariance[0][3]);
-		covariances[1].push_back(one.covariance[1][0] + two.covariance[1][0]); covariances[0].push_back(one.covariance[0][1] + two.covariance[1][1]); covariances[0].push_back(one.covariance[1][2] + two.covariance[1][2]); covariances[0].push_back(one.covariance[1][3] + two.covariance[1][3]);
-		covariances[2].push_back(one.covariance[2][0] + two.covariance[2][0]); covariances[0].push_back(one.covariance[0][1] + two.covariance[2][1]); covariances[0].push_back(one.covariance[2][2] + two.covariance[2][2]); covariances[0].push_back(one.covariance[2][3] + two.covariance[2][3]);
-		covariances[3].push_back(one.covariance[3][0] + two.covariance[3][0]); covariances[0].push_back(one.covariance[0][1] + two.covariance[3][1]); covariances[0].push_back(one.covariance[3][2] + two.covariance[3][2]); covariances[0].push_back(one.covariance[3][3] + two.covariance[3][3]);
-		
-		vector<int> intermeddiate; 
-		intermeddiate.push_back(newPlane.A * covariances[0][0] + newPlane.B * covariances[1][0]  + newPlane.C * covariances[2][0] + newPlane.D * covariances[3][0]);
-		intermeddiate.push_back(newPlane.A * covariances[0][1] + newPlane.B * covariances[1][1]  + newPlane.C * covariances[2][1] + newPlane.D * covariances[3][1]);
-		intermeddiate.push_back(newPlane.A * covariances[0][2] + newPlane.B * covariances[1][2]  + newPlane.C * covariances[2][2] + newPlane.D * covariances[3][2]);
-		intermeddiate.push_back(newPlane.A * covariances[0][3] + newPlane.B * covariances[1][3]  + newPlane.C * covariances[2][3] + newPlane.D * covariances[3][3]);
-
-		Plane mDistanceSquared(intermeddiate[0] * newPlane.A, intermeddiate[1] * newPlane.B, intermeddiate[2] * newPlane.C, intermeddiate[3] * newPlane.D); 
-
-		return;
-	}
-
-	//Correction
+	//Depth Correction
 	void correctDistances(pcl::PointCloud<PointType>::ConstPtr cloud, pcl::PointCloud<PointType>* mutable_cloud) {
 		for(int i = 0; i < 19200; i++) {
 
 			if (cloud->points[i].z > 0.5) {
 				int index = (cloud->points[i].z * 10) - 4;
-				int index1 = index + 1;
-
 						 
 				float zRatiof = 
-					((correction_table[i/160][i%160][(int) index1] - correction_table[i/160][i%160][(int) index])
-					/(((index1 + 4.0) / 10.0) - ((index + 4.0) / 10.0))
+					((correction_table[i][(int) index + 1] - correction_table[i][(int) index])
+					/(((index + 1 + 4.0) / 10.0) - ((index + 4.0) / 10.0))
 					* (cloud->points[i].z - ((index + 4.0) / 10.0)) 
-					+ correction_table[i/160][i%160][(int) index]) / cloud->points[i].z;
+					+ correction_table[i][(int) index]) / cloud->points[i].z;
 						
 				mutable_cloud->points[i].z *= zRatiof;
 				mutable_cloud->points[i].y *= zRatiof;
@@ -557,10 +537,7 @@ class QCVision
 
 	}
 };
-void printPlanes(std::vector<Plane> planes){
-	//Open file
 
-}
 void usage (char ** argv)
 {
   std::cout << "usage: " << argv[0] << " [<device_id>]\n\n";
