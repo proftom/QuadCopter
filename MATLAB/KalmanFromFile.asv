@@ -44,6 +44,8 @@ Planes = [-1 0 0 0;...
            0 1 0 0;...
            0 0 1 0];
        
+XtionCovarFudge = 100;
+       
 for i = 1:n
     X = [X; Planes(i,:).'];
     P = [P, zeros(length(P), 4);...
@@ -139,29 +141,61 @@ for k = 1:N
     
     %-------------------
     thisplane = lastplanedata + 1;
-    if(T > Planedata{1,.T / 1000 - Toffset)
+    if(T > Planedata{1,thisplane}(1,1).T / 1000 - Toffset)
+        lastplanedata = thisplane;
         
+        for plane_idx = 1:length(Planedata{1,thisplane})
+            
+            Pstr = Planedata{1,thisplane}(1,plane_idx);
+            
+            Hpermute = [0 0 1 0;...
+                        1 0 0 0;...
+                        0 1 0 0;...
+                        0 0 0 1];
+            inP = Hpermute * Pstr.P;
+            inC = Hpermute * Pstr.C * Hpermute.';
+         
+            %find closest mahalobis
+            idx1 = 17;
+            idx2 = 20;
+            currTP = X(idx1:idx2);
+            md = (inP - currTP).' * inv(inC .* XtionCovarFudge + P(idx1:idx2, idx1:idx2)) * (inP - currTP);
+            minTP = currTP;
+            mdi = 1;
+            for i = 2:n
+                idx1 = idx1 + 4;
+                idx2 = idx2 + 4;
+                currTP = X(idx1:idx2);
+                mdp = (inP - currTP).' * inv(inC .* XtionCovarFudge + P(idx1:idx2, idx1:idx2)) * (inP - currTP)
+                if*b
+            end
+            
+            TransPlane = [DCMderiv.' zeros(3,1);...
+                          X(1:3).'   1];
+            z = inP - TransPlane * X(16+(PinStateIdx-1)*4:16+PinStateIdx*4);
+            
+            q = X(7:10);
+            Xi = [-q(2) -q(3) -q(4); ...
+                   q(1) -q(4)  q(3); ...
+                   q(4)  q(1) -q(2); ...
+                  -q(3)  q(2)  q(1)];
+              
+            Hqparts = Xi * ;
+            Hq = 2 .* [Hqparts(2) -Hqparts(1) Hqparts(4) -Hqparts(3); ...
+                       Hqparts(3) -Hqparts(4) -Hqparts(1) Hqparts(2); ...
+                       Hqparts(4) Hqparts(3) -Hqparts(2) -Hqparts(1)];
+            
+            %H = [[-D.*DCM; zeros(1,3)], zeros(4,3), [Hq; zeros(1,4)], zeros(4,3), zeros(4,3), zeros(4,4*(plane_idx-1)), [DCM -DCM*X(1:3); zeros(1,3) 1], zeros(4,4*(n-plane_idx)) ];
+            H = [[zeros(3); plane1(1:3).'], zeros(4,3), [Hq; zeros(1,4)], zeros(4,3), zeros(4,3), zeros(4,4*(plane_idx-1)), [DCM.' zeros(3,1); X(1:3).' 1], zeros(4,4*(n-plane_idx))];
+            
+            S = H*P*H.' + inC .* XtionCovarFudge;
+            K = (P*H.') / S;
+            
+            X = X + K*z;
+            P = (eye(length(P)) - K*H)*P;
+            
+        end
     end
-    
-    panenum = 0;
-    
-    Xip = [-q(2) -q(3) -q(4); ...
-           -q(1) -q(4)  q(3); ...
-            q(4) -q(1) -q(2); ...
-           -q(3)  q(2) -q(1)];
-
-    Hqparts = Xip * ([Nx; Ny; Nz] - D*X(1:3));
-    Hq = 2 .* [-Hqparts(2) -Hqparts(1) Hqparts(4) -Hqparts(3); ...
-               -Hqparts(3) -Hqparts(4) -Hqparts(1) Hqparts(2); ...
-               -Hqparts(4) Hqparts(3) -Hqparts(2) -Hqparts(1)];
-           
-	Hpermute = [0 0 1;...
-                1 0 0;...
-                0 1 0];
-
-    H = Hpermute * [[-D.*DCMderiv; zeros(1,3)] zeros(4,3) [Hq; zeros(1,4)] zeros(4,3) zeros(4,3) zeros(4,4*panenum) [DCMderiv -DCMderiv*X(1:3); zeros(1,3) 1] zeros(4,4*((n-1)-panenum)) ];
-    
-    
     
 %     if (k <= 5000)
 %         z = [0 0 0 0 0 0 1 0 0 0].';

@@ -23,9 +23,9 @@ Q = blkdiag(Qgyro, Qacc, Qgyrobias, Qaccbias);
 
 Ts = 0.01;
 
-X = [-2 2 2, 0 0 0, 1 0 0 0, -0.0456    0.0069   -0.0048   -0.0331    0.1024    0.1473].'; %-0.0336 0.1013 0.0674].'; %-0.1013 -0.0674 -0.0336].';
+X = [-2.2 2.2 2.2, 0 0 0, 1 0 0 0, -0.0456    0.0069   -0.0048   -0.0331    0.1024    0.1473].'; %-0.0336 0.1013 0.0674].'; %-0.1013 -0.0674 -0.0336].';
 
-P0r = zeros(3);
+P0r = eye(3) * 0.3*0.3; %zeros(3);
 P0v = zeros(3);
 P0q = zeros(4);
 P0wb = eye(3) * 0.001;
@@ -43,6 +43,8 @@ n = 3;
 Planes = [-1 0 0 0;...
            0 1 0 0;...
            0 0 1 0];
+       
+XtionCovarFudge = 100000;
        
 for i = 1:n
     X = [X; Planes(i,:).'];
@@ -146,26 +148,58 @@ for k = 1:N
             
             Pstr = Planedata{1,thisplane}(1,plane_idx);
             
-            q = X(7:10);
-            Xip = [-q(2) -q(3) -q(4); ...
-                   -q(1) -q(4)  q(3); ...
-                    q(4) -q(1) -q(2); ...
-                   -q(3)  q(2) -q(1)];
-               
-            D = Pstr.P(4);
-
-            Hqparts = Xip * (Pstr.P(1:3) - D*X(1:3));
-            Hq = 2 .* [-Hqparts(2) -Hqparts(1) Hqparts(4) -Hqparts(3); ...
-                       -Hqparts(3) -Hqparts(4) -Hqparts(1) Hqparts(2); ...
-                       -Hqparts(4) Hqparts(3) -Hqparts(2) -Hqparts(1)];
-
             Hpermute = [0 0 1 0;...
                         1 0 0 0;...
                         0 1 0 0;...
                         0 0 0 1];
+            TransPlane = [DCM.'    zeros(3,1);...
+                          X(1:3).' 1];
+            inP = Hpermute * Pstr.P;
+            inC = Hpermute * Pstr.C * Hpermute.';
+            
+            q = X(7:10);
+            Xi = [-q(2) -q(3) -q(4); ...
+                   q(1) -q(4)  q(3); ...
+                   q(4)  q(1) -q(2); ...
+                  -q(3)  q(2)  q(1)];
+         
+            %find closest mahal
+            idx1 = 17;
+            idx2 = 20;
+            firsttime = 1;
+            for i = 1:n
+                currTP = X(idx1:idx2);
+                
+                z = inP - TransPlane * currTP;
+                
+                Hqparts = Xi * currTP(1:3);
+                Hq = 2 .* [Hqparts(2) -Hqparts(1) Hqparts(4) -Hqparts(3); ...
+                           Hqparts(3) -Hqparts(4) -Hqparts(1) Hqparts(2); ...
+                           Hqparts(4) Hqparts(3) -Hqparts(2) -Hqparts(1)];
 
-            H = Hpermute * [[-D.*DCM; zeros(1,3)], zeros(4,3), [Hq; zeros(1,4)], zeros(4,3), zeros(4,3), zeros(4,4*(plane_idx-1)), [DCM -DCM*X(1:3); zeros(1,3) 1], zeros(4,4*(n-plane_idx)) ];
+                %H = [[-D.*DCM; zeros(1,3)], zeros(4,3), [Hq; zeros(1,4)], zeros(4,3), zeros(4,3), zeros(4,4*(plane_idx-1)), [DCM -DCM*X(1:3); zeros(1,3) 1], zeros(4,4*(n-plane_idx)) ];
+                H = [[zeros(3); currTP(1:3).'], zeros(4,3), [Hq; zeros(1,4)], zeros(4,3), zeros(4,3), zeros(4,4*(i-1)), [DCM.' zeros(3,1); X(1:3).' 1], zeros(4,4*(n-i))];
 
+                S = H*P*H.' + inC .* XtionCovarFudge;
+                mdp = z.'*inv(S)*z;
+            
+                if (firsttime == 1 || mdp < md )
+                    firsttime = 0;
+                    md = mdp;
+                    minS = S;
+                    minz = z;
+                end
+                idx1 = idx1 + 4;
+                idx2 = idx2 + 4;
+            end
+            
+            %TODO: check for md < thresh for reg instead of assoc here!
+            
+            K = (P*H.') / minS;
+            
+            X = X + K*minz;
+            P = (eye(length(P)) - K*H)*P;
+            
         end
     end
     
