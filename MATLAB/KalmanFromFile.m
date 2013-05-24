@@ -23,7 +23,7 @@ Q = blkdiag(Qgyro, Qacc, Qgyrobias, Qaccbias);
 
 Ts = 0.01;
 
-X = [0 0 0, 0 0 0, 1 0 0 0, 0 0 0, 0,0,0].'; %-0.0336 0.1013 0.0674].'; %-0.1013 -0.0674 -0.0336].';
+X = [-2 2 2, 0 0 0, 1 0 0 0, -0.0456    0.0069   -0.0048   -0.0331    0.1024    0.1473].'; %-0.0336 0.1013 0.0674].'; %-0.1013 -0.0674 -0.0336].';
 
 P0r = zeros(3);
 P0v = zeros(3);
@@ -34,10 +34,27 @@ P0ab = eye(3) * 1;
 P = blkdiag(P0r, P0v, P0q, P0wb, P0ab);
 
 N = length(Gyro);
-Xtrace = zeros(N,16);
-Xdot = zeros(16,1);
+
+T = 0;
+Toffset = Planedata{1,1}.T / 1000;
+lastplanedata = 0;
+
+n = 3;
+Planes = [-1 0 0 0;...
+           0 1 0 0;...
+           0 0 1 0];
+       
+for i = 1:n
+    X = [X; Planes(i,:).'];
+    P = [P, zeros(length(P), 4);...
+         zeros(4, length(P)), zeros(4)];
+end
+Xdot = zeros(16+4*n,1);
+Xtrace = zeros(N,16+4*n);
 
 for k = 1:N
+    
+    T = T + 0.01;
     
     wm = Gyro(k,:).' ./ 818.51113590117601252569;
     wm = [wm(3) -wm(1) -wm(2)].';
@@ -117,25 +134,53 @@ for k = 1:N
               zeros(3,6) eye(3) zeros(3); ...
               zeros(3,9) eye(3)];
 
-    P = F*P*F.' + G*Q*G.';
+    P(1:16,1:16) = F*P(1:16,1:16)*F.' + G*Q*G.';
     
     
     %-------------------
-    
-    if (k <= 5000)
-        z = [0 0 0 0 0 0 1 0 0 0].';
-        H = blkdiag([eye(10) zeros(10,6)]);
-        y = z - H*X;
-        R = eye(10) .* 0.0001;
+    thisplane = lastplanedata + 1;
+    if(T > Planedata{1,thisplane}(1,1).T / 1000 - Toffset)
+        lastplanedata = thisplane;
+        
+        for plane_idx = 1:length(Planedata{1,thisplane})
+            
+            Pstr = Planedata{1,thisplane}(1,plane_idx);
+            
+            q = X(7:10);
+            Xip = [-q(2) -q(3) -q(4); ...
+                   -q(1) -q(4)  q(3); ...
+                    q(4) -q(1) -q(2); ...
+                   -q(3)  q(2) -q(1)];
+               
+            D = Pstr.P(4);
 
-        S = H*P*H.' + R;
-        K = P*H.'*inv(S);
+            Hqparts = Xip * (Pstr.P(1:3) - D*X(1:3));
+            Hq = 2 .* [-Hqparts(2) -Hqparts(1) Hqparts(4) -Hqparts(3); ...
+                       -Hqparts(3) -Hqparts(4) -Hqparts(1) Hqparts(2); ...
+                       -Hqparts(4) Hqparts(3) -Hqparts(2) -Hqparts(1)];
 
-        X = X + K*y;
-        P = (eye(16) - K*H)*P;
+            Hpermute = [0 0 1 0;...
+                        1 0 0 0;...
+                        0 1 0 0;...
+                        0 0 0 1];
+
+            H = Hpermute * [[-D.*DCM; zeros(1,3)], zeros(4,3), [Hq; zeros(1,4)], zeros(4,3), zeros(4,3), zeros(4,4*(plane_idx-1)), [DCM -DCM*X(1:3); zeros(1,3) 1], zeros(4,4*(n-plane_idx)) ];
+
+        end
     end
     
-    
+%     if (k <= 5000)
+%         z = [0 0 0 0 0 0 1 0 0 0].';
+%         H = blkdiag([eye(10) zeros(10,6)]);
+%         y = z - H*X;
+%         R = eye(10) .* 0.0001;
+% 
+%         S = H*P*H.' + R;
+%         K = P*H.'*inv(S);
+% 
+%         X = X + K*y;
+%         P = (eye(16) - K*H)*P;
+%     end
     
 end
 

@@ -1,4 +1,5 @@
-fid = fopen('startatzero222.txt');
+%Parses Planes Data from PCL for Use.
+fid = fopen('planes.txt');
 
 nument = 0;
 tline = fgetl(fid);
@@ -18,7 +19,6 @@ Planedata = cell([1,nument]);
 
 for t = 1:nument
     N = fscanf(fid, '%d\n', 1);
-    
     P = cell([1,N]);
     C = cell([1,N]);
     pts = cell([1,N]);
@@ -31,7 +31,7 @@ for t = 1:nument
     T = fscanf(fid, '%d\n', 1);
     delim = fscanf(fid, '%s\n', 1);
     
-    Planedata{t} = struct('T', T, 'P', P, 'C', C, 'pts', pts);
+    Planedata{t} = struct('time', T, 'plane', P, 'cov', C, 'pts', pts);
 end
 
 fclose(fid);
