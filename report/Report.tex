@@ -7,6 +7,7 @@
 \documentclass[]{article}
 
 \usepackage[utf8]{inputenc} % set input encoding (not needed with XeLaTeX)
+\DeclareUnicodeCharacter{00A0}{ }
 
 %%% PAGE DIMENSIONS
 \usepackage{geometry} % to change the page dimensions
@@ -40,7 +41,8 @@
 % \captionsetup[subfigure]{format=subfig,labelsep=colon,labelformat=simple}
 % \usepackage{subcaption}
 
-
+\usepackage[backend=bibtex]{biblatex}
+\bibliography{biblib} 
 %%% Code listing
 \definecolor{mygreen}{rgb}{0,0.6,0}
 \definecolor{mygray}{rgb}{0.5,0.5,0.5}
@@ -124,6 +126,7 @@ Introduction introducing things in an introductory manner.
 
 \subsection{Project Aim}
 \label{sub:what_are_we_trying_to_achieve}
+\cite{OpenPilotinsgps}
 This project aims to provide our client with a functional prototype of an autonomous flying platform, much like traditional UAVs (Unmanned Aerial Vehicle). The novel aspect of this prototype will be the fact that it can operate in GPS (Global Positioning System) denied environments, such as indoors and in urban canyons. The aim of the prototype is to be a proof of concept, showing that with current technology, a flying robot can be autonomous in GPS denied environments using only on-board sensors and computing. 
 
 There are often situations where unmanned aerial vehicles could be useful, such as: search and rescue; infrastructure inspection (power lines, sewers); photography and videography. These tasks are already performed routinely by UAVs, though usually controlled remotely by a human operator. In some cases the human operator is removed, and GPS is used to close the loop on absolute positioning. This is a great solution for many problems, as it is quite cheap and can work nearly anywhere in the world. There are some places though where GPS will not work reliably, such as inside a building or between many tall buildings (often called an urban canyon). These environments also would put pressure on the skill of a human operator due to the abundance of obstacles. Therefore providing a system that can reliably navigate indoors without a human operator is a very good idea. 
@@ -132,14 +135,18 @@ There are often situations where unmanned aerial vehicles could be useful, such 
 \label{sub:why_are_mavrx_interested_in_this_work_}
 
 MavRX are a small start-up firm that are trying to push the frontiers of affordable UAVs for the masses. Having achieved massive success in crowd-funding a cheap quadcopter platform, they are looking at pushing into more novel areas of UAV production. They have asked us to help pave the road to a fully autonomous flying platform that will be priced in the consumer range rather than military/defence category like similar autonomous platforms. The main thing they are interested is a proof of concept model that they can use to attract support and funding with, as well as using it as a base for future experimentation. We must also give some thought to the pricing of the hardware to ensure we are not developing an infeasible product, though MavRX do not want us to spend much time on pricing and comparison of components, nor to develop a financial plan for this project as they already have a team of people working on the business aspect of this project.  
-
 \subsection{Other Work in This Field} % (fold)
 \label{sub:other_work_in_this_field}
-
+\textbf{begin draft}
 The one that uses laser scanners fom map gen,%http://icrobotics.co.uk/wiki/images/f/f1/Autonomous_Multi-Floor_Indoor_Navigation_with_a_Computationally_Constrained_MAV.pdf
 and surf features for micro-localisation. + seems to do pretty much what we want. - laser scanners are v.expensive, uses a atom processor (heavy, power hungry) pose is not corrected for absolutely. relies on walls to be consistent with hight. 
 
 The plane using planar laser scanner as well. not hugely fitted to our application. v.espensive scanner. %http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6225295
+
+
+
+
+\textbf{end draft}
 
 
 
@@ -726,63 +733,84 @@ In fact, after linearization, this distrubution is projected onto a plane tangen
 %TODO: insert picture of distrubution projected onto plane
 
 While we cannot serialise the individual componets of a plane measurment, the measurment error between planes are uncorrelated, so we can still make use of the serial update strategy. As such, at each time there is a new frame that has finished feature extraction, we serially apply the measurment updates for each plane, without running the predict loop in-between.
-That means the update stage will only have to invert $v$ matricies of size $4\times4$, instead of inverting a $4v \times 4v$ matrix.
-
+That means the update stage will only have to invert $v$ matricies of size $4\times4$, instead of inverting a $4v \times 4v$ matrix. 
 As a further optimization, we find that the equation that transforms the state covariance matrix (\ref{eqn:predictP}) forms a seperable system. That is, the Jacobian matrix $F$ as defined in (\ref{eqn:F}) does not carry any information regarding the craft to the planes, and vica versa.
 In fact, all terms in $F$ regarding the planes are zero, execpt the main diagonal, which is unity. This means that not only is it a seperable system, but the plane subsystem is fully static.
 Because the system is seperable, and because the second half is static, we can ignore the second half of the system when computing (\ref{eqn:predictP}).
 This makes an enormous difference in the scalability of the kalman filter approach. If the entire matrix-matrix multiplication is required, then the algorithm will scale like $O(n^3)$ where $n$ is the number of planes in the state vector. Now that this cubic dependence on $n$ is removed, only $O(n^2)$ terms remain, along with other terms.
 %TODO: explore complexity
 
-We crosscheck our implementation against a similar open source implementation by the OpenPilot team \cite{OpenPilotinsgps}.
+	We crosscheck our implementation against a similar open source implementation by the OpenPilot team %\cite{OpenPilotinsgps}. \cite{Holz2011}
 
 % subsection impementation (end)
 
 % section ekf (end)
 
 \clearpage
-\begin{thebibliography}{99}
+\nocite{*}
+\cite{OpenPilotinsgps}
+\printbibliography
+% \bibliography{biblib}{}
+% \bibliographystyle{plain}
+% \begin{thebibliography}{99}
 
-\bibitem{todo}
-	THIS REFERENCE IS MISSING!
+% \bibitem{todo}
+% 	THIS REFERENCE IS MISSING!
 
-\bibitem{MARSlab}
-	Nikolas Trawny and Stergios I. Roumeliotis,
-	\emph{Indirect Kalman Filter for 3D Attitude Estimation, A Tutorial for Quaternion Algebra}. \\
-	\url{http://www-users.cs.umn.edu/~trawny/Publications/Quaternions_3D.pdf}
+% \bibitem{MARSlab}
+% 	Nikolas Trawny and Stergios I. Roumeliotis,
+% 	\emph{Indirect Kalman Filter for 3D Attitude Estimation, A Tutorial for Quaternion Algebra}. \\
+% 	\url{http://www-users.cs.umn.edu/~trawny/Publications/Quaternions_3D.pdf}
 
-\bibitem{MATLABAerospace}
-	MathWorks,
-	\emph{Implement quaternion representation of six-degrees-of-freedom equations of motion with respect to body axes}. \\
-	\url{http://www.mathworks.co.uk/help/aeroblks/6dofquaternion.html}
+% \bibitem{MATLABAerospace}
+% 	MathWorks,
+% 	\emph{Implement quaternion representation of six-degrees-of-freedom equations of motion with respect to body axes}. \\
+% 	\url{http://www.mathworks.co.uk/help/aeroblks/6dofquaternion.html}
 
-\bibitem{OpenPilotPaper}
-	Dale E. Schinstock,
-	\emph{GPS-aided INS Solution for OpenPilot}. \\
-	\url{http://wiki.openpilot.org/download/attachments/950387/INSGPSAlg.pdf}
+% \bibitem{OpenPilotPaper}
+% 	Dale E. Schinstock,
+% 	\emph{GPS-aided INS Solution for OpenPilot}. \\
+% 	\url{http://wiki.openpilot.org/download/attachments/950387/INSGPSAlg.pdf}
 
-\bibitem{KFBookSerialupdate}
-	Grewal, M.S., A.P. Andrews,
-	\emph{Kalman Filtering, Theory and Practice Using MATLAB}. \\
-	\url{http://www.control.aau.dk/~obin03/ESIF/Grewal,%20Andrews%20Kalman%20Filtering%20Theory%20And%20Practice%20Using%20Matlab%20(2Ed%20,%20Wiley,%202001)(410S).pdf}
+% \bibitem{KFBookSerialupdate}
+% 	Grewal, M.S., A.P. Andrews,
+% 	\emph{Kalman Filtering, Theory and Practice Using MATLAB}. \\
+% 	\url{http://www.control.aau.dk/~obin03/ESIF/Grewal,%20Andrews%20Kalman%20Filtering%20Theory%20And%20Practice%20Using%20Matlab%20(2Ed%20,%20Wiley,%202001)(410S).pdf}
 
-\bibitem{OpenPilotinsgps}
-	The OpenPilot Team,
-	\emph{Joint attitude and position estimation EKF}. \\
-	\url{http://reviews.openpilot.org/browse/OpenPilot/flight/libraries/insgps16state.c?hb=true}
+% \bibitem{OpenPilotinsgps}
+% 	The OpenPilot Team,
+% 	\emph{Joint attitude and position estimation EKF}. \\
+% 	\url{http://reviews.openpilot.org/browse/OpenPilot/flight/libraries/insgps16state.c?hb=true}
 
-\bibitem{ThirdYearControl}
-	Alessandro Astolfi,
-	\emph{Systems and Control Theory - An Introduction}. \\
-	\url{http://www3.imperial.ac.uk/pls/portallive/docs/1/31851696.PDF}
+% \bibitem{ThirdYearControl}
+% 	Alessandro Astolfi,
+% 	\emph{Systems and Control Theory - An Introduction}. \\
+% 	\url{http://www3.imperial.ac.uk/pls/portallive/docs/1/31851696.PDF}
 
-\bibitem{BerkelyCourse}
-	Pieter Abbeel,
-	\emph{Learning for robotics and control}. \\
-	\url{http://inst.eecs.berkeley.edu/~cs294-40/fa08/#syllabus}
+% \bibitem{BerkelyCourse}
+% 	Pieter Abbeel,
+% 	\emph{Learning for robotics and control}. \\
+% 	\url{http://inst.eecs.berkeley.edu/~cs294-40/fa08/#syllabus}
+
+% \bibitem{HexCoptSelfCalb}%some interesting stuff about online sensor calibration. also quite embedded solution
+% 	Stephan Weiss, Markus W. Achtelik, Margarita Chli, Roland Siegwart,
+% 	\emph{Versatile Distributed Pose Estimation and Sensor
+% 			Self-Calibration for an Autonomous MAV}. \\
+% 	\url{http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6225002}
+
+% \bibitem{KinectCopter}%very close to our solution, using kinect and atom. focus on navigation/exploration
+% 	Shaojie Shen, Nathan Michael, and Vijay Kumar,
+% 	\emph{Autonomous Indoor 3D Exploration with a Micro-Aerial Vehicle}. \\
+% 	\url{http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6225146}
+
+% \bibitem{AgresivePlane}%very close to our solution, using kinect and atom. focus on navigation/exploration
+% 	Adam Bry, Abraham Bachrach, Nicholas Roy,
+% 	\emph{State Estimation for Aggressive Flight in GPS-Denied Environments
+% 			Using Onboard Sensing}. \\
+% 	\url{http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=6225295}
 
 
-\end{thebibliography}
+% \end{thebibliography}
 
 \end{document}
 
