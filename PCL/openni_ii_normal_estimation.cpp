@@ -17,7 +17,7 @@
 #include "Plane.h"
 #include <time.h>
 //#include "C:/Users/Prof/Documents/GitHub/QuadCopter/PCL/tvmet/include/tvmet/Matrix.h"
-#include "C:\Users\Prof\Documents\GitHub\QuadCopter\MATLAB\CorrectIMage\Depth_Correction_Array.txt"
+#include "Depth_Correction_Array.txt"
 
 #define RESOLUTION_MODE pcl::OpenNIGrabber::OpenNI_QQVGA_30Hz
 
@@ -188,7 +188,7 @@ class QCVision
       pcl::PointCloud<pcl::Normal>::Ptr temp_normals;
 
       temp_cloud.swap (cloud_); //here we set cloud_ to null, so that
-      temp_normals.swap (normals_);
+      temp_normals.swap (nbormals_);
       mtx_.unlock ();
 
       if (!viz.updatePointCloud (temp_cloud, "OpenNICloud"))
@@ -203,7 +203,7 @@ class QCVision
 
         viz.removePointCloud ("normalcloud");
 
-        viz.addPointCloudNormals<PointType, pcl::Normal> (temp_cloud, temp_normals, 5, 0.05f, "normalcloud");
+        //viz.addPointCloudNormals<PointType, pcl::Normal> (temp_cloud, temp_normals, 5, 0.05f, "normalcloud");
         new_cloud_ = false;
 
       }
