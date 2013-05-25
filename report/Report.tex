@@ -539,7 +539,8 @@ The process nosie is defined as follows
 
 $f$ in equation (\ref{eqn:system}) and (\ref{eqn:predictx}) operates in discrete time, but we have established our model in continous time. As such, we perform a first order approximation to the continous time system:
 \begin{align}
-	f &= I + \Delta T \dot{x}
+	f &= x + \Delta T \dot{x}
+	\label{eqn:descrete_f}
 \end{align}
 
 \begin{align}
@@ -597,6 +598,7 @@ as a rotation matrix is orthogonal, we have that
 \end{align}
 
 Linearisation: Jacobians
+Descritised system $f$ as shown in Equation~(\ref{eqn:descrete_f}).
 \begin{align}
 	F &= \frac{\partial f}{\partial x} \notag \\
 	&=
