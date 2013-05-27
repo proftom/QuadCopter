@@ -1,4 +1,4 @@
-fid = fopen('startatzero222.txt');
+fid = fopen('notmoving3corners2.2.txt');
 
 nument = 0;
 tline = fgetl(fid);

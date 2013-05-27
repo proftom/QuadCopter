@@ -9,26 +9,30 @@ Qacc = 1.0e-03 * ...
     0.0377    0.8222   -0.1422;...
    -0.0648   -0.1422    2.7314];
 
-Qgyrobias = 1.0e-06 * ...
+%Qgyrobias = 1.0e-06 * ...
+Qgyrobias = 1.0e-03 * ...
   [ 0.3552   -0.0323   -0.2509;...
    -0.0323    0.2822   -0.2381;...
    -0.2509   -0.2381    0.5686];
 
-Qaccbias = 1.0e-05 * ...
+%Qaccbias = 1.0e-05 * ...
+Qaccbias = 1.0e-02 * ...
   [ 0.3501   -0.1312    0.2149;...
    -0.1312    0.4719   -0.2273;...
     0.2149   -0.2273    1.3670];
 
 Q = blkdiag(Qgyro, Qacc, Qgyrobias, Qaccbias);
+%Q = blkdiag(zeros(3), Qacc, zeros(3), Qaccbias);
 
 Ts = 0.01;
 
-X = [-2.2 2.2 2.2, 0 0 0, 1 0 0 0, -0.0456    0.0069   -0.0048   -0.0331    0.1024    0.1473].'; %-0.0336 0.1013 0.0674].'; %-0.1013 -0.0674 -0.0336].';
+X = [-2.2 2.2 2.2, 0 0 0, 0.853553 0.146447 0.353553 -0.353553, -0.0456    0.0069   -0.0048   -0.0331    0.1024    0.1473].'; %-0.0336 0.1013 0.0674].'; %-0.1013 -0.0674 -0.0336].';
+%X = [0 0 0, 0 0 0, 1 0 0 0, -0.0456    0.0069   -0.0048   -0.0331    0.1024    0.1473].'; %-0.0336 0.1013 0.0674].'; %-0.1013 -0.0674 -0.0336].';
 
 P0r = eye(3) * 0.3*0.3; %zeros(3);
 P0v = zeros(3);
-P0q = zeros(4);
-P0wb = eye(3) * 0.001;
+P0q = eye(4) * 0.1*0.1;
+P0wb = eye(3) * 0.05*0.05;
 P0ab = eye(3) * 1;
 
 P = blkdiag(P0r, P0v, P0q, P0wb, P0ab);
@@ -36,7 +40,7 @@ P = blkdiag(P0r, P0v, P0q, P0wb, P0ab);
 N = length(Gyro);
 
 T = 0;
-Toffset = Planedata{1,1}.T / 1000;
+Toffset = Planedata{1,1}(1,1).T / 1000;
 lastplanedata = 0;
 
 n = 3;
@@ -44,7 +48,7 @@ Planes = [-1 0 0 0;...
            0 1 0 0;...
            0 0 1 0];
        
-XtionCovarFudge = 100000;
+XtionCovarFudge = 100;
        
 for i = 1:n
     X = [X; Planes(i,:).'];
@@ -53,6 +57,7 @@ for i = 1:n
 end
 Xdot = zeros(16+4*n,1);
 Xtrace = zeros(N,16+4*n);
+mdtrace = zeros(length(Planedata),1);
 
 for k = 1:N
     
@@ -152,8 +157,8 @@ for k = 1:N
                         1 0 0 0;...
                         0 1 0 0;...
                         0 0 0 1];
-            TransPlane = [DCM.'    zeros(3,1);...
-                          X(1:3).' 1];
+            TransPlane = [DCM      zeros(3,1);...
+                          X(1:3).' 1        ];
             inP = Hpermute * Pstr.P;
             inC = Hpermute * Pstr.C * Hpermute.';
             
@@ -162,6 +167,11 @@ for k = 1:N
                    q(1) -q(4)  q(3); ...
                    q(4)  q(1) -q(2); ...
                   -q(3)  q(2)  q(1)];
+              
+            Xip = [-q(2) -q(3) -q(4); ...
+                   -q(1) -q(4)  q(3); ...
+                    q(4) -q(1) -q(2); ...
+                   -q(3)  q(2) -q(1)];
          
             %find closest mahal
             idx1 = 17;
@@ -172,13 +182,13 @@ for k = 1:N
                 
                 z = inP - TransPlane * currTP;
                 
-                Hqparts = Xi * currTP(1:3);
-                Hq = 2 .* [Hqparts(2) -Hqparts(1) Hqparts(4) -Hqparts(3); ...
-                           Hqparts(3) -Hqparts(4) -Hqparts(1) Hqparts(2); ...
-                           Hqparts(4) Hqparts(3) -Hqparts(2) -Hqparts(1)];
+                Hqparts = Xip * currTP(1:3);
+                Hq = 2 .* [-Hqparts(2) -Hqparts(1) Hqparts(4) -Hqparts(3); ...
+                           -Hqparts(3) -Hqparts(4) -Hqparts(1) Hqparts(2); ...
+                           -Hqparts(4) Hqparts(3) -Hqparts(2) -Hqparts(1)];
 
                 %H = [[-D.*DCM; zeros(1,3)], zeros(4,3), [Hq; zeros(1,4)], zeros(4,3), zeros(4,3), zeros(4,4*(plane_idx-1)), [DCM -DCM*X(1:3); zeros(1,3) 1], zeros(4,4*(n-plane_idx)) ];
-                H = [[zeros(3); currTP(1:3).'], zeros(4,3), [Hq; zeros(1,4)], zeros(4,3), zeros(4,3), zeros(4,4*(i-1)), [DCM.' zeros(3,1); X(1:3).' 1], zeros(4,4*(n-i))];
+                H = [[zeros(3); currTP(1:3).'], zeros(4,3), [Hq; zeros(1,4)], zeros(4,3), zeros(4,3), zeros(4,4*(i-1)), [DCM zeros(3,1); X(1:3).' 1], zeros(4,4*(n-i))];
 
                 S = H*P*H.' + inC .* XtionCovarFudge;
                 mdp = z.'*inv(S)*z;
@@ -186,6 +196,8 @@ for k = 1:N
                 if (firsttime == 1 || mdp < md )
                     firsttime = 0;
                     md = mdp;
+                    %mdtrace(thisplane) = md;
+                    minH = H;
                     minS = S;
                     minz = z;
                 end
@@ -195,10 +207,10 @@ for k = 1:N
             
             %TODO: check for md < thresh for reg instead of assoc here!
             
-            K = (P*H.') / minS;
+            K = (P*minH.') / minS;
             
             X = X + K*minz;
-            P = (eye(length(P)) - K*H)*P;
+            P = (eye(length(P)) - K*minH)*P;
             
         end
     end
