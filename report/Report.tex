@@ -722,6 +722,43 @@ where
 %	G_{b_a w_{ba}} &= I_{3x3}
 \end{align}
 
+\begin{align}
+	T_h &= 
+	\left[
+	\begin{matrix}
+		R_{be} 	& 0_{3\times1} \\
+		r^\top 	& 1
+	\end{matrix}
+	\right]
+	\\
+	h &= T_h \pi
+\end{align}
+
+\begin{align}
+	\tilde{q} &= 
+	\left[
+	\begin{matrix}
+		-q_0 \\
+		q_1 \\
+		q_2 \\
+		q_3
+	\end{matrix}
+	\right]
+	\\
+	H_{Nq(0\cdots3)} &= \Xi(\tilde{q}) N_p
+	\\
+	H_{Nq} &= 2
+	\left[
+	\begin{matrix}
+		-H_{Nq1} 	& -H_{Nq0} 	& H_{Nq3} 	& -H_{Nq2} \\
+		-H_{Nq2} 	& -H_{Nq3} 	& -H_{Nq0} 	& H_{Nq1} \\
+		-H_{Nq3} 	& H_{Nq2} 	& -H_{Nq1} 	& -H_{Nq0}
+	\end{matrix}
+	\right]
+\end{align}
+
+
+
 % subsection system_model (end)
 
 \subsection{Impementation} % (fold)
