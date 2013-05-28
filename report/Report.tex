@@ -116,6 +116,8 @@ Introduction introducing things in an introductory manner.
 	\acro{EKF}{Extended Kalman Filter}
 	\acro{DoF}{Degrees of Freedom}
 	\acro{MMSE}{minimum mean square error}
+	\acro{PCL}{point cloud library}
+	\acro{DBScan}{density based scan}
 \end{acronym}
 % section acronyms (end)
 
@@ -297,6 +299,165 @@ Set Distance& Measured Distance& Corrected Distance\\ \hline
 
 \section{Feature Extraction} % (fold)
 \label{sec:feature_extraction}
+
+To obtain robust and consistent computer vision the open source \ac{PCL} was used as a foundation on which vision algorithms were implemented. By leveraging . 
+
+Once the Xtion passes the data to the \ac{PCL}, we run a kernel operator over the image which integrates over many points to obtain an estimate of the normal. By using this integral normal estimation we smooth out noisy and sporadic normal estimations which occur if normal estimates are taken for just a single point. However, by using a kernel we require an initial amount of information, and hence, for the edges of the image there are no available normal estimations as there are no neighbouring points available in each direction. Further another caveat of using this technique is the loss of high frequency normal information, such as sharp corners or edges, due to averaging (loss of high frequency information). This latter property is discovered and discussed later in the flood fill algorithm. 
+
+A much referenced and popular algorithm for density based clustering is \ac{DBScan}, having excellent noise immunity. The basic idea is to take a point, finding all other neighbouring points within a certain neighbourhood or radius (of distance epsilon). If enough are found (decided by a threshold value gamma), then we are able iteratively expand these neighbouring points, again checking if the minimum number of neighbouring points (that is the density) is sufficient to be considered within the same cluster. 
+
+\begin{figure}[bt]
+	\begin{center}
+		\includegraphics[width=0.8\textwidth]{2000px-DBSCAN-Illustration.png}
+	\end{center}
+	\caption{\ac{DBScan} clustering, starting from point within cluster A, and terminating at B and C, which do not contain enough points within their radius to be considered density connected. N is never touched by this iteration of the algorithm as no point contains it within its radius}
+	
+\end{figure}
+
+\begin{algorithm}[tb]
+	\SetAlgoLined
+	\KwData{$N \times N$ matrix: $D$}
+	\KwResult{List of densely related points} 
+	\bigskip
+	DBScan($D$, $\epsilon$, MinPts): \\
+	\ForEach {unvisited point $P$ in dataset $D$}
+	{
+		mark $P$ as visited; \\
+		NeighbourPts $\leftarrow$ regionQuery($P$, $\epsilon$); \\
+		\If{count of NeighbourPts $< \gamma$}{
+			mark $P$ as noise; \\
+		} 
+		\Else {
+			$C \leftarrow$ next cluster \\
+			expandCluster($P$, NeighborPts, $C$, $\epsilon$, MinPts);
+		}
+	}
+	\bigskip
+	expandCluster($P$, NeighborPts, $C$, $\epsilon$, MinPts):  \\
+	add $P$ to cluster $C$
+	\ForEach {point $P'$ in not visited}{
+		mark $P'$ as visited; \\
+		NeighbourPts' $\leftarrow$ regionQuery($P'$, $\epsilon$); \\
+		\If{count of NeighbourPts' $>=$ MinPts} {
+			NeighbourPts $\leftarrow$ NeighbourPts joined with NeighbourPts'; \\
+		}
+		\If{$P'$ is not yet a member of any cluster} {
+			add $P'$ to cluster $C$'
+		}
+	}
+	\bigskip
+	regionQuery($P$, $\epsilon$):  \\
+	{
+ 		return all points within $P'$ $epsilon$-neighbourhood (including $P$)
+	}
+	\bigskip
+	\caption{\ac{DBScan} pseudocode}
+	\label{alg:doolittle}
+\end{algorithm}
+
+We began with a basic naïve implementation which iteratively looped through each point in the cloud, performing a region query in just x, y, z space. This meant that for each point in the image, we then inspect all other points in the image, checking whether they are within the epsilon distance. 
+
+\begin{figure}[bt]
+	\begin{center}
+		\includegraphics[width=0.8\textwidth]{6table_dbscan.png}
+	\end{center}
+	\caption{\ac{DBScan} of a laboratory in xyz space. Notice each whiteboard considered a seperate cluster. Distant objects coloured in blue. Total clusters found was four.}
+	\label{fig:figure1}
+\end{figure}
+
+We then moved onto performing the region query in normal space, meaning planes of the normal equation would appear in the same cluster:
+IMAGE
+
+We made modifications to the DBScan algorithm to decrease the running time. Using a tag fields to set whether a points had already been visited or were already part of a cluster (a point can belong to one cluster only). These tag fields allowed the insertion into a list-like data structure without duplication, decreasing the complexity of insertion from O(m log?n) (such as with the STL set class) to O(m).
+
+The DBScan algorithm completes in $O(n^2)$ if the region query completes in $O(n)$, and $O(n \cdot log(n))$ if the region query completes within $O(log(n))$. Our implementation lay somewhere between the two, having a complexity dependent on run time. This is because for large planar images, the 
+
+IMAGE – Bench marks
+
+To combat against the possibility of very slow density based algorithm, we decided to use a 2 step algorithm. A simple flood fill algorithm will fill the initial field of view from the depth camera flooding connected areas which have the same normal and are joined in depth. Due to the shadowing effect and obstruction by objects in the image space, the flood fill will be terminated prematurely when regions should in fact be connected (figure below). Thus a second pass is performed with the DBScan algorithm to merge regions that should be connected, into a single plane. 
+
+\begin{algorithm}[tb]
+	\SetAlgoLined
+	\KwData{$N \times N$ matrix: $D$}
+	\KwResult{List of densely related points} 
+	\bigskip
+	DBScan($D$, $\epsilon$, MinPts): \\
+	\ForEach {unvisited point $P$ in dataset $D$}
+	{
+		mark $P$ as visited; \\
+		NeighbourPts $\leftarrow$ regionQuery($P$, $\epsilon$); \\
+		\If{count of NeighbourPts $< \gamma$}{
+			mark $P$ as noise; \\
+		} 
+		\Else {
+			$C \leftarrow$ next cluster \\
+			expandCluster($P$, NeighborPts, $C$, $\epsilon$, MinPts);
+		}
+	}
+	\bigskip
+	expandCluster($P$, NeighborPts, $C$, $\epsilon$, MinPts):  \\
+	add $P$ to cluster $C$
+	\ForEach {point $P'$ in not visited}{
+		mark $P'$ as visited; \\
+		NeighbourPts' $\leftarrow$ regionQuery($P'$, $\epsilon$); \\
+		\If{count of NeighbourPts' $>=$ MinPts} {
+			NeighbourPts $\leftarrow$ NeighbourPts joined with NeighbourPts'; \\
+		}
+		\If{$P'$ is not yet a member of any cluster} {
+			add $P'$ to cluster $C$'
+		}
+	}
+	\bigskip
+	regionQuery($P$, $\epsilon$):  \\
+	{
+ 		return all points within $P'$ $epsilon$-neighbourhood (including $P$)
+	}
+	\bigskip
+	\caption{Flood fill pseudocode}
+	\label{alg:Flood fill algorithm}
+\end{algorithm}
+
+IMAGE – shadowing effect (chair)
+
+This design leads to increased throughput as the flood fill deals with the raw data from CCD space, converting 19200 points to only a few planes.  The DBScan, having complexity towards a greedy $O(n^{2})$, only works in planar space, meaning the near-quadratic complexity does not dominate run time as there are much less planes than there are points. 
+
+The flood fill algorithm is very similar to that used for a paint bucket function in a graphical editing package. We randomly take a seed point in pixel space (that is we randomly select a point from the from camera output, taking into account no sense of depth or position in the real world), taking the normal and distance (planar space), and then proceeding to “fill” out from this point in all directions until the planes parameters (Nx, Ny, Nz, D) differs by value epsilon from the original seed point. We continue to attempt clustering planes until either we flood a certain threshold of the image (sigma, i.e. 90\%) or have attempted to flood fill from a random seed point after a specified number of tries (gamma, i.e. 50). The flood fill algorithm works iteratively using only a simple queue structure and list keep track if points have been explored yet in the context of the current fill or already added to a previous fill (plane) respectively, resulting in a complexity of O(n). 
+
+Complications arose in the distance space. Because of this, we introduced two different epsilon values. The first epsilon deals with the tolerance between normal components of the plane equations, while the second epsilon value relates the tolerance between the distance component of the plane equations. 
+
+IMAGE
+
+Another immediate problem with this algorithm was that due to the kernel averaging (required for good normal estimation) high frequency information was lost, meaning the vertexes and vertices where planes intersect become less sharp and more gradual: 
+
+IMAGE - curve normals on edges
+
+IMAGE – separate species of flood
+
+When the flood fill is selecting a random seed point, it can select a point along the gradual vertex and then proceed to flood along the vertex for other points with similar planar properties, causing a new region to be considered a plane, giving rise to a false positive. Initial attempts to resolve this problem by adjusting the algorithm parameters such as the minimum points to consider a plane failed, as in certain orientations the false positives still existed:
+
+
+In an effort to deal with this caveat, introducing an additional step between the Flood Fill and the DBScan can be introduced which detects for false positives
+By computing the covariance matrix in XYZ space for each point in a cluster, then finding the eigenvalues of this matrix calculates the principle component axis (PCA) of each plane allowing us the investigate the dimensionality of each plane by checking the ratio of Eigen values generated. If there is much disparity, we can assumed that a plane has been encountered fitting to the caveat described above and hence the region is removed from the set of planes. 
+The principle component axis calculation is made 
+
+IMAGE?
+
+However, this method was never implemented as after thinking ahead towards plane association in the state update, we realised that performing the DBScan algorithm (as well as PCA) was no longer necessary at this stage. 
+In fact, it was found that DBScan was no longer the algorithm suitable, but rather a similar or adaptation of it – Iterative Nearest Neighbour (INN). The algorithm works by iteratively looping through pairs of planes, calculating there statistical similarity and then making a decision on whether to combine the pair. 
+If a pair is combined, we replace the pair with just one new plane, created from the properties of the two combined and repeat until all permutations are complete). Hence, the worst case time-complexity of this algorithm is O(n\^{2}).
+The reason we choose to move the merge part of the algorithm to the plane association part was that we are not only duplicating the work, but also that we can lead to unoptimal and/or incorrect plane association. Consider:
+
+IMAGE – 4 PLANES with all possible merge combinations 
+
+The statistical difference is known as the malokonvis distance
+MATH
+
+And finally, the two were combined together to cluster in Nx, Ny, Nz, D space (planar space):
+
+
+
+
+
 
 % \subsection{Sensor Calibration} % (fold)
 % \label{sub:sensor_calibration}
