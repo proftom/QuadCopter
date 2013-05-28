@@ -188,7 +188,7 @@ class QCVision
       pcl::PointCloud<pcl::Normal>::Ptr temp_normals;
 
       temp_cloud.swap (cloud_); //here we set cloud_ to null, so that
-      temp_normals.swap (nbormals_);
+      temp_normals.swap (normals_);
       mtx_.unlock ();
 
       if (!viz.updatePointCloud (temp_cloud, "OpenNICloud"))
