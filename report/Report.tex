@@ -41,7 +41,7 @@
 % \captionsetup[subfigure]{format=subfig,labelsep=colon,labelformat=simple}
 % \usepackage{subcaption}
 
-\usepackage[backend=bibtex]{biblatex}
+\usepackage[backend=bibtex, bibencoding=utf8]{biblatex}
 \bibliography{biblib} 
 %%% Code listing
 \definecolor{mygreen}{rgb}{0,0.6,0}
@@ -747,6 +747,8 @@ where
 \end{align}
 
 \begin{align}
+	H_{Nq(0\cdots3)} &= \Xi(\tilde{q}) N_p
+	&
 	\tilde{q} &= 
 	\left[
 	\begin{matrix}
@@ -756,9 +758,9 @@ where
 		q_3
 	\end{matrix}
 	\right]
-	\\
-	H_{Nq(0\cdots3)} &= \Xi(\tilde{q}) N_p
-	\\
+\end{align}
+
+\begin{align}
 	H_{Nq} &= 2
 	\left[
 	\begin{matrix}
@@ -769,7 +771,35 @@ where
 	\right]
 \end{align}
 
+\begin{align}
+	H &=
+	\left[
+	\begin{matrix}
+		\begin{matrix}
+			0_{3 \times 3} \\
+			r^\top
+		\end{matrix}
+		&
+		0_{4 \times 3}
+		&
+		\begin{matrix}
+			H_{Nq} \\
+			0_{1 \times 4}
+		\end{matrix}
+		&
+		0_{4 \times 6}
+		&
+		\cdots
+		&
+		T_h
+		&
+		\cdots
+	\end{matrix}
+	\right]
+\end{align}
 
+The $H$ matrix is composed of two sections, one relating to the state, and one relating to the plane itself. As only the associated plane is relevant, only the part of the H matrix that pertains to this specific plane in the state is populated, and the other entries are set to zero.
+In the implementation, we take advantage of this sparsity and compute matrix multiplication terms only related to the populated columns.
 
 % subsection system_model (end)
 
