@@ -206,7 +206,7 @@ Shen et al. \cite{Shen2012} used a quadcoptor airframe and a RGB-D camera from M
 
 \begin{figure}
 \centering     %%% not \center
-\subfloat[MATLAB]{\label{fig:matlabuncal5m}\includegraphics[width=60mm]{uncal5m.PNG}} \,\,\,\,
+\subfloat[MATLAB]{\label{fig:matlabuncal5m}\includegraphics[width=60mm]{uncal5m.PNG}} \;
 \subfloat[Colour Point Cloud]{\label{fig:clouduncal5m}\includegraphics[width=60mm]{wallat6m}}
 \caption{Example of the poor calibration of the Xtion sensor}
 \label{fig:uncal5m}
@@ -241,18 +241,18 @@ In order to avoid large computation times on the embedded device it is important
 
 
 \begin{figure}[htb]
-\centering     %%% not \center
-\subfloat[Before correction]{\label{fig:preflat8}\includegraphics[width=60mm]{preflat8}} \,\,\,\,
-\subfloat[After correction]{\label{fig:postflat8}\includegraphics[width=60mm]{postflat8}}
-\caption{Example of the correction function in action. Images show divergence from the measurements average distance, white is +10\% and black is -10\% of the average respectively.}
-\label{fig:beforeAfter}
+	\centering     %%% not \center
+	\subfloat[Before correction]{\label{fig:preflat8}\includegraphics[width=60mm]{preflat8}} \;
+	\subfloat[After correction]{\label{fig:postflat8}\includegraphics[width=60mm]{postflat8}}
+	\caption{Example of the correction function in action. Images show divergence from the measurements average distance, white is +10\% and black is -10\% of the average respectively.}
+	\label{fig:beforeAfter}
 \end{figure}
- \begin{figure}[htb]
-\centering     %%% not \center
-\subfloat[Before processing]{\label{fig:NewBeforeMatlab}\includegraphics[width=60mm]{NewBeforeMatlab.PNG}} \,\,\,\,
-\subfloat[After processing]{\label{fig:NewAfterMatlab}\includegraphics[width=60mm]{NewAfterMatlab}}
-\caption{A demonstration of the correction removing curvature from the Xtion data}
-\label{fig:outputTest}
+\begin{figure}[htb]
+	\centering     %%% not \center
+	\subfloat[Before processing]{\label{fig:NewBeforeMatlab}\includegraphics[width=60mm]{NewBeforeMatlab.PNG}} \;
+	\subfloat[After processing]{\label{fig:NewAfterMatlab}\includegraphics[width=60mm]{NewAfterMatlab}}
+	\caption{A demonstration of the correction removing curvature from the Xtion data}
+	\label{fig:outputTest}
 \end{figure}
 
 \begin{figure}[htb]
@@ -1012,6 +1012,21 @@ sqrt covariance
 	\end{matrix}
 	\right]
 \end{align}
+
+\begin{figure}[tb]
+	\centering     %%% not \center
+	\subfloat[A]{
+		\label{fig:A}
+		\includegraphics[width=0.4\textwidth]{notmoving22a.PNG}
+	}
+	\;
+	\subfloat[B]{
+		\label{fig:B}
+		\includegraphics[width=0.4\textwidth]{notmoving22b.PNG}
+	}
+	\caption{AB}
+	\label{fig:AB}
+\end{figure}
 
 % subsection testing (end)
 
