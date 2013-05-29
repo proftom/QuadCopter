@@ -300,7 +300,7 @@ A much referenced and popular algorithm for density based clustering is \ac{DBSc
 
 \begin{figure}[bt]
 	\begin{center}
-		\includegraphics[width=0.8\textwidth]{2000px-DBSCAN-Illustration.png}
+		\includegraphics[width=0.6\textwidth]{2000px-DBSCAN-Illustration.png}
 	\end{center}
 	\caption{\ac{DBScan} clustering, starting from point within cluster A, and terminating at B and C, which do not contain enough points within their radius to be considered densely connected. N is never touched by this iteration of the algorithm as regions A, B and C are outside distance $\epsilon$.}
 	\label{fig:dbscan}
@@ -350,7 +350,7 @@ A much referenced and popular algorithm for density based clustering is \ac{DBSc
 
 We began with a basic naïve implementation which iteratively looped through each point in the cloud, performing a region query in just x, y, z space. This meant that for each point in the image, we then inspect all other points in the image, checking whether they are within the epsilon $(\epsilon)$ distance. 
 
-\begin{figure}[bt]
+\begin{figure}[tbp]
 	\begin{center}
 		\includegraphics[width=0.8\textwidth]{6table_dbscan.png}
 	\end{center}
@@ -360,13 +360,31 @@ We began with a basic naïve implementation which iteratively looped through eac
 
 We then moved onto performing the region query in normal space, meaning planes of the normal equation would appear in the same cluster, shown in Figure~\ref{fig:dbscan_planes}
 
-\begin{figure}[tb]
+\begin{figure}[tbp]
 	\begin{center}
 		\includegraphics[width=0.8\textwidth]{6normal_boards.png}
 	\end{center}
 	\caption{\ac{DBScan} is normal space. A total of 4 planes were fonud in this image, the floor, the white boards and two backwalls.}
 	\label{fig:dbscan_planes}
 \end{figure}
+
+\begin{figure}[tbp]
+	\centering     %%% not \center
+	\subfloat[C]{
+		\label{fig:6box_before}
+		\includegraphics[width=0.45\textwidth]{6box_before.PNG}
+	}
+	\subfloat[D]{
+		\label{fig:6box_after}
+		\includegraphics[width=0.45\textwidth]{6box_after.PNG}
+	}
+
+	\caption{CAPTION}
+	\label{fig:spurious_plane_normals}
+\end{figure}
+
+
+
 
 Four parameters are required to uniquely characterise planes $(N_A, N_B, N_C, D)$ so finally we combined both the normal space with distance space (z) for the region query criteria.
 
@@ -377,7 +395,7 @@ The DBScan algorithm completes in $O(n^2)$ if the region query completes in $O(n
 
 To combat against the possibility of very slow density based algorithm, we decided to use a 2 step algorithm. A simple flood fill algorithm will fill the initial field of view from the depth camera flooding connected areas which have the same normal and are joined in depth. Due to the shadowing effect and obstruction by objects in the image space, the flood fill will be terminated prematurely when regions should in fact be connected (figure below). Thus a second pass is performed with the DBScan algorithm to merge regions that should be connected, into a single plane. 
 
-\begin{algorithm}[tb]
+\begin{algorithm}[tbp]
 	\SetAlgoLined
 	\KwData{$N \times N$ matrix: $D$}
 	\KwResult{List of sets of connected points} 
@@ -422,19 +440,22 @@ Complications arose in the distance space. Because of this, we introduced two di
 Another immed	. Figures~\ref{fig:spurious_plane_normals} and \ref{fig:spurious_plane_normals_2} show this effect.
 
 
-\begin{figure}[tb]
-	\begin{center}
-		\includegraphics[width=0.8\textwidth]{6spuriousplanes_normals.png}
-	\end{center}
+
+
+\begin{figure}[tbp]
+	\centering     %%% not \center
+	\subfloat[A]{
+		\label{fig:spurious_plane_normals1}
+		\includegraphics[width=0.45\textwidth]{6spuriousplanes_normals.PNG}
+	}
+	\;
+	\subfloat[B]{
+		\label{fig:spurious_plane_normals_2}
+		\includegraphics[width=0.45\textwidth]{6spuriousplanes_normals_2.PNG}
+	}
+
 	\caption{Normal estimation kernal causing loss of high frequency information of normals}
 	\label{fig:spurious_plane_normals}
-\end{figure}
-\begin{figure}[tb]
-	\begin{center}
-		\includegraphics[width=0.8\textwidth]{6spuriousplanes_normals_2.png}
-	\end{center}
-	\caption{Normal estimation kernal causing loss of high frequency information of normals}
-	\label{fig:spurious_plane_normals_2}
 \end{figure}
 
 
