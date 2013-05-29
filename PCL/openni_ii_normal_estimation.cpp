@@ -146,6 +146,26 @@ class QCVision
 				cloud_ = cloud;
 				vector<Plane> planes = ClusterToAveragePlane(clusterIndicies);
 
+				
+				ofstream myfile;
+				myfile.open("planes.txt",ios::app);
+				myfile << planes.size() << endl;
+
+				for (int i = 0; i < planes.size(); i++) {
+					planes[i].calculateCovarianceMatrix(planes_);
+					double dist = sqrt( (planes[i].A * planes[i].A) + (planes[i].B * planes[i].B) + (planes[i].C * planes[i].C));
+
+					myfile << planes[i].A * (1.0 / dist) << " " << planes[i].B * (1.0 / dist) << " " << planes[i].C * (1.0 / dist) << " " << planes[i].D << endl;
+					for (int j = 0; j < planes[i].covariance.size(); j++) {
+						myfile << planes[i].covariance[j][0] << " " << planes[i].covariance[j][1] << " " << planes[i].covariance[j][2] << " " << planes[i].covariance[j][3] << endl;
+					}
+					myfile << planes[i].indicies.size() << endl;
+					
+				}
+				
+				myfile << t2 << endl;
+				myfile << "<<<" << endl; 
+
 				//Colour clusters
 				for(int i = 0; i < clusterIndicies.size(); i++) 
 				{
