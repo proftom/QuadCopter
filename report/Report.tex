@@ -354,11 +354,11 @@ We began with a basic naïve implementation which iteratively looped through eac
 	\begin{center}
 		\includegraphics[width=0.8\textwidth]{6table_dbscan.png}
 	\end{center}
-	\caption{\ac{DBScan} of a laboratory in xyz space. Notice each whiteboard considered a seperate cluster. Distant objects coloured in blue. Total clusters found was four.}
+	\caption{\ac{DBScan} of a laboratory in xyz space. Each whiteboard is considered a seperate cluster. The green cluster Distant objects coloured in blue. A total of four clusters were found}
 	\label{fig:table_dbscan}
 \end{figure}
 
-We then moved onto performing the region query in normal space, meaning planes of the normal equation would appear in the same cluster, shown in Figure~\ref{fig:}
+We then moved onto performing the region query in normal space, meaning planes of the normal equation would appear in the same cluster, shown in Figure~\ref{fig:dbscan_planes}
 
 \begin{figure}[tb]
 	\begin{center}
@@ -370,11 +370,10 @@ We then moved onto performing the region query in normal space, meaning planes o
 
 Four parameters are required to uniquely characterise planes $(N_A, N_B, N_C, D)$ so finally we combined both the normal space with distance space (z) for the region query criteria.
 
-We made modifications to the DBScan algorithm to decrease the running time. Using a tag fields to set whether a points had already been visited or were already part of a cluster (a point can belong to one cluster only). These tag fields allowed the insertion into a list-like data structure without duplication, decreasing the complexity of insertion from $O(m \cdot logn)$ (such as with the STL set class) to $O(m)$.
+We made modifications to the DBScan algorithm to decrease the running time. Using a tag fields to set whether a points had already been visited or were already part of a cluster (a point can belong to one cluster only). These tag fields allowed the insertion into a list-like data structure without duplication, decreasing the complexity of insertion from $O(m \cdot log(n))$ (such as with the STL set class) to $O(m)$.
 
 The DBScan algorithm completes in $O(n^2)$ if the region query completes in $O(n)$, and $O(n \cdot log(n))$ if the region query completes within $O(log(n))$. Our implementation lay somewhere between the two, having a complexity dependent on run time. This is because for large planar images, the 
 
-IMAGE – Bench marks
 
 To combat against the possibility of very slow density based algorithm, we decided to use a 2 step algorithm. A simple flood fill algorithm will fill the initial field of view from the depth camera flooding connected areas which have the same normal and are joined in depth. Due to the shadowing effect and obstruction by objects in the image space, the flood fill will be terminated prematurely when regions should in fact be connected (figure below). Thus a second pass is performed with the DBScan algorithm to merge regions that should be connected, into a single plane. 
 
@@ -420,7 +419,8 @@ Complications arose in the distance space. Because of this, we introduced two di
 
 %TODO do some funky math
 
-Another immediate problem with this algorithm was that due to the kernel averaging (required for good normal estimation) high frequency information was lost, meaning the vertexes and vertices where planes intersect become less sharp and more gradual: 
+Another immed	. Figures~\ref{fig:spurious_plane_normals} and \ref{fig:spurious_plane_normals_2} show this effect.
+
 
 \begin{figure}[tb]
 	\begin{center}
@@ -436,9 +436,7 @@ Another immediate problem with this algorithm was that due to the kernel averagi
 	\caption{Normal estimation kernal causing loss of high frequency information of normals}
 	\label{fig:spurious_plane_normals_2}
 \end{figure}
-IMAGE - curve normals on edges
 
-IMAGE – separate species of flood
 
 When the flood fill is selecting a random seed point, it can select a point along the gradual vertex and then proceed to flood along the vertex for other points with similar planar properties, causing a new region to be considered a plane, giving rise to a false positive. Initial attempts to resolve this problem by adjusting the algorithm parameters such as the minimum points to consider a plane failed, as in certain orientations the false positives still existed:
 
