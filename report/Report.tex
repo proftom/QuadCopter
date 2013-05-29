@@ -977,6 +977,35 @@ This makes an enormous difference in the scalability of the kalman filter approa
 
 % subsection impementation (end)
 
+\subsection{Testing} % (fold)
+\label{sub:testing}
+
+Covariance
+\begin{align}
+	10^{-3}
+	\left[
+	\begin{matrix}
+		0.1037	& 0.0919	& -0.0024 \\
+		0.0919	& 0.1014	& -0.0129 \\
+		-0.0024	& -0.0129	& 0.0538
+	\end{matrix}
+	\right]
+\end{align}
+
+sqrt covariance
+\begin{align}
+	10^{-3}
+	\left[
+	\begin{matrix}
+		10.1809	& 9.5878	& 1.5370 \\
+		9.5878	& 10.0684	& 3.5982 \\
+		1.5370	& 3.5982	& 7.3351
+	\end{matrix}
+	\right]
+\end{align}
+
+% subsection testing (end)
+
 % section ekf (end)
 
 \clearpage

@@ -146,7 +146,7 @@ for k = 1:N
     
     %-------------------
     thisplane = lastplanedata + 1;
-    if(T > Planedata{1,thisplane}(1,1).T / 1000 - Toffset)
+    if(thisplane <= length(Planedata) && T > Planedata{1,thisplane}(1,1).T / 1000 - Toffset)
         lastplanedata = thisplane;
         
         for plane_idx = 1:length(Planedata{1,thisplane})
