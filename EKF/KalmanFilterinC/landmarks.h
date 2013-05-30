@@ -72,12 +72,10 @@ public:
 		return landmarks[i].getCov();
 	}
 	float getMahaDist(Vector4f A, Vector4f B, Matrix4f S) {
-		Matrix4f dist;
-		Vector4f diff = A-B;
-		dist<< diff.transpose() *  S.inverse()*   diff;
-
-		return dist(0,0);
-	}
+			Matrix<float, 1, 1> dist;
+			Vector4f diff = A-B;
+			return diff.transpose() *  S.inverse()*   diff;
+		}
 	void increaseCount(int planeId) {
 		landmarks[planeId].increaseCount();
 	}
