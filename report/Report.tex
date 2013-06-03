@@ -261,7 +261,7 @@ In order to avoid large computation times on the embedded device it is important
 		\hline
 
 		\hline
-		\textbf{Set Distanc}& \textbf{Measured Distance}& \textbf{Corrected Distance} \\
+		\textbf{Set Distance}& \textbf{Measured Distance}& \textbf{Corrected Distance} \\
 		\hline
 		0.8		& 0.773	& 0.800\\
 		1.0		& 0.960	& 1.002\\
@@ -962,7 +962,7 @@ where
 	\begin{matrix}
 		\begin{matrix}
 			0_{3 \times 3} \\
-			r^\top
+			N_p^\top
 		\end{matrix}
 		&
 		0_{4 \times 3}
@@ -987,6 +987,18 @@ The $H$ matrix is composed of two sections, one relating to the state, and one r
 In the implementation, we take advantage of this sparsity and compute matrix multiplication terms only related to the populated columns.
 
 % subsection system_model (end)
+
+\subsection{Landmark Association} % (fold)
+\label{sub:landmark_association}
+
+% subsection landmark_association (end)
+
+\subsection{Landmark Initialization} % (fold)
+\label{sub:landmark_initialization}
+
+Cool stuff from \cite{Sola2013}
+
+% subsection landmark_initialization (end)
 
 \subsection{Implementation} % (fold)
 \label{sub:implementation}

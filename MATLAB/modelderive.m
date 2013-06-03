@@ -77,7 +77,7 @@ deltaF %#ok<NOPTS>
 %        2*(q1*q3 + q0*q2), 2*(q2*q3 - q0*q1), 2*(q0^2 + q3^2) - 1];
 %DCM = [a b c; d e f; g h k];
 
-%DCM = sym('DCM',[3,3]);
+DCM = sym('DCM',[3,3]);
 
 %R0 = [eye(3) -X(1:3);...
 %      zeros(1,3) 1];
@@ -118,3 +118,27 @@ H = [[zeros(3); plane1(1:3).'] zeros(4,3) [Hq; zeros(1,4)] zeros(4,3) zeros(4,3)
 deltaH = simple(H - J);
 deltaH %#ok<NOPTS>
 
+R1 = [eye(3) zeros(3,1);...
+      -X(1:3).' 1];
+Rot4T = [DCMderiv.' zeros(3,1);...
+        zeros(1,3) 1];
+InvTransPlane = [DCMderiv.' zeros(3,1);...
+        -X(1:3).' * DCMderiv.' 1];
+g = R1*Rot4T*plane1;
+
+Nglob = DCMderiv.' * plane1(1:3);
+
+GNqparts = Xi * Nglob;
+GNq = 2 .* [GNqparts(2) -GNqparts(1) GNqparts(4) -GNqparts(3); ...
+            GNqparts(3) -GNqparts(4) -GNqparts(1) GNqparts(2); ...
+            GNqparts(4) GNqparts(3) -GNqparts(2) -GNqparts(1)];
+
+J_R = simple(jacobian(g,X))
+G_R = [[zeros(3); -Nglob.'] zeros(4,3) [GNq; zeros(1,4)] zeros(4,3) zeros(4,3)];
+deltaGR = simple(G_R - J_R);
+deltaGR
+
+J_y = simple(jacobian(g,plane1));
+G_y = InvTransPlane;
+deltaGy = simple(G_y - J_y);
+deltaGy
