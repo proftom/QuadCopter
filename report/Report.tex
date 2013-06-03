@@ -112,7 +112,7 @@ Introduction introducing things in an introductory manner.
 
 \section{Acronyms} % (fold)
 \label{sec:acronyms}
-\begin{acronym}
+\begin{acronym}[DBScan]
 	\acro{EKF}{Extended Kalman Filter}
 	\acro{DoF}{Degrees of Freedom}
 	\acro{MMSE}{minimum mean square error}
@@ -256,29 +256,32 @@ In order to avoid large computation times on the embedded device it is important
 
 \begin{figure}[htb]
 	\begin{center}
-	\begin{tabular}{|c|c|c|}
-	\hline
-Set Distance& Measured Distance& Corrected Distance\\ \hline
-0.8		& 0.773	& 0.800\\ \hline
-1.0		& 0.960	& 1.002\\ \hline
-1.2 	& 1.138	& 1.201\\ \hline
-1.6 	& 1.483	& 1.601\\ \hline
-1.8 	& 1.655	& 1.800\\ \hline
-2.0 	& 1.826	& 2.001\\ \hline
-2.2 	& 1.976	& 2.186\\ \hline
-2.4 	& 2.146	& 2.415\\ \hline
-2.6 	& 2.299	& 2.590\\ \hline
-2.8 	& 2.465	& 2.804\\ \hline
-3.0 	& 2.614	& 2.988\\ \hline
-3.2 	& 2.751	& 3.158\\ \hline
-3.4 	& 2.895	& 3.370\\ \hline
-3.6 	& 3.045	& 3.591\\ \hline
-3.8 	& 3.198	& 3.815\\ \hline
-4.0 	& 3.341	& 3.993\\ \hline
+	\begin{tabular}{ccc}
+		\hline
 
+		\hline
+		\textbf{Set Distanc}& \textbf{Measured Distance}& \textbf{Corrected Distance} \\
+		\hline
+		0.8		& 0.773	& 0.800\\
+		1.0		& 0.960	& 1.002\\
+		1.2 	& 1.138	& 1.201\\
+		1.6 	& 1.483	& 1.601\\
+		1.8 	& 1.655	& 1.800\\
+		2.0 	& 1.826	& 2.001\\
+		2.2 	& 1.976	& 2.186\\
+		2.4 	& 2.146	& 2.415\\
+		2.6 	& 2.299	& 2.590\\
+		2.8 	& 2.465	& 2.804\\
+		3.0 	& 2.614	& 2.988\\
+		3.2 	& 2.751	& 3.158\\
+		3.4 	& 2.895	& 3.370\\
+		3.6 	& 3.045	& 3.591\\
+		3.8 	& 3.198	& 3.815\\
+		4.0 	& 3.341	& 3.993\\
+		\hline
 
-\end{tabular}
-		
+		\hline
+	\end{tabular}
 	\end{center}
 	\caption{Table showing the performance of the correction function, all units in meters}
 	\label{tab:averages}
@@ -955,8 +958,8 @@ In the implementation, we take advantage of this sparsity and compute matrix mul
 
 % subsection system_model (end)
 
-\subsection{Impementation} % (fold)
-\label{sub:impementation}
+\subsection{Implementation} % (fold)
+\label{sub:implementation}
 
 SerialUpdate: \cite{OpenPilotPaper} and chapter 4.2.2 of \cite{KFBookSerialupdate}
 The referenced papers perform an optimization which assumes an entirerly uncorrelated measurment noise covariance matrix. That is the $R$ matrix is purely diagonal.
@@ -975,7 +978,7 @@ This makes an enormous difference in the scalability of the kalman filter approa
 
 	We crosscheck our implementation against a similar open source implementation by the OpenPilot team %\cite{OpenPilotinsgps}. \cite{Holz2011}
 
-% subsection impementation (end)
+% subsection implementation (end)
 
 \subsection{Testing} % (fold)
 \label{sub:testing}
