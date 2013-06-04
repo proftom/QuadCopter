@@ -984,7 +984,7 @@ where
 \end{align}
 
 The $H$ matrix is composed of two sections, one relating to the state, and one relating to the plane itself. As only the associated plane is relevant, only the part of the H matrix that pertains to this specific plane in the state is populated, and the other entries are set to zero.
-In the implementation, we take advantage of this sparsity and compute matrix multiplication terms only related to the populated columns.
+In the implementation, we take advantage of this sparsity and compute matrix multiplication terms only related to the populated columns, as shown in \cite{Sola2013}.
 
 % subsection system_model (end)
 
@@ -997,6 +997,74 @@ In the implementation, we take advantage of this sparsity and compute matrix mul
 \label{sub:landmark_initialization}
 
 Cool stuff from \cite{Sola2013}
+
+\begin{align}
+	y_i = 
+	\left[
+	\begin{matrix}
+		\hat{N}_x \\
+		\hat{N}_y \\
+		\hat{N}_z \\
+		\hat{D}
+	\end{matrix}
+	\right]
+\end{align}
+
+\begin{align}
+	T_d &= 
+	\left[
+	\begin{matrix}
+		R_{eb} 			& 0_{3\times1} \\
+		-r^\top R_{eb}	& 1
+	\end{matrix}
+	\right]
+\end{align}
+
+\begin{align}
+	\pi_i	&= d(y_i,x) \\
+			&= T_d y_i
+\end{align}
+
+\begin{align}
+	D_y &= \frac{\partial d}{\partial y} \notag \\
+		&= T_d \\
+	D_x &= \frac{\partial d}{\partial x} \notag \\
+		&=
+	\left[
+	\begin{matrix}
+		\begin{matrix}
+			0_{3 \times 3} \\
+			-\hat{N}^\top R_{be}
+		\end{matrix}
+		&
+		0_{4 \times 3}
+		&
+		\begin{matrix}
+			D_{Nq} \\
+			-r^\top D_{Nq}
+		\end{matrix}
+		&
+		0_{4 \times 6}
+	\end{matrix}
+	\right]
+\end{align}
+
+
+where
+\begin{align}
+	D_{Nq} 	&= 2
+	\left[
+	\begin{matrix}
+		D_{Nq1} 	& -D_{Nq0} 	& D_{Nq3} 	& -D_{Nq2} \\
+		D_{Nq2} 	& -D_{Nq3} 	& -D_{Nq0} 	& D_{Nq1} \\
+		D_{Nq3} 	& D_{Nq2} 	& -D_{Nq1} 	& -D_{Nq0}
+	\end{matrix}
+	\right]
+\end{align}
+where
+\begin{align}
+	D_{Nq(0\cdots3)} &= \Xi(q) \hat{N}
+\end{align}
 
 % subsection landmark_initialization (end)
 
