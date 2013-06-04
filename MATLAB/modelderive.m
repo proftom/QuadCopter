@@ -124,17 +124,19 @@ Rot4T = [DCMderiv.' zeros(3,1);...
         zeros(1,3) 1];
 InvTransPlane = [DCMderiv.' zeros(3,1);...
         -X(1:3).' * DCMderiv.' 1];
-g = R1*Rot4T*plane1;
+%g = R1*Rot4T*plane1;
+g = InvTransPlane*plane1;
 
 Nglob = DCMderiv.' * plane1(1:3);
 
-GNqparts = Xi * Nglob;
+%GNqparts = Xi * Nglob;
+GNqparts = Xi * plane1(1:3);
 GNq = 2 .* [GNqparts(2) -GNqparts(1) GNqparts(4) -GNqparts(3); ...
             GNqparts(3) -GNqparts(4) -GNqparts(1) GNqparts(2); ...
             GNqparts(4) GNqparts(3) -GNqparts(2) -GNqparts(1)];
 
-J_R = simple(jacobian(g,X))
-G_R = [[zeros(3); -Nglob.'] zeros(4,3) [GNq; zeros(1,4)] zeros(4,3) zeros(4,3)];
+J_R = simple(jacobian(g,X));
+G_R = [[zeros(3); -Nglob.'] zeros(4,3) [GNq; -X(1:3).' * GNq] zeros(4,3) zeros(4,3)];
 deltaGR = simple(G_R - J_R);
 deltaGR
 
