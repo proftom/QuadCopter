@@ -355,7 +355,7 @@ void update() {
 			}
 		}
 		//Update States
-		landmarks.increaseCount(i);
+		landmarks.increaseCount(ptr);
 		MatrixXf kalmanGain(P_min_opt * minH.transpose() * minS.inverse());
 //		cout << "minH.transpose" << endl << minH.transpose() << endl << endl;
 //		cout << "P_opt" << endl << P_min_opt << endl << endl;
