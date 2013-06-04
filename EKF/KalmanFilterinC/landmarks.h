@@ -29,13 +29,11 @@ private:
 	class Landmark {
 	private:
 		Vector4f plane;
-		Matrix4f cov;
 		int count;
 	public:
-		Landmark (Vector4f nPlane, Matrix4f nCov)
+		Landmark (Vector4f nPlane)
 		{
 			setPlane(nPlane);
-			setCov(nCov);
 			count = 0;
 		}
 		void increaseCount() {
@@ -44,22 +42,16 @@ private:
 		Vector4f getPlane() {
 			return plane;
 		}
-		Matrix4f getCov() {
-			return cov;
-		}
 		void setPlane(Vector4f nPlane) {
 			plane = nPlane;
-		}
-		void setCov(Matrix4f nCov) {
-			cov = nCov;
 		}
 	};
 
 	vector<Landmark> landmarks;
 
 public:
-	void addToLandmarks(Vector4f plane, MatrixXf cov) {
-		Landmark *new_landmark = new Landmark(plane, cov);
+	void addToLandmarks(Vector4f plane) {
+		Landmark *new_landmark = new Landmark(plane);
 		landmarks.push_back(*new_landmark);
 	}
 	int size() {
@@ -67,9 +59,6 @@ public:
 	}
 	Vector4f getPlane(int i) {
 		return landmarks[i].getPlane();
-	}
-	Matrix4f getCov(int i) {
-		return landmarks[i].getCov();
 	}
 	float getMahaDist(Vector4f A, Vector4f B, Matrix4f S) {
 			Matrix<float, 1, 1> dist;
@@ -83,9 +72,6 @@ public:
 		Vector4f temp = landmarks[planeId].getPlane() + delta;
 			landmarks[planeId].setPlane(temp);
 		}
-	void updateCov(int planeId, Matrix4f delta) {
-		landmarks[planeId].setCov(landmarks[planeId].getCov() - delta);
-	}
 };
 
 
