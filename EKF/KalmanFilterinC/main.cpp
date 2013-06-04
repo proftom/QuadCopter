@@ -7,6 +7,7 @@
 //============================================================================
 
 #include "landmarks.h"
+#include <time.h>
 using namespace std;
 typedef Matrix< float , 16 , 16> Matrix16f;
 typedef Matrix< float , 16 , 1> Vector16f;
@@ -62,6 +63,8 @@ int accPtr = 0;
 int planePtr = 0;
 int planeSteps = 0;
 int main() {
+	clock_t tStart = clock();
+
 	initialisation ();
 	while(timeSteps < 100) {
 				timeSteps++;
@@ -73,10 +76,12 @@ int main() {
 				update();
 				statehistory.push_back(state);
 			}
-for (int i = 0; i < (int)statehistory.size(); i++)
-	cout << "state at time t = " << i << endl<< statehistory[i] << endl<<endl;
+//	for (int i = 0; i < (int)statehistory.size(); i++)
+//		cout << "state at time t = " << i << endl<< statehistory[i] << endl<<endl;
+	printf("Time taken: %.2fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
 	return 0;
 }
+
 void initialisation () { //Incomplete.
 	// acc measurements
 	accList << -400.000000, 12816.000000, 9280.000000, -432.000000, 12768.000000, 9936.000000, -544.000000, 13184.000000, 10304.000000, -208.000000, 12912.000000, 8960.000000, -64.000000, 13136.000000, 10480.000000, -32.000000, 12752.000000, 9360.000000, -128.000000, 12704.000000, 10304.000000, -256.000000, 12624.000000, 9536.000000, -448.000000, 12720.000000, 10256.000000, -352.000000, 12512.000000, 10016.000000, -224.000000, 12720.000000, 9952.000000, -160.000000, 12864.000000, 9760.000000, -272.000000, 12816.000000, 9888.000000, -128.000000, 12848.000000, 10000.000000, -48.000000, 12976.000000, 9632.000000, -64.000000, 12960.000000, 10032.000000, -48.000000, 12864.000000, 9760.000000, -208.000000, 12864.000000, 9808.000000, -256.000000, 12864.000000, 9872.000000, -288.000000, 12832.000000, 10016.000000, -256.000000, 12816.000000, 9856.000000, -208.000000, 12640.000000, 9984.000000, -320.000000, 12784.000000, 9936.000000, -304.000000, 12768.000000, 9872.000000, -192.000000, 12896.000000, 10000.000000, -112.000000, 12864.000000, 9904.000000, -128.000000, 12880.000000, 9840.000000, -160.000000, 12960.000000, 9840.000000, -80.000000, 12656.000000, 9904.000000, -128.000000, 12864.000000, 9872.000000, -160.000000, 12912.000000, 9840.000000, -144.000000, 12816.000000, 9856.000000, -192.000000, 12864.000000, 9936.000000, -192.000000, 12832.000000, 9968.000000, -272.000000, 12800.000000, 9984.000000, -352.000000, 12784.000000, 9968.000000, -320.000000, 12720.000000, 9872.000000, -272.000000, 12768.000000, 9856.000000, -256.000000, 12832.000000, 9856.000000, -144.000000, 12880.000000, 9888.000000, -160.000000, 12928.000000, 9776.000000, -128.000000, 12960.000000, 9872.000000, -32.000000, 12816.000000, 9904.000000, -64.000000, 13088.000000, 9824.000000, -96.000000, 12544.000000, 9856.000000, -176.000000, 12800.000000, 9952.000000, -160.000000, 12848.000000, 9904.000000, -176.000000, 12720.000000, 9920.000000, -320.000000, 12848.000000, 10000.000000, -240.000000, 12688.000000, 9888.000000, -272.000000, 12832.000000, 9904.000000, -192.000000, 12736.000000, 9904.000000, -160.000000, 12832.000000, 9904.000000, -192.000000, 12896.000000, 9872.000000, -160.000000, 12800.000000, 9904.000000, -176.000000, 12880.000000, 9872.000000, -144.000000, 12896.000000, 9792.000000, -192.000000, 12896.000000, 9888.000000, -176.000000, 12800.000000, 9872.000000, -288.000000, 12784.000000, 9936.000000, -224.000000, 12816.000000, 9872.000000, -224.000000, 12784.000000, 10032.000000, -128.000000, 12848.000000, 9936.000000, -208.000000, 12832.000000, 9968.000000, -144.000000, 12864.000000, 9920.000000, -128.000000, 12976.000000, 9936.000000, -80.000000, 12992.000000, 9856.000000, -144.000000, 12928.000000, 9840.000000, -176.000000, 12912.000000, 9856.000000, -160.000000, 12992.000000, 9840.000000, -192.000000, 12896.000000, 9952.000000, -176.000000, 12864.000000, 9888.000000, -272.000000, 12880.000000, 9872.000000, -304.000000, 12896.000000, 9968.000000, -320.000000, 12672.000000, 9968.000000, -240.000000, 12816.000000, 9872.000000, -224.000000, 12816.000000, 9920.000000, -80.000000, 12768.000000, 9952.000000, -208.000000, 12784.000000, 9904.000000, -192.000000, 12784.000000, 9888.000000, -80.000000, 12880.000000, 9856.000000, -192.000000, 12880.000000, 9808.000000, -128.000000, 12832.000000, 9808.000000, -112.000000, 12880.000000, 9936.000000, -112.000000, 12768.000000, 9936.000000, -240.000000, 12704.000000, 10032.000000, -272.000000, 12816.000000, 9904.000000, -288.000000, 12864.000000, 9920.000000, -256.000000, 12976.000000, 9888.000000, -320.000000, 12768.000000, 10032.000000, -224.000000, 12784.000000, 9904.000000, -256.000000, 12800.000000, 9856.000000, -192.000000, 12832.000000, 9872.000000, -144.000000, 13008.000000, 9904.000000, -160.000000, 12992.000000, 9792.000000, -192.000000, 12880.000000, 9936.000000, -80.000000, 12896.000000, 9888.000000, -176.000000, 12880.000000, 9840.000000, -240.000000, 12832.000000, 10000.000000, -208.000000, 12880.000000, 9952.000000, -288.000000, 12848.000000, 9984.000000, -208.000000, 12848.000000, 10064.000000, -240.000000, 12832.000000, 9968.000000, -224.000000, 12848.000000, 9856.000000, 32.000000, 12800.000000, 9840.000000, -128.000000, 12928.000000, 9888.000000, -192.000000, 12928.000000, 9904.000000, -144.000000, 12912.000000, 9824.000000, -208.000000, 12960.000000, 9952.000000, -160.000000, 12912.000000, 9904.000000, -144.000000, 12800.000000, 9856.000000, -192.000000, 12816.000000, 9888.000000, -224.000000, 12816.000000, 9872.000000, -240.000000, 12832.000000, 9904.000000, -208.000000, 12880.000000, 10016.000000, -320.000000, 12848.000000, 9920.000000, -208.000000, 12864.000000, 9904.000000, -192.000000, 12864.000000, 9856.000000, -192.000000, 12848.000000, 9840.000000, -224.000000, 13088.000000, 9808.000000, -192.000000, 13024.000000, 9888.000000, -160.000000, 12912.000000, 9808.000000, -160.000000, 12896.000000, 9904.000000, -288.000000, 12832.000000, 9792.000000, -224.000000, 12848.000000, 9840.000000, -224.000000, 12832.000000, 9936.000000, -176.000000, 12880.000000, 9936.000000, -224.000000, 12880.000000, 9920.000000, -128.000000, 12752.000000, 10064.000000, -208.000000, 12832.000000, 9968.000000, -128.000000, 12880.000000, 9904.000000, -176.000000, 12832.000000, 9920.000000, -176.000000, 12800.000000, 9904.000000, -96.000000, 12832.000000, 9824.000000, -192.000000, 12784.000000, 9920.000000, -160.000000, 12800.000000, 9888.000000, -176.000000, 13008.000000, 9808.000000, -208.000000, 12816.000000, 9888.000000, -224.000000, 12736.000000, 9952.000000, -208.000000, 12752.000000, 9856.000000, -224.000000, 12816.000000, 9904.000000, -224.000000, 12864.000000, 9888.000000, -224.000000, 12880.000000, 9888.000000, -320.000000, 12880.000000, 9856.000000, -160.000000, 12736.000000, 10032.000000, -192.000000, 12880.000000, 9952.000000, -240.000000, 12928.000000, 9760.000000, -96.000000, 12880.000000, 9904.000000, -240.000000, 12864.000000, 9904.000000, -176.000000, 13120.000000, 10000.000000, -240.000000, 12880.000000, 9888.000000, -256.000000, 12880.000000, 9920.000000, -208.000000, 12864.000000, 9920.000000, -272.000000, 12752.000000, 9952.000000, -272.000000, 12848.000000, 10016.000000, -272.000000, 12912.000000, 9936.000000, -208.000000, 12896.000000, 9776.000000, -32.000000, 12848.000000, 9968.000000, -160.000000, 12912.000000, 9856.000000, -176.000000, 12928.000000, 9968.000000, -208.000000, 13008.000000, 9888.000000, -144.000000, 12880.000000, 9968.000000, -160.000000, 12816.000000, 9920.000000, -112.000000, 12752.000000, 9936.000000, -160.000000, 13040.000000, 9840.000000, -176.000000, 12816.000000, 9984.000000, -224.000000, 12848.000000, 10016.000000, -176.000000, 12896.000000, 9904.000000, -176.000000, 12944.000000, 9808.000000, -144.000000, 12832.000000, 9904.000000, -144.000000, 12752.000000, 9856.000000, -176.000000, 12848.000000, 9840.000000, -240.000000, 13152.000000, 9824.000000, -128.000000, 12880.000000, 9888.000000, -192.000000, 12848.000000, 9904.000000, -208.000000, 12832.000000, 9968.000000, -288.000000, 12976.000000, 9888.000000, -160.000000, 12832.000000, 9904.000000, -192.000000, 12816.000000, 9808.000000, -144.000000, 12864.000000, 9952.000000, -96.000000, 12368.000000, 9904.000000, -112.000000, 12864.000000, 9936.000000, -192.000000, 12848.000000, 9824.000000, -224.000000, 12928.000000, 9904.000000, -176.000000, 12992.000000, 9888.000000, -128.000000, 12864.000000, 9888.000000, -176.000000, 12832.000000, 9968.000000, -240.000000, 12832.000000, 9872.000000, -160.000000, 12912.000000, 9856.000000, -192.000000, 12944.000000, 9936.000000, -160.000000, 12880.000000, 9920.000000, -272.000000, 12768.000000, 9904.000000, -208.000000, 12752.000000, 9808.000000, -208.000000, 12848.000000, 9920.000000, -224.000000, 12800.000000, 9984.000000, -144.000000, 12864.000000, 10080.000000, -144.000000, 12912.000000, 9888.000000, -96.000000, 12784.000000, 9888.000000, -240.000000, 12992.000000, 9888.000000, -144.000000, 12912.000000, 9904.000000;
@@ -114,11 +119,11 @@ void initialisation () { //Incomplete.
 			MatrixXf::Zero(3,10), block1*0.0025, MatrixXf::Zero(3,3+12),
 			MatrixXf::Zero(3,13), block1,  MatrixXf::Zero(3,12),
 			MatrixXf::Zero(12,28);
-	cout << "P initial" << endl << P << endl << endl;
+//	cout << "P initial" << endl << P << endl << endl;
 	//initialise state vector.
 	state <<-2.2, 2.2, 2.2, 0, 0, 0, 0.853553, 0.146447, 0.353553, -0.353553,
 			-0.0456 ,   0.0069,   -0.0048 ,  -0.0331  ,  0.1024 ,   0.1473;
-	cout << "state initial" << endl << state << endl << endl;
+//	cout << "state initial" << endl << state << endl << endl;
 }
 Matrix3f DCM() { //There is a round off error in dcm(2,3). May cause an issue.
 	Vector4f q;
@@ -128,7 +133,7 @@ Matrix3f DCM() { //There is a round off error in dcm(2,3). May cause an issue.
 	dcm << 	2*(pow(q(0),2) + pow(q(1),2)) - 1,		2*(q(1)*q(2) + q(0)*q(3)), 		2*(q(1)*q(3) - q(0)*q(2)),
     		2*(q(1)*q(2) - q(0)*q(3)), 				2*(pow(q(0),2) + pow(q(2),2)) - 1, 2*(q(2)*q(3) + q(0)*q(1)),
     		2*(q(1)*q(3) + q(0)*q(2)), 2*(q(2)*q(3) - q(0)*q(1)), 2*(pow(q(0),2) + pow(q(3),2)) - 1;
-	cout << "dcm" << endl << dcm << endl << endl;
+//	cout << "dcm" << endl << dcm << endl << endl;
 	return dcm;
 }
 Matrix4f omega() {
@@ -140,7 +145,7 @@ Matrix4f omega() {
 			 w(0),	0,		w(2),	-w(1),
 			 w(1), 	-w(2), 	0, 		w(0),
 			 w(2),	w(1), 	-w(0), 	0;
-	cout << "omega" << endl << omega << endl << endl;
+//	cout << "omega" << endl << omega << endl << endl;
 	return omega;
 }
 // Calculates Predicted Next State.
@@ -175,11 +180,11 @@ void state_prediction () {
 	xdelta.segment(10,6) << 0,0,0,0,0,0;
 	//Biases
 	//xdelta.block<6,1>(10,1) = 0;
-	cout << "xdelta" << endl << xdelta << endl<<endl;
+//	cout << "xdelta" << endl << xdelta << endl<<endl;
 	state += Sampling_Time*xdelta;
 	//normalise quaternions.
 	state.segment(6,4)/=state.segment(6,4).norm();
-	cout << "state predicted" << endl << state << endl<<endl;
+//	cout << "state predicted" << endl << state << endl<<endl;
 }
 MatrixXf Xi() {
 	MatrixXf Xi(4,3);
@@ -188,7 +193,7 @@ MatrixXf Xi() {
 			q(0), -q(3), q(2),
 			q(3), q(0), -q(1),
 			-q(2), q(1), q(0);
-	cout << "Xi" << endl << Xi << endl << endl;
+//	cout << "Xi" << endl << Xi << endl << endl;
 	return Xi;
 }
 MatrixXf Q() {
@@ -226,7 +231,7 @@ MatrixXf Q() {
 			zeros3, Qacc, zeros3, zeros3,
 			zeros3, zeros3, Qgyrobias, zeros3,
 			zeros3, zeros3, zeros3, Qaccbias;
-	cout << "Q" << endl << Q << endl << endl;
+//	cout << "Q" << endl << Q << endl << endl;
 	return Q;
 }
 Matrix16f F() {
@@ -254,7 +259,7 @@ Matrix16f F() {
 			Matrix<float, 6, 16>::Zero();
 	F *= Sampling_Time;
 	F+= Matrix<float, 16, 16>::Identity();
-	cout << "F" << endl << F << endl << endl;
+//	cout << "F" << endl << F << endl << endl;
 	return F;
 }
 MatrixXf G() {
@@ -267,44 +272,42 @@ MatrixXf G() {
 			Matrix<float, 3, 6>::Zero(), Matrix<float, 3, 3>::Identity(), Matrix<float, 3, 3>::Zero(),
 			Matrix<float, 3, 9>::Zero(), Matrix<float, 3, 3>::Identity();
 	G *= Sampling_Time;
-	cout << "G" << endl << G << endl << endl;
+//	cout << "G" << endl << G << endl << endl;
 	return G;
 }
 void covariance_prediction() { //Create a function to build P up in step3.
 	Matrix16f P_old(P.block<16,16>(0,0));
 	P.block<16,16>(0,0) << F()*P.block<16,16>(0,0)*F().transpose() + G()*Q()*G().transpose();
 	// Should we propagate any change to the other blocks of P?
-	for (int i = 0; i < (int) landmarks.size(); i++) {
-		MatrixXf P_temp(F()*P.block<16,4>(0,16+i*4));
-		P.block<16,4>(0,16+i*4) = P_temp;
-		P.block<4,16>(16+i*4,0)  = P_temp.transpose();
-	}
-	cout << "P" << endl << P << endl << endl;
+	MatrixXf P_temp(F()*P.block(0,16, 16, P.cols() - 16));
+		P.block(0,16, 16, P.cols() - 16) = P_temp;
+		P.block(16,0, P.rows() - 16,16)  = P_temp.transpose();
+
+//	cout << "P" << endl << P << endl << endl;
 }
 
 MatrixXf H_fn(int planeId) {
-	int size = landmarks.size();
-	MatrixXf H(4, 4*size + 16);
+	MatrixXf H(4, 20);
 	// Build H for each plane.
 	MatrixXf Xip(4,3);
 	Vector4f q(state.segment(6,4));
-	cout << "q" << endl << q << endl << endl;
+//	cout << "q" << endl << q << endl << endl;
 	Xip << 	-q(1), -q(2), -q(3),
 			-q(0), -q(3),  q(2),
 			q(3),  -q(0), -q(1),
 			-q(2),  q(1),  -q(0);
-	cout << "Xip" << endl << Xip << endl << endl;
+//	cout << "Xip" << endl << Xip << endl << endl;
 	Vector4f plane(landmarks.getPlane(planeId));
 	Vector4f Hqparts;
 	Hqparts << Xip * plane.segment(0,3); //Nx,Ny Nz
-	cout << "Hqparts" << endl << Hqparts << endl << endl;
-	cout << "currtP" << endl << plane << endl << endl;
+//	cout << "Hqparts" << endl << Hqparts << endl << endl;
+//	cout << "currtP" << endl << plane << endl << endl;
 	MatrixXf Hq(3,4);
 	Hq << -Hqparts(1), -Hqparts(0), Hqparts(3), -Hqparts(2),
 			   -Hqparts(2), -Hqparts(3), -Hqparts(0), Hqparts(1),
 			   -Hqparts(3), Hqparts(2), -Hqparts(1), -Hqparts(0);
 	Hq*=2;
-	cout << "Hq" << endl << Hq << endl << endl;
+//	cout << "Hq" << endl << Hq << endl << endl;
 	MatrixXf block(4,3);
 	Matrix4f block2;
 	Matrix4f block3(4,4);
@@ -312,14 +315,10 @@ MatrixXf H_fn(int planeId) {
 	block2 << Hq, Matrix<float, 1, 4>::Zero();
 
 	block3 << DCM(),  Matrix<float, 3, 1>::Zero(), state.segment(0,3).transpose(), 1;
-	if (planeId == 0) {
-		H << 	block,  	MatrixXf::Zero(4,3), 	block2,		MatrixXf::Zero(4,6),
-						 block3,  MatrixXf::Zero(4, 4*(size-1-planeId));
-	} else {
+
 	H << 	block,  	MatrixXf::Zero(4,3), 	block2,		MatrixXf::Zero(4,6),
-			MatrixXf::Zero(4, 4*(planeId)), block3,  MatrixXf::Zero(4, 4*(size-1-planeId));
-			}
-	cout << "H" << endl << H << endl << endl;
+					 block3;
+//	cout << "H" << endl << H << endl << endl;
 	return H;
 }
 void update() {
@@ -333,7 +332,7 @@ void update() {
 						0,0,0,1;
 		Matrix4f transPlane;
 		transPlane << DCM(), Vector3f::Zero(), state.segment(0,3).transpose(), 1;
-		cout << "Transplane" << endl << transPlane << endl << endl;
+//		cout << "Transplane" << endl << transPlane << endl << endl;
 		Vector4f inP;
 		Matrix4f inC;
 		inP << hypermute*newPlanes[i].plane;
@@ -341,46 +340,58 @@ void update() {
 		MatrixXf minH(4,28);
 		Matrix4f minS;
 		Vector4f minDiff;
+		MatrixXf P_min_opt;
 		double tempDist;
 		int first = 1;
+		int ptr = 0;
 		for (int j = 0; j < landmarks.size(); j++) {
 			Vector4f diff;
 			diff << inP - transPlane*landmarks.getPlane(j);
-			cout << "Diff" << endl << diff << endl << endl;
+//			cout << "Diff" << endl << diff << endl << endl;
 			MatrixXf H(H_fn(j));
-			MatrixXf S(H*P*H.transpose() + inC * 100);
+			//Build the optimised P.
+			MatrixXf P_opt(20,20);
+			P_opt << P.block(0,0, 16,16), P.block(0,16+4*j, 16,4),
+					P.block(16+4*j,0,4,16), P.block(16+4*j, 16+4*j, 4, 4);
+//			cout << "P_opt" << endl << P_opt << endl << endl;
+			MatrixXf S(H*P_opt*H.transpose() + inC * 100);
 
 			double dist = diff.transpose() *  S.inverse()*   diff;
 			dist = abs(dist);
-			cout << "Distance" << endl << dist << endl << endl;
+//			cout << "Distance" << endl << dist << endl << endl;
 			if ((first == 1) || dist < tempDist) {
 				first = 0;
 				tempDist = dist;
-				minH <<H;
-				minS << S;
-				minDiff << diff;
+				minH = H;
+				minS = S;
+				minDiff = diff;
+				P_min_opt = P_opt;
+				ptr = j;
 			}
 		}
 		//Update States
 		landmarks.increaseCount(i);
-		MatrixXf kalmanGain(P * minH.transpose() * minS.inverse());
-		cout << "minH.transpose" << endl << minH.transpose() << endl << endl;
-		cout << "P" << endl << P << endl << endl;
-		cout << "minS.inverse" << endl << minS.inverse() << endl << endl;
-		cout << "kalmanGain" << endl << kalmanGain << endl << endl;
+		MatrixXf kalmanGain(P_min_opt * minH.transpose() * minS.inverse());
+//		cout << "minH.transpose" << endl << minH.transpose() << endl << endl;
+//		cout << "P_opt" << endl << P_min_opt << endl << endl;
+//		cout << "minS.inverse" << endl << minS.inverse() << endl << endl;
+//		cout << "kalmanGain" << endl << kalmanGain << endl << endl;
 		VectorXf change(kalmanGain * minDiff);
 		//cout<< "state increment" << endl << change.segment(0,16)<<endl<<endl;
 		state += change.segment(0,16);
-		cout<< "state update stage" << endl << state<<endl<<endl;
+//		cout<< "state update stage" << endl << state<<endl<<endl;
 		//Update State Covariances
-		P -= kalmanGain*minH*P;
+		P_min_opt -= kalmanGain*minH*P_min_opt;
+		//unPack P_opt into main P
+		P.block(0,0, 16,16) = P_min_opt.block(0,0, 16,16);
+		P.block(0,16+4*ptr, 16,4) = P_min_opt.block(0,16, 16,4);
+		P.block(16+4*ptr, 0, 4, 16) = P_min_opt.block(16,0, 4,16);
+		P.block(16+4*ptr,16+4*ptr,4,4) = P_min_opt.block(16,16,4,4);
+//		cout<< "P update stage" << endl << P<<endl<<endl;
 		//update landmarks covariances and state.
-		for (int k = 0; k < landmarks.size(); k++) {
-			Vector4f delta(change.segment(16 + 4*k,4));
-			landmarks.updatePlane(k, delta);
-			//update covariance.
-			landmarks.updateCov(k,P.block<4,4>(16 + 4*k,16 + 4*k));
-		}
+		Vector4f delta(change.segment(16,4));
+		landmarks.updatePlane(ptr, delta);
+
  				// addition to state.
 
 	}
@@ -393,7 +404,7 @@ void getNewMeasurement() {
 	acc_t*=(9.816 /pow(2.00,14));
 	acc << acc_t(2), -acc_t(0), -acc_t(1);
 	Vector3f accBias(state.segment(13,3));
-	cout << "acc measured" << endl << acc << endl << endl;
+//	cout << "acc measured" << endl << acc << endl << endl;
 	acc-=accBias;
 
 	// Process Gyro Reading.
@@ -402,7 +413,7 @@ void getNewMeasurement() {
 	gyro_t /= 818.51113590117601252569;
 	gyro << gyro_t(2), -gyro_t(0), -gyro_t(1);
 	Vector3f gyroBias(state.segment(10,3));
-	cout << "gyro measured" << endl << gyro << endl << endl;
+//	cout << "gyro measured" << endl << gyro << endl << endl;
 	gyro  -= gyroBias;
 
 	accPtr+=3;
@@ -411,8 +422,8 @@ void getNewMeasurement() {
 		accPtr  = 0;
 		gyroPtr = 0;
 	}
-	cout << "acc" << endl << acc << endl << endl;
-	cout << "gyro" << endl << gyro << endl << endl;
+//	cout << "acc" << endl << acc << endl << endl;
+//	cout << "gyro" << endl << gyro << endl << endl;
 }
 void getNewObservation() {
 	newPlanes.clear();
