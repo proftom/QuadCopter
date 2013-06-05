@@ -37,6 +37,8 @@
 \usepackage{mathtools}
 \usepackage{amssymb}
 
+
+
 \usepackage{caption}
 % \captionsetup[subfigure]{format=subfig,labelsep=colon,labelformat=simple}
 % \usepackage{subcaption}
@@ -162,45 +164,53 @@ Shen et al. \cite{Shen2012} used a quadcoptor airframe and a RGB-D camera from M
 \subsection{Our Solution to the Problem} % (fold)
 \label{sub:our_solution_to_the_problem}
 
+Our solution is to use an RGB-D camera as our primary sensor, supplemented with accelerometers and gyros and a downward facing sonar sensor. In order to generate the estimate of our state we will use an \ac{EKF} to fuse all the data. In order to simplify our feature extraction we will only extract planes from the environment, this is because planes are easy to characterise from all directions as well as being a consistently available feature in man made environments. We will be using the Asus Xtion Pro depth camera as our sensor as it is considerably lighter than the Microsoft Kinect, while maintaining a similar price point. Due to the somewhat narrow field of view we expect that the floor and the ceiling will often be out of view, hence reduced observability in the elevation direction. We will compliment the Xtion sensor with a downward facing sonar sensor, to address this issue.
 
-\subsubsection{Why did we Choose to Track Planes} % (fold)
-\label{ssub:why_did_we_choose_to_track_planes}
+With the above we can create a system that can accurately locate itself in a GPS denied environment, and this will be satisfactory for MavRX to see the viability of the system. Though in order to get qualitative and quantitative data we wish to implement this system on an embedded platform on a MAV. This will allow us to demonstrate the outcome of the project in a closed loop system and give MavRX valuable information about the utility of such a localisation system. 
 
-\subsubsection{Why did we Choose the Xtion Sensor} % (fold)
-\label{ssub:why_did_we_choose_the_xtion_sensor}
+For the embedded platform we have chosen to use a board called the 'arndale' board from INSIGNAL. This is due to its large amount of processing power and reasonably light weight design. It offers a dual core ARM A15 processor which will allow us to separate the two major tasks onto the different cores; feature extraction and Kalman filtering. 
 
-
-\subsubsection{Why did we Choose the Arndale Board} % (fold)
-\label{ssub:why_did_we_choose_the_arndale_board}
-
-\subsubsection{Why did we Choose a Quadcopter Platform} % (fold)
-\label{ssub:why_did_we_choose_a_quadcopter_platform}
+We have decided to go with a quadcopter airframe for closed loop experimentation. This is because quadcopters have the ability to move around their environment slowly by hovering, this is especially useful when there is limited space for manoeuvre. Quadcopters also will have good stability, and therefore limit the amount of motion blur on the depth camera. Finally quadcopters are MavRX's speciality, so we will be able to make use of their expertise as well as helping them gather experience with this kind of air frame. 
 
 
-\begin{itemize}
-	\item What are we trying to achieve
-	\item Why is this a good idea to achieve
-	\begin{itemize}
-		\item why indoor navigation
-		\item why are mavrx interested in this
-		\item financial rundown (note that mavrx are intersted in a prototype consulting job, not a financial feasability report)
-		\item discuss some of mavrx's buisiness model (if we are allowed)
-	\end{itemize}
-	\item What have other people done in this field
-	\begin{itemize}
-		\item insert papers here
-	\end{itemize}
-	\item how are we going to achieve it
-	\item Why did we chose to do it that way
-	\begin{itemize}
-		\item why planes
-		\item why xtion
-		\item why arndale
-		\item why quadcopter
-	\end{itemize}
-\end{itemize}
+% \subsubsection{Why did we Choose to Track Planes} % (fold)
+% \label{ssub:why_did_we_choose_to_track_planes}
 
-% section problem_specification (end)
+% \subsubsection{Why did we Choose the Xtion Sensor} % (fold)
+% \label{ssub:why_did_we_choose_the_xtion_sensor}
+
+
+% \subsubsection{Why did we Choose the Arndale Board} % (fold)
+% \label{ssub:why_did_we_choose_the_arndale_board}
+
+% \subsubsection{Why did we Choose a Quadcopter Platform} % (fold)
+% \label{ssub:why_did_we_choose_a_quadcopter_platform}
+
+
+% \begin{itemize}
+% 	\item What are we trying to achieve
+% 	\item Why is this a good idea to achieve
+% 	\begin{itemize}
+% 		\item why indoor navigation
+% 		\item why are mavrx interested in this
+% 		\item financial rundown (note that mavrx are intersted in a prototype consulting job, not a financial feasability report)
+% 		\item discuss some of mavrx's buisiness model (if we are allowed)
+% 	\end{itemize}
+% 	\item What have other people done in this field
+% 	\begin{itemize}
+% 		\item insert papers here
+% 	\end{itemize}
+% 	\item how are we going to achieve it
+% 	\item Why did we chose to do it that way
+% 	\begin{itemize}
+% 		\item why planes
+% 		\item why xtion
+% 		\item why arndale
+% 		\item why quadcopter
+% 	\end{itemize}
+% \end{itemize}
+
+% % section problem_specification (end)
 
 \section{Sensor Calibration} % (fold)
 
