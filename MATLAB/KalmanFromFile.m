@@ -57,7 +57,8 @@ for i = 1:n
 end
 Xdot = zeros(16+4*n,1);
 Xtrace = zeros(N,16+4*n);
-mdtrace = zeros(length(Planedata),1);
+%mdtrace = zeros(length(Planedata),3);
+mdtrace = zeros(N,3);
 
 for k = 1:N
     
@@ -142,16 +143,22 @@ for k = 1:N
               zeros(3,9) eye(3)];
 
     P(1:16,1:16) = F*P(1:16,1:16)*F.' + G*Q*G.';
+    P(1:16,17:end) = F*P(1:16,17:end);
+    P(17:end,1:16) = P(1:16,17:end).';
     
     
     %-------------------
     thisplane = lastplanedata + 1;
-    if(T > Planedata{1,thisplane}(1,1).T / 1000 - Toffset)
+    if(thisplane <= length(Planedata) && T > Planedata{1,thisplane}(1,1).T / 1000 - Toffset)
         lastplanedata = thisplane;
         
         for plane_idx = 1:length(Planedata{1,thisplane})
             
             Pstr = Planedata{1,thisplane}(1,plane_idx);
+            
+            DCM =  [2*(q(1)^2 + q(2)^2) - 1, 2*(q(2)*q(3) + q(1)*q(4)), 2*(q(2)*q(4) - q(1)*q(3));...
+                    2*(q(2)*q(3) - q(1)*q(4)), 2*(q(1)^2 + q(3)^2) - 1, 2*(q(3)*q(4) + q(1)*q(2));...
+                    2*(q(2)*q(4) + q(1)*q(3)), 2*(q(3)*q(4) - q(1)*q(2)), 2*(q(1)^2 + q(4)^2) - 1];
             
             Hpermute = [0 0 1 0;...
                         1 0 0 0;...
@@ -196,6 +203,7 @@ for k = 1:N
                 if (firsttime == 1 || mdp < md )
                     firsttime = 0;
                     md = mdp;
+                    mini = i;
                     %mdtrace(thisplane) = md;
                     minH = H;
                     minS = S;
@@ -206,6 +214,7 @@ for k = 1:N
             end
             
             %TODO: check for md < thresh for reg instead of assoc here!
+            mdtrace(k,plane_idx) = md;
             
             K = (P*minH.') / minS;
             
