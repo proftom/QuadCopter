@@ -115,12 +115,17 @@ Introduction introducing things in an introductory manner.
 \section{Acronyms} % (fold)
 \label{sec:acronyms}
 \begin{acronym}[DBScan]
+	\acro{UAV}{Unmanned Aerial Vehicle}
+	\acro{MAV}{Micro Aerial Vehicle}
 	\acro{EKF}{Extended Kalman Filter}
 	\acro{DoF}{Degrees of Freedom}
 	\acro{MMSE}{minimum mean square error}
 	\acro{PCL}{point cloud library}
 	\acro{DBScan}{density based scan}
 	\acro{PCA}{principle component axis}
+	\acro{GPS}{Global Positioning System}
+	\acro{RGB}{Red Green Blue}
+	\acro{RGB-D}{Red Green Blue - Depth}
 \end{acronym}
 % section acronyms (end)
 
@@ -132,26 +137,26 @@ Introduction introducing things in an introductory manner.
 \subsection{Project Aim}
 \label{sub:what_are_we_trying_to_achieve}
 \cite{OpenPilotinsgps}
-This project aims to provide our client with a functional prototype of an autonomous flying platform, much like traditional UAVs (Unmanned Aerial Vehicle). The novel aspect of this prototype will be the fact that it can operate in GPS (Global Positioning System) denied environments, such as indoors and in urban canyons. The aim of the prototype is to be a proof of concept, showing that with current technology, a flying robot can be autonomous in GPS denied environments using only on-board sensors and computing. 
+This project aims to provide our client with a functional prototype of an autonomous flying platform, much like a traditional \ac{UAV}. The novel aspect of this prototype will be the fact that it can operate in \ac{GPS} denied environments, such as indoors and in urban canyons. The aim of the prototype is to be a proof of concept, showing that with current technology, a flying robot can be autonomous in \ac{GPS} denied environments using only on-board sensors and computing. 
 
-There are often situations where unmanned aerial vehicles could be useful, such as: search and rescue; infrastructure inspection (power lines, sewers); photography and videography. These tasks are already performed routinely by UAVs, though usually controlled remotely by a human operator. In some cases the human operator is removed, and GPS is used to close the loop on absolute positioning. This is a great solution for many problems, as it is quite cheap and can work nearly anywhere in the world. There are some places though where GPS will not work reliably, such as inside a building or between many tall buildings (often called an urban canyon). These environments also would put pressure on the skill of a human operator due to the abundance of obstacles. Therefore providing a system that can reliably navigate indoors without a human operator is a very good idea. 
+There are often situations where unmanned aerial vehicles could be useful, such as: search and rescue; infrastructure inspection (power lines, sewers); photography and videography. These tasks are already performed routinely by \ac{UAV}s, though usually controlled remotely by a human operator. In some cases the human operator is removed, and \ac{GPS} is used to close the loop on absolute positioning. This is a great solution for many problems, as it is quite cheap and can work nearly anywhere in the world. There are some places though where \ac{GPS} will not work reliably, such as inside a building or between many tall buildings (often called an urban canyon). These environments also would put pressure on the skill of a human operator due to the abundance of obstacles. Therefore providing a system that can reliably navigate indoors without a human operator is a very good idea. 
 
 \subsection{Who are MavRX and Why are They Interested?} % (fold)
 \label{sub:why_are_mavrx_interested_in_this_work_}
 
-MavRX are a small start-up firm that are trying to push the frontiers of affordable UAVs for the masses. Having achieved massive success in crowd-funding a cheap quadcopter platform, they are looking at pushing into more novel areas of UAV production. They have asked us to help pave the road to a fully autonomous flying platform that will be priced in the consumer range rather than military/defence category like similar autonomous platforms. The main thing they are interested is a proof of concept model that they can use to attract support and funding with, as well as using it as a base for future experimentation. We must also give some thought to the pricing of the hardware to ensure we are not developing an infeasible product, though MavRX do not want us to spend much time on pricing and comparison of components, nor to develop a financial plan for this project as they already have a team of people working on the business aspect of this project.  
+MavRX are a small start-up firm that are trying to push the frontiers of affordable \ac{UAV}s for the masses. Having achieved massive success in crowd-funding a cheap quadcopter platform, they are looking at pushing into more novel areas of \ac{UAV} production. They have asked us to help pave the road to a fully autonomous flying platform that will be priced in the consumer range rather than military/defence category like similar autonomous platforms. The main thing they are interested is a proof of concept model that they can use to attract support and funding with, as well as using it as a base for future experimentation. We must also give some thought to the pricing of the hardware to ensure we are not developing an infeasible product, though MavRX do not want us to spend much time on pricing and comparison of components, nor to develop a financial plan for this project as they already have a team of people working on the business aspect of this project.  
 
 \subsection{Other Work in This Field} % (fold)
 \label{sub:other_work_in_this_field}
 
-This section will explore solutions to this and similar problems generated by other academics. The approaches to localisation for UAVs and MAVs (Micro Aerial Vehicles) fall into 3 main categories: Optical flow tracking \cite{DBLP:conf/icra/GrabeBG12}; time of flight laser scanners \cite{Bry2012} and rgb-d cameras \cite{Shen2012}.
+This section will explore solutions to this and similar problems generated by other academics. The approaches to localisation for \ac{UAV}s and \ac{MAV}s (Micro Aerial Vehicles) fall into 3 main categories: Optical flow tracking \cite{DBLP:conf/icra/GrabeBG12}; time of flight laser scanners \cite{Bry2012} and rgb-d cameras \cite{Shen2012}.
 
-Grabe et al\cite{DBLP:conf/icra/GrabeBG12} produced an interesting UAV that uses a downward facing RGB camera on a quadcopter to correct for sensor drift. This approach has a number of advantages firstly is the low cost of the hardware, RGB cameras are now so common place that their price can be very low. In combination with other cheap sensors such as gyros, accelerometers, magnetometers and barometers a complete navigation solution becomes quite affordable. Though there are some significant downsides to this approach. Firstly there is no easy way to extract absolute data from the system, the concept of an absolute distance must be derived from the inertial sensors at some point, hence the whole system could be susceptible to drift over time. The conclusion of this paper suggests that this system would be well applied as a backup for a more robust tracking system. Therefore for now we can dismiss the use of optical flow tracking as a primary localisation technique. 
+Grabe et al\cite{DBLP:conf/icra/GrabeBG12} produced an interesting \ac{UAV} that uses a downward facing \ac{RGB} camera on a quadcopter to correct for sensor drift. This approach has a number of advantages firstly is the low cost of the hardware, \ac{RGB} cameras are now so common place that their price can be very low. In combination with other cheap sensors such as gyros, accelerometers, magnetometers and barometers a complete navigation solution becomes quite affordable. Though there are some significant downsides to this approach. Firstly there is no easy way to extract absolute data from the system, the concept of an absolute distance must be derived from the inertial sensors at some point, hence the whole system could be susceptible to drift over time. The conclusion of this paper suggests that this system would be well applied as a backup for a more robust tracking system. Therefore for now we can dismiss the use of optical flow tracking as a primary localisation technique. 
 
 Bry et al. \cite{Bry2012} took a different approach. They used A fixed wing model aircraft and a planar time of flight (ToF) range finder for their localisation scheme. The use of a fixed wing aircraft offers one main advantage; high efficiency, therefore long flight times compared to a rotary aircraft such as a helicopter or quadcopter design. The draw back is that a fixed wing aircraft must be continually moving in order to stay airborne, and hence is more restrictive in environments that are confined. The ToF range finder is a very promising technology for localisation, it provides accurate data at high update rates. There are, as always, a number of issues; These range finders are very expensive, the one used here is \$5590 (Via Acroname Robotics)%http://www.acroname.com/robotics/parts/R314-HOKUYO-LASER4.html)
 This is likely to put it out of contention for our project. Furthermore, these range finders only scan in one plane, hence only return quite sparse data. In order to identify features one must accumulate data along many planes, which depending on feature type, may make detection time prohibitively long. 
 
-Shen et al. \cite{Shen2012} used a quadcoptor airframe and a RGB-D camera from Microsoft combined with a laser range finder for localisation. Using the Depth channel of the camera they extract point cloud data to form an occupancy map and localise using the laser scanner. The benefit of the RGB-D camera is that due to Microsoft pushing this technology to consumers, the sensors are considerably cheaper than the competition (\pounds 129.99). The laser range finder is used in a similar way to the above methods. Our implementation would not need the high density occupancy data that a full point cloud gives, a better use of this sensor may be to use it as the primary localisation sensor.
+Shen et al. \cite{Shen2012} used a quadcoptor airframe and a \ac{RGB-D} camera from Microsoft combined with a laser range finder for localisation. Using the Depth channel of the camera they extract point cloud data to form an occupancy map and localise using the laser scanner. The benefit of the \ac{RGB-D} camera is that due to Microsoft pushing this technology to consumers, the sensors are considerably cheaper than the competition (\pounds 129.99). The laser range finder is used in a similar way to the above methods. Our implementation would not need the high density occupancy data that a full point cloud gives, a better use of this sensor may be to use it as the primary localisation sensor.
 
 
 
@@ -164,9 +169,9 @@ Shen et al. \cite{Shen2012} used a quadcoptor airframe and a RGB-D camera from M
 \subsection{Our Solution to the Problem} % (fold)
 \label{sub:our_solution_to_the_problem}
 
-Our solution is to use an RGB-D camera as our primary sensor, supplemented with accelerometers and gyros and a downward facing sonar sensor. In order to generate the estimate of our state we will use an \ac{EKF} to fuse all the data. In order to simplify our feature extraction we will only extract planes from the environment, this is because planes are easy to characterise from all directions as well as being a consistently available feature in man made environments. We will be using the Asus Xtion Pro depth camera as our sensor as it is considerably lighter than the Microsoft Kinect, while maintaining a similar price point. Due to the somewhat narrow field of view we expect that the floor and the ceiling will often be out of view, hence reduced observability in the elevation direction. We will compliment the Xtion sensor with a downward facing sonar sensor, to address this issue.
+Our solution is to use an \ac{RGB-D} camera as our primary sensor, supplemented with accelerometers and gyros and a downward facing sonar sensor. In order to generate the estimate of our state we will use an \ac{EKF} to fuse all the data. In order to simplify our feature extraction we will only extract planes from the environment, this is because planes are easy to characterise from all directions as well as being a consistently available feature in man made environments. We will be using the Asus Xtion Pro depth camera as our sensor as it is considerably lighter than the Microsoft Kinect, while maintaining a similar price point. Due to the somewhat narrow field of view we expect that the floor and the ceiling will often be out of view, hence reduced observability in the elevation direction. We will compliment the Xtion sensor with a downward facing sonar sensor, to address this issue.
 
-With the above we can create a system that can accurately locate itself in a GPS denied environment, and this will be satisfactory for MavRX to see the viability of the system. Though in order to get qualitative and quantitative data we wish to implement this system on an embedded platform on a MAV. This will allow us to demonstrate the outcome of the project in a closed loop system and give MavRX valuable information about the utility of such a localisation system. 
+With the above we can create a system that can accurately locate itself in a \ac{GPS} denied environment, and this will be satisfactory for MavRX to see the viability of the system. Though in order to get qualitative and quantitative data we wish to implement this system on an embedded platform on a \ac{MAV}. This will allow us to demonstrate the outcome of the project in a closed loop system and give MavRX valuable information about the utility of such a localisation system. 
 
 For the embedded platform we have chosen to use a board called the 'arndale' board from INSIGNAL. This is due to its large amount of processing power and reasonably light weight design. It offers a dual core ARM A15 processor which will allow us to separate the two major tasks onto the different cores; feature extraction and Kalman filtering. 
 
@@ -481,7 +486,7 @@ The principle component axis calculation is made
 
 IMAGE?
 
-However, this method was never implemented as after thinking ahead towards plane association in the state update, we realised that performing the DBScan algorithm (as well as PCA) was no longer necessary at this stage. 
+However, this method was never implemented as after thinking ahead towards plane association in the state update, we realised that performing the DBScan algorithm (as well as \ac{PCA}) was no longer necessary at this stage. 
 In fact, it was found that DBScan was no longer the algorithm suitable, but rather a similar or adaptation of it – Iterative Nearest Neighbour (INN). The algorithm works by iteratively looping through pairs of planes, calculating there statistical similarity and then making a decision on whether to combine the pair. 
 If a pair is combined, we replace the pair with just one new plane, created from the properties of the two combined and repeat until all permutations are complete). Hence, the worst case time-complexity of this algorithm is O(n\^{2}).
 The reason we choose to move the merge part of the algorithm to the plane association part was that we are not only duplicating the work, but also that we can lead to unoptimal and/or incorrect plane association. Consider:
@@ -1094,7 +1099,7 @@ Cool stuff from \cite{Sola2013}
 \end{align}
 
 \begin{align}
-	\pi_i	&= e(y_i,x) \\
+	\pi_i	&= e(y_i,x) \notag \\
 			&= T_e y_i
 \end{align}
 
@@ -1164,7 +1169,7 @@ where
 \subsection{Implementation} % (fold)
 \label{sub:implementation}
 
-SerialUpdate: \cite{OpenPilotPaper} and chapter 4.2.2 of \cite{KFBookSerialupdate}
+SerialUpdate: \cite{OpenPilotPaper} and chapter 4.2.2 of \cite{KFBookSerialupdate}, and also mentioned in \cite{Sola2013}
 The referenced papers perform an optimization which assumes an entirerly uncorrelated measurment noise covariance matrix. That is the $R$ matrix is purely diagonal.
 We, on the other hand, use a measurment model that includes the measurment of planes. These measurements consist of the estimated plane equation in hessian normal form. As the plane is in a three dimensional space, and thus the measurment error will have three degrees of freedom, and this form has four dimensions, the covariance matrix cannot be uncorrelated.
 That is, as the hessian normal form uses a unit vector, the length of this vector is bound to unity. As such, the probability distrubution of the error of the components of this normal vector cannot be spherical.
@@ -1178,6 +1183,7 @@ In fact, all terms in $F$ regarding the planes are zero, execpt the main diagona
 Because the system is seperable, and because the second half is static, we can ignore the second half of the system when computing (\ref{eqn:predictP}).
 This makes an enormous difference in the scalability of the kalman filter approach. If the entire matrix-matrix multiplication is required, then the algorithm will scale like $O(n^3)$ where $n$ is the number of planes in the state vector. Now that this cubic dependence on $n$ is removed, only $O(n^2)$ terms remain, along with other terms.
 %TODO: explore complexity
+%TODO: incorporate reasoning from Sola2013
 
 	We crosscheck our implementation against a similar open source implementation by the OpenPilot team %\cite{OpenPilotinsgps}. \cite{Holz2011}
 
