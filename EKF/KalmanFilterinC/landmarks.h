@@ -15,9 +15,9 @@
  *      Author: ChinemeluEzeh
  */
 #include <Eigen/Dense>
-#include <iostream>
 #include <math.h>
 #include <vector>
+#include <Eigen/StdVector>
 
 
 using namespace std;
@@ -31,7 +31,7 @@ private:
 		Vector4f plane;
 		int count;
 	public:
-		Landmark (Vector4f nPlane)
+		Landmark (const Vector4f& nPlane)
 		{
 			setPlane(nPlane);
 			count = 0;
@@ -42,17 +42,20 @@ private:
 		Vector4f getPlane() {
 			return plane;
 		}
-		void setPlane(Vector4f nPlane) {
+		void setPlane(const Vector4f& nPlane) {
 			plane = nPlane;
 		}
 	};
 
-	vector<Landmark> landmarks;
+	std::vector<Landmark,Eigen::aligned_allocator<Landmark>> landmarks;
 
 public:
-	void addToLandmarks(Vector4f plane) {
-		Landmark *new_landmark = new Landmark(plane);
-		landmarks.push_back(*new_landmark);
+	//EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+	void addToLandmarks(const Vector4f& plane) {
+		//Landmark *new_landmark = new Landmark(plane);
+		//landmarks.push_back(*new_landmark);
+		landmarks.push_back(Landmark(plane));
+
 	}
 	int size() {
 		return landmarks.size();
@@ -60,7 +63,7 @@ public:
 	Vector4f getPlane(int i) {
 		return landmarks[i].getPlane();
 	}
-	float getMahaDist(Vector4f A, Vector4f B, Matrix4f S) {
+	float getMahaDist(const Vector4f& A, const Vector4f& B, const Matrix4f& S) {
 			Matrix<float, 1, 1> dist;
 			Vector4f diff = A-B;
 			return diff.transpose() *  S.inverse()*   diff;
@@ -68,7 +71,7 @@ public:
 	void increaseCount(int planeId) {
 		landmarks[planeId].increaseCount();
 	}
-	void updatePlane(int planeId, Vector4f delta) {
+	void updatePlane(int planeId, const Vector4f& delta) {
 		Vector4f temp = landmarks[planeId].getPlane() + delta;
 			landmarks[planeId].setPlane(temp);
 		}
