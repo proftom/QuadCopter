@@ -154,74 +154,81 @@ for k = 1:N
         
         for plane_idx = 1:length(Planedata{1,thisplane})
             
-            Pstr = Planedata{1,thisplane}(1,plane_idx);
-            
-            DCM =  [2*(q(1)^2 + q(2)^2) - 1, 2*(q(2)*q(3) + q(1)*q(4)), 2*(q(2)*q(4) - q(1)*q(3));...
-                    2*(q(2)*q(3) - q(1)*q(4)), 2*(q(1)^2 + q(3)^2) - 1, 2*(q(3)*q(4) + q(1)*q(2));...
-                    2*(q(2)*q(4) + q(1)*q(3)), 2*(q(3)*q(4) - q(1)*q(2)), 2*(q(1)^2 + q(4)^2) - 1];
-            
-            Hpermute = [0 0 1 0;...
-                        1 0 0 0;...
-                        0 1 0 0;...
-                        0 0 0 1];
-            TransPlane = [DCM      zeros(3,1);...
-                          X(1:3).' 1        ];
-            inP = Hpermute * Pstr.P;
-            inC = Hpermute * Pstr.C * Hpermute.';
-            
-            q = X(7:10);
-            %Xi = [-q(2) -q(3) -q(4); ...
-            %       q(1) -q(4)  q(3); ...
-            %       q(4)  q(1) -q(2); ...
-            %     -q(3)  q(2)  q(1)];
-              
-            Xip = [-q(2) -q(3) -q(4); ...
-                   -q(1) -q(4)  q(3); ...
-                    q(4) -q(1) -q(2); ...
-                   -q(3)  q(2) -q(1)];
-         
-            %find closest mahal
-            idx1 = 17;
-            idx2 = 20;
-            firsttime = 1;
-            for i = 1:n
-                currTP = X(idx1:idx2);
-                
-                z = inP - TransPlane * currTP;
-                
-                Hqparts = Xip * currTP(1:3);
-                Hq = 2 .* [-Hqparts(2) -Hqparts(1) Hqparts(4) -Hqparts(3); ...
-                           -Hqparts(3) -Hqparts(4) -Hqparts(1) Hqparts(2); ...
-                           -Hqparts(4) Hqparts(3) -Hqparts(2) -Hqparts(1)];
+                Pstr = Planedata{1,thisplane}(1,plane_idx);
 
-                %H = [[-D.*DCM; zeros(1,3)], zeros(4,3), [Hq; zeros(1,4)], zeros(4,3), zeros(4,3), zeros(4,4*(plane_idx-1)), [DCM -DCM*X(1:3); zeros(1,3) 1], zeros(4,4*(n-plane_idx)) ];
-                H = [[zeros(3); currTP(1:3).'], zeros(4,3), [Hq; zeros(1,4)], zeros(4,3), zeros(4,3), zeros(4,4*(i-1)), [DCM zeros(3,1); X(1:3).' 1], zeros(4,4*(n-i))];
+                DCM =  [2*(q(1)^2 + q(2)^2) - 1, 2*(q(2)*q(3) + q(1)*q(4)), 2*(q(2)*q(4) - q(1)*q(3));...
+                        2*(q(2)*q(3) - q(1)*q(4)), 2*(q(1)^2 + q(3)^2) - 1, 2*(q(3)*q(4) + q(1)*q(2));...
+                        2*(q(2)*q(4) + q(1)*q(3)), 2*(q(3)*q(4) - q(1)*q(2)), 2*(q(1)^2 + q(4)^2) - 1];
 
-                S = H*P*H.' + inC .* XtionCovarFudge;
-                mdp = z.'*inv(S)*z;
-            
-                if (firsttime == 1 || mdp < md )
-                    firsttime = 0;
-                    md = mdp;
-                    mini = i;
-                    %mdtrace(thisplane) = md;
-                    minH = H;
-                    minS = S;
-                    minz = z;
+                Hpermute = [0 0 1 0;...
+                            1 0 0 0;...
+                            0 1 0 0;...
+                            0 0 0 1];
+                TransPlane = [DCM      zeros(3,1);...
+                              X(1:3).' 1        ];
+                inP = Hpermute * Pstr.P;
+                inC = Hpermute * Pstr.C * Hpermute.';
+
+                q = X(7:10);
+                %Xi = [-q(2) -q(3) -q(4); ...
+                %       q(1) -q(4)  q(3); ...
+                %       q(4)  q(1) -q(2); ...
+                %     -q(3)  q(2)  q(1)];
+
+                Xip = [-q(2) -q(3) -q(4); ...
+                       -q(1) -q(4)  q(3); ...
+                        q(4) -q(1) -q(2); ...
+                       -q(3)  q(2) -q(1)];
+                if (k < 3000)               % Registration is off.
+                %find closest mahal
+                idx1 = 17;
+                idx2 = 20;
+                firsttime = 1;
+                for i = 1:n
+                    currTP = X(idx1:idx2);
+
+                    z = inP - TransPlane * currTP;
+
+                    Hqparts = Xip * currTP(1:3);
+                    Hq = 2 .* [-Hqparts(2) -Hqparts(1) Hqparts(4) -Hqparts(3); ...
+                               -Hqparts(3) -Hqparts(4) -Hqparts(1) Hqparts(2); ...
+                               -Hqparts(4) Hqparts(3) -Hqparts(2) -Hqparts(1)];
+
+                    %H = [[-D.*DCM; zeros(1,3)], zeros(4,3), [Hq; zeros(1,4)], zeros(4,3), zeros(4,3), zeros(4,4*(plane_idx-1)), [DCM -DCM*X(1:3); zeros(1,3) 1], zeros(4,4*(n-plane_idx)) ];
+                    H = [[zeros(3); currTP(1:3).'], zeros(4,3), [Hq; zeros(1,4)], zeros(4,3), zeros(4,3), zeros(4,4*(i-1)), [DCM zeros(3,1); X(1:3).' 1], zeros(4,4*(n-i))];
+
+                    S = H*P*H.' + inC .* XtionCovarFudge;
+                    mdp = z.'*inv(S)*z;
+
+                    if (firsttime == 1 || mdp < md )
+                        firsttime = 0;
+                        md = mdp;
+                        mini = i;
+                        %mdtrace(thisplane) = md;
+                        minH = H;
+                        minS = S;
+                        minz = z;
+                    end
+                    idx1 = idx1 + 4;
+                    idx2 = idx2 + 4;
                 end
-                idx1 = idx1 + 4;
-                idx2 = idx2 + 4;
+
+                %TODO: check for md < thresh for reg instead of assoc here!
+                mdtrace(k,plane_idx) = md;
+
+                K = (P*minH.') / minS;
+
+                X = X + K*minz;
+                P = (eye(length(P)) - K*minH)*P;
+            else %Turning Registration ON. Yeah!
+                
+                
             end
-            
-            %TODO: check for md < thresh for reg instead of assoc here!
-            mdtrace(k,plane_idx) = md;
-            
-            K = (P*minH.') / minS;
-            
-            X = X + K*minz;
-            P = (eye(length(P)) - K*minH)*P;
-            
         end
+    end
+    
+    if(k == 5000)
+        k
     end
     
 %     if (k <= 5000)
