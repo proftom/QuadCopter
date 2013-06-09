@@ -353,6 +353,7 @@ function [X, P , lastplanedata] = update(X, P, Planedata,lastplanedata, T)
             K = (P*minH.') / minS;
             
             X = X + K*minz;
+            X(7:10) = X(7:10)/norm(X(7:10));
             P = (eye(length(P)) - K*minH)*P;
         end
     end

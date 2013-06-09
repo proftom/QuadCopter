@@ -436,6 +436,8 @@ void update() {
 		VectorXf change(kalmanGain * minDiff);
 //		cout<< "state increment" << endl << change.segment(0,16)<<endl<<endl;
 		state += change.segment(0,16);
+		//normalise quaternions.
+		state.segment(6,4)/=state.segment(6,4).norm();
 		cout<< "state update stage" << endl << state<<endl<<endl;
 //		cout<< "Ptr" << endl << ptr<<endl<<endl;
 		//Update State Covariances
