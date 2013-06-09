@@ -18,9 +18,8 @@ using namespace Eigen;
 typedef Matrix< float , 16 , 16> Matrix16f;
 typedef Matrix< float , 16 , 1> Vector16f;
 #define STATENUM 16
-#define Sampling_Time 0.01	// unit is milliseconds.
-#define covFactor 1000
-#define distThreshold 800
+#define Sampling_Time 0.01	// unit is seconds.
+#define distThreshold 1000
 
 typedef struct {
 	Vector4f plane;
@@ -45,7 +44,6 @@ public:
 // Function definitions.
 Matrix3f DCM_fn();
 void initialisation ();
-Matrix4f omega_fn();
 void state_prediction ();
 MatrixXf Xi_fn();
 MatrixXf noiseMatrix();
@@ -69,7 +67,6 @@ MatrixXf E_r_fn(Vector4f plane);
 
 //Variables
 vector<Vector4f, Eigen::aligned_allocator<Vector4f> > landmarks;
-int timeSteps = 0;
 vector<Vector16f, Eigen::aligned_allocator<Vector16f> > statehistory;
 vector<planeStruct, Eigen::aligned_allocator<planeStruct> > newPlanes;
 Vector3f acc;
@@ -77,7 +74,6 @@ Vector3f gyro;
 Vector16f state;
 MatrixXf P(28,28);
 MatrixXf bigH;
-Matrix4f omega;
 Matrix3f DCM;
 MatrixXf Xi(4,3);
 MatrixXf Xip(4,3);
@@ -93,11 +89,19 @@ int gyroPtr = 0;
 int accPtr = 0;
 int planePtr = 0;
 int planeSteps = 0;
+int timeSteps = 0;
+
+
 
 int main() {
+
 	clock_t tStart = clock();
 	kalmanInitialiser();
+
+	//Pause here.
+
 	kalmanFilter();
+
 	for (int i = 0; i < (int)statehistory.size(); i++)
 		cout << "state at time t = " << i << endl<< statehistory[i] << endl<<endl;
 	printf("Time taken: %.2fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
@@ -107,15 +111,14 @@ void kalmanFilter() {
 	//Initialise P matrix and landmark
 	landmarks.clear();
 	P = P.block(0,0,16,16);
-
+	cout << "initial P and state" << endl<<P<<endl<<endl<<state<<endl;
 	while(timeSteps < 180) {
-				timeSteps++;
-				//Get measurements. Important step.
+
 				getNewMeasurement();
 
 				DCM = DCM_fn();
-				omega = omega_fn();
 				Xi = Xi_fn();
+				Xip = Xip_fn();
 
 				state_prediction();
 				covariance_prediction();
@@ -123,19 +126,20 @@ void kalmanFilter() {
 
 				processObservation();
 				statehistory.push_back(state);
+				timeSteps++;
 			}
 }
 
 void kalmanInitialiser() {
 	initialisation();
 	while(timeSteps < 50) {
-				timeSteps++;
+
 				//Get measurements. Important step.
 				getNewMeasurement();
 
 				DCM = DCM_fn();
-				omega = omega_fn();
 				Xi = Xi_fn();
+				Xip = Xip_fn();
 
 				state_prediction();
 				covariance_prediction();
@@ -143,6 +147,7 @@ void kalmanInitialiser() {
 
 				update();
 				statehistory.push_back(state);
+				timeSteps++;
 			}
 }
 
@@ -185,17 +190,7 @@ Matrix3f DCM_fn() { //There is a round off error in dcm(2,3). May cause an issue
 //	cout << "dcm" << endl << dcm << endl << endl;
 	return dcm;
 }
-Matrix4f omega_fn() {
-	Vector3f w(gyro);
 
-	Matrix4f omega_t;
-	omega_t << 0,		-w(0),	-w(1),	-w(2),
-			 w(0),	0,		w(2),	-w(1),
-			 w(1), 	-w(2), 	0, 		w(0),
-			 w(2),	w(1), 	-w(0), 	0;
-//	cout << "omega_t" << endl << omega_t << endl << endl;
-	return omega_t;
-}
 // Calculates Predicted Next State.
 void state_prediction () {
 
@@ -293,6 +288,13 @@ Matrix16f F_fn() {
 	Fvq*=2;
 	/*********************/
 	Matrix3f Fvba(-DCM.transpose());
+	Vector3f w(gyro);
+
+		Matrix4f omega;
+		omega << 0,		-w(0),	-w(1),	-w(2),
+				 w(0),	0,		w(2),	-w(1),
+				 w(1), 	-w(2), 	0, 		w(0),
+				 w(2),	w(1), 	-w(0), 	0;
 	Matrix4f Fqq(0.5 * omega);
 	MatrixXf Fqbw(-0.5 * Xi);
 	/********/
@@ -417,23 +419,22 @@ void getNewObservation() {
 						0,0,0,1;
 	int len = planeList[planePtr++];
 	for (int i = 0; i<len; i++) {
-		Vector4f plane_t;
-		Matrix4f cov_t;
+		Vector4f plane_t, pl2;
+		Matrix4f cov_t, cov;
 		plane_t << planeList[planePtr], planeList[planePtr+1], planeList[planePtr+2],planeList[planePtr+3];
-		plane_t << hypermute*plane_t;
+		pl2 << hypermute*plane_t;
 
 		cov_t << planeList[planePtr+4], planeList[planePtr+5], planeList[planePtr+6],planeList[planePtr+7],
 				 planeList[planePtr+8], planeList[planePtr+9], planeList[planePtr+10],planeList[planePtr+11],
 				 planeList[planePtr+12], planeList[planePtr+13], planeList[planePtr+14],planeList[planePtr+15],
 				 planeList[planePtr+16], planeList[planePtr+17], planeList[planePtr+18],planeList[planePtr+19];
-		cov_t << hypermute*cov_t* hypermute.transpose();
-		cov_t*= 100;
+		cov << hypermute*cov_t* hypermute.transpose();
+		cov*= 100;
 		planeStruct temp = {
-				 plane_t,
-				 cov_t
+				 pl2,
+				 cov
 		};
-		temp.cov = cov_t;
-		temp.plane = plane_t;
+
 		newPlanes.push_back(temp);
 		planePtr+=20;
 	}
@@ -486,6 +487,7 @@ association_struct dataAssociation(planeStruct planeData) {
 			data.S = S;
 			break;
 		}
+
 	}
 	return data;
 }
@@ -502,15 +504,16 @@ void processObservation() {
 		association_struct data = dataAssociation(newPlanes[i]);
 		//Either register plane or update kalman equations
 		if (data.planeId != -1) {	//Data was associated!
+//			cout << "updated lm: "<< data.planeId << endl<<endl;
 			update(data);
 		} else {	// Data NOT associated so register new plane.
+			cout << "added at time t= "<< timeSteps<<endl<<endl;
 			registration(i, data);
 		}
 	}
 }
 
 void update(association_struct data) {
-
 	// Unpack data.
 	MatrixXf P_opt(data.P_opt);
 	MatrixXf H_opt(data.H_opt);
@@ -539,7 +542,7 @@ void update(association_struct data) {
 //	cout << "P_opt" << endl << P_opt << endl << endl;
 //	cout << "S.inverse" << endl << S.inverse() << endl << endl;
 //	cout << "kalmanGain" << endl << kalmanGain << endl << endl;
-//	cout << "State Update to landmark " << index <<";" << endl << state << endl <<"Update Above to landmark: "<< index << endl <<endl;
+	cout << "State Update to landmark " << index <<";" << endl << state << endl <<"Update Above to landmark: "<< index << endl <<endl;
 //	cout << "Distance" << endl << data.distance << endl << endl;
 }
 
@@ -590,9 +593,12 @@ MatrixXf E_r_fn(Vector4f plane) { // D is h inverse
 	            GNqparts(3), GNqparts(2), -GNqparts(1), -GNqparts(0);
 	GNq *= 2;
 	MatrixXf E_r(4,16);
+	MatrixXf block(4,3);
+	block << Matrix3f::Zero(), -Nglob.transpose();
+	Matrix4f block2;
+	block2 << GNq, -state.segment(0,3).transpose()*GNq;
 
-	E_r << MatrixXf::Zero(3,6), GNq, MatrixXf::Zero(3, 6),
-			-Nglob.transpose(), MatrixXf::Zero(1, 3), -state.segment(0,3).transpose()*GNq, MatrixXf::Zero(1,6);
+	E_r << block, MatrixXf::Zero(4,3),block2, MatrixXf::Zero(4,6);
 	return E_r;
 }
 void update() {
@@ -601,10 +607,10 @@ void update() {
 	for (int i = 0; i < (signed)newPlanes.size(); i++) {
 		DCM = DCM_fn();
 		Xip = Xip_fn();
-		omega = omega_fn();
+		Xi = Xi_fn();
 		Matrix4f transPlane;
 		transPlane << DCM, Vector3f::Zero(), state.segment(0,3).transpose(), 1;
-//		cout << "Transplane" << endl << transPlane << endl << endl;
+
 		Vector4f inP(newPlanes[i].plane);
 		Matrix4f inC(newPlanes[i].cov);
 		MatrixXf minH(4,28);
@@ -653,6 +659,7 @@ void update() {
 		VectorXf change(kalmanGain * minDiff);
 //		cout<< "state increment" << endl << change.segment(0,16)<<endl<<endl;
 		state += change.segment(0,16);
+		state.segment(6,4)/=state.segment(6,4).norm();
 //		cout<< "state update stage" << endl << state<<endl<<endl;
 //		cout<< "Ptr" << endl << ptr<<endl<<endl;
 		//Update State Covariances
