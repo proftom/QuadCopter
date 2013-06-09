@@ -14,6 +14,7 @@
 #include <Eigen/StdVector>
 #include <boost/thread/thread.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include "SerialClass.h"
 using namespace std;
 using namespace Eigen;
 
@@ -433,10 +434,41 @@ void update() {
 }
 
 bool getNewMeasurementThalamus(){
-	return false;
+	static Serial SP("\\\\.\\COM10");
+	if (SP.BytesAvailable() >= 10)
+	{
+		char sync[2];
+		SP.ReadData(sync,sizeof(sync));
+
+		if (sync[0] == 11)
+		{
+			short GyroRaw[3];
+			SP.ReadData(GyroRaw,sizeof(GyroRaw));
+
+			Vector3f gyro_t;
+			gyro_t << GyroRaw[0], GyroRaw[1], GyroRaw[2];
+			gyro_t /= 818.51113590117601252569;
+			gyro << gyro_t(2), -gyro_t(0), -gyro_t(1);
+			Vector3f gyroBias(state.segment(10,3));
+			//	cout << "gyro measured" << endl << gyro << endl << endl;
+			gyro  -= gyroBias;
+
+
+			short AccRaw[3];
+			SP.ReadData(AccRaw,sizeof(AccRaw));
+
+			short MagRaw[3];
+			SP.ReadData(MagRaw,sizeof(MagRaw));
+		}
+
+
+
+	}
+	else
+		return false;
 }
 
-/*
+
 void getNewMeasurement() {
 	//Process Accelerometer reading.
 	Vector3f acc_t;
@@ -465,7 +497,7 @@ void getNewMeasurement() {
 //	cout << "acc" << endl << acc << endl << endl;
 //	cout << "gyro" << endl << gyro << endl << endl;
 }
-*/
+
 
 void getNewObservation() {
 	newPlanes.clear();
