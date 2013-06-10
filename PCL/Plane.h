@@ -11,7 +11,7 @@ class Plane  {
 	
 public:
 
-	double A, B, C, D;
+	float A, B, C, D;
 	vector<int> indicies;
 	vector<vector<float>> covariance;
 

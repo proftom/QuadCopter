@@ -370,7 +370,7 @@ void update() {
 		Matrix4f minS;
 		Vector4f minDiff;
 		MatrixXf P_min_opt;
-		double tempDist;
+		float tempDist;
 		int first = 1;
 		int ptr = 0;
 		for (int j = 0; j < (int)landmarks.size(); j++) {
@@ -388,7 +388,7 @@ void update() {
 			//			cout << "P_opt" << endl << P_opt << endl << endl;
 			MatrixXf S(H*P_opt*H.transpose() + inC * 100);
 
-			double dist = diff.transpose() *  S.inverse()*   diff;
+			float dist = diff.transpose() *  S.inverse()*   diff;
 			dist = abs(dist);
 			//			cout << "Distance" << endl << dist << endl << endl;
 			if ((first == 1) || dist < tempDist) {

@@ -161,7 +161,7 @@ class QCVision
 
 				for (int i = 0; i < planes.size(); i++) {
 					planes[i].calculateCovarianceMatrix(planes_);
-					double dist = sqrt( (planes[i].A * planes[i].A) + (planes[i].B * planes[i].B) + (planes[i].C * planes[i].C));
+					float dist = sqrt( (planes[i].A * planes[i].A) + (planes[i].B * planes[i].B) + (planes[i].C * planes[i].C));
 
 					myfile << planes[i].A * (1.0 / dist) << " " << planes[i].B * (1.0 / dist) << " " << planes[i].C * (1.0 / dist) << " " << planes[i].D << endl;
 					for (int j = 0; j < planes[i].covariance.size(); j++) {
@@ -341,7 +341,7 @@ class QCVision
 		return planes;
 	}
 
-	vector<Plane> DBScanND(vector<Plane> planes, int minPoints, double epsilon) 
+	vector<Plane> DBScanND(vector<Plane> planes, int minPoints, float epsilon) 
 	{
 		int sizeOfData = planes.size();
 		vector<bool> Visited(sizeOfData, false);
@@ -408,7 +408,7 @@ class QCVision
 	}
 
 	//Get all planes in region within epsilon
-	vector<int> regionQuery(vector<Plane> &planes, int currentPoint, double epsilon) {
+	vector<int> regionQuery(vector<Plane> &planes, int currentPoint, float epsilon) {
 		vector<int> k_indicies;
 
 		for( int j = 0; j < planes.size(); j++) {
@@ -425,7 +425,7 @@ class QCVision
 	}
 
 	void expandCluster(	int inputInd, vector<int> NeighborPts, vector<bool> pointsInNeighborPts, vector<int> &currentCluster,
-					double radius, int minPoints, vector<bool> &Visited, vector<bool> &addedToCluster, vector<Plane> &planes){
+					float radius, int minPoints, vector<bool> &Visited, vector<bool> &addedToCluster, vector<Plane> &planes){
 
 		currentCluster.push_back(inputInd);
 
@@ -537,7 +537,7 @@ class QCVision
 
 	}
 
-	bool samePlaneNormal(int pointOfInterest, int rootPoint, double epsilon) {
+	bool samePlaneNormal(int pointOfInterest, int rootPoint, float epsilon) {
 		if	((abs(planes_[rootPoint].A - planes_[pointOfInterest].A) < epsilon) 
 		&&	(abs(planes_[rootPoint].B - planes_[pointOfInterest].B) < epsilon) 
 		&&	(abs(planes_[rootPoint].C - planes_[pointOfInterest].C) < epsilon)
