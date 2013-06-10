@@ -10,6 +10,7 @@
 #include <pcl/features/integral_image_normal.h>
 #include <pcl/console/parse.h>
 #include <pcl/common/time.h>
+#include <pcl/common/transforms.h>
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/kdtree/kdtree.h>
 #include <iostream>
@@ -23,18 +24,18 @@ using namespace Eigen;
 #define RESOLUTION_MODE pcl::OpenNIGrabber::OpenNI_QQVGA_30Hz
 
 #define FPS_CALC(_WHAT_) \
-do \
+	do \
 { \
-    static unsigned count = 0;\
-    static double last = pcl::getTime ();\
-    double now = pcl::getTime (); \
-    ++count; \
-    if (now - last >= 1.0) \
-    { \
-      std::cout << "Average framerate("<< _WHAT_ << "): " << double(count)/double(now - last) << " Hz" <<   std::endl; \
-      count = 0; \
-      last = now; \
-    } \
+	static unsigned count = 0;\
+	static double last = pcl::getTime ();\
+	double now = pcl::getTime (); \
+	++count; \
+	if (now - last >= 1.0) \
+{ \
+	std::cout << "Average framerate("<< _WHAT_ << "): " << double(count)/double(now - last) << " Hz" <<   std::endl; \
+	count = 0; \
+	last = now; \
+} \
 }while(false)
 
 float G_smoothsize = 20.0f;
@@ -46,14 +47,14 @@ typedef Matrix< float , 16 , 1> Vector16f;
 class QCVision
 {
 
-  private:
+private:
 	clock_t t1, t2;
-    bool new_cloud_;
+	bool new_cloud_;
 
-  public:
-    typedef pcl::PointCloud<PointType> Cloud;
+public:
+	typedef pcl::PointCloud<PointType> Cloud;
 	typedef Cloud::Ptr CloudPtr; //typename
-    typedef Cloud::ConstPtr CloudConstPtr; //typename
+	typedef Cloud::ConstPtr CloudConstPtr; //typename
 
 	Vector16f* stateVector;
 
@@ -62,63 +63,63 @@ class QCVision
 	unsigned int eventflag; 
 	unsigned int Perseventflag; 
 
-	
-    pcl::visualization::CloudViewer viewer;
-    std::string device_id_;
-    boost::mutex mtx_;
 
-    // Data
-    CloudConstPtr cloud_;						//Raw cloud
+	pcl::visualization::CloudViewer viewer;
+	std::string device_id_;
+	boost::mutex mtx_;
+
+	// Data
+	CloudConstPtr cloud_;						//Raw cloud
 	pcl::PointCloud<pcl::Normal>::Ptr normals_; //Normal cloud
 	pcl::IntegralImageNormalEstimation<PointType, pcl::Normal> ne_; //Normal estimation object
 	vector<Plane> planes_;						//Found planes
 
 
 	QCVision (const std::string& device_id = "")
-      : viewer ("PCL OpenNI NormalEstimation Viewer")
-    , device_id_(device_id)
-	, eventflag(0)
-    {
-      //ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::COVARIANCE_MATRIX);
-      ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::SIMPLE_3D_GRADIENT);
-	  ne_.setDepthDependentSmoothing(true);
-	  ne_.setMaxDepthChangeFactor (G_depthdepend);
-      ne_.setNormalSmoothingSize (G_smoothsize);
-      new_cloud_ = false;
-      viewer.registerKeyboardCallback(&QCVision::keyboard_callback, *this);
-	  planes_.assign(19200, Plane(0,0,0,0));
+		: viewer ("PCL OpenNI NormalEstimation Viewer")
+		, device_id_(device_id)
+		, eventflag(0)
+	{
+		//ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::COVARIANCE_MATRIX);
+		ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::SIMPLE_3D_GRADIENT);
+		ne_.setDepthDependentSmoothing(true);
+		ne_.setMaxDepthChangeFactor (G_depthdepend);
+		ne_.setNormalSmoothingSize (G_smoothsize);
+		new_cloud_ = false;
+		viewer.registerKeyboardCallback(&QCVision::keyboard_callback, *this);
+		planes_.assign(19200, Plane(0,0,0,0));
 
-    }
-	
+	}
+
 	void cloud_cb (const CloudConstPtr& cloud)
-    {
-	  t2 = clock(); 
-	  boost::mutex::scoped_lock lock (mtx_);
- 
-      //lock while we set our cloud;
-      FPS_CALC ("computation");
-      // Estimate surface normals
+	{
+		t2 = clock(); 
+		boost::mutex::scoped_lock lock (mtx_);
 
-	  // Cloud cld (new Cloud(cloud));
+		//lock while we set our cloud;
+		FPS_CALC ("computation");
+		// Estimate surface normals
 
-      normals_.reset (new pcl::PointCloud<pcl::Normal>);
-	  //cld_render_ptr.reset(new pcl::PointCloud<PointType>);
-	  
-      double start = pcl::getTime ();
-      ne_.setInputCloud (cloud);
-	  ne_.compute (*normals_); 
+		// Cloud cld (new Cloud(cloud));
 
-      double stop = pcl::getTime ();
-      //std::cout << "Time for normal estimation: " << (stop - start) * 1000.0 << " ms" << std::endl;
-      cloud_ = cloud;
+		normals_.reset (new pcl::PointCloud<pcl::Normal>);
+		//cld_render_ptr.reset(new pcl::PointCloud<PointType>);
 
-	  
-	  normals_ = normals_; //TODO unessecary copy
-	  
-	  
-	  static bool hasrun = false;
-	  if(eventflag & 0x1){
-		  if(!hasrun){
+		double start = pcl::getTime ();
+		ne_.setInputCloud (cloud);
+		ne_.compute (*normals_); 
+
+		double stop = pcl::getTime ();
+		//std::cout << "Time for normal estimation: " << (stop - start) * 1000.0 << " ms" << std::endl;
+		cloud_ = cloud;
+
+
+		normals_ = normals_; //TODO unessecary copy
+
+
+		static bool hasrun = false;
+		if(eventflag & 0x1){
+			if(!hasrun){
 				//hasrun = true;
 
 
@@ -141,20 +142,20 @@ class QCVision
 				//
 				//myfile << t2 << endl;
 				//myfile << "<<<" << endl; 
-				
+
 				//vector<Plane> h = DBScanND(planes,1,0.05);
 
 				//For displaying coloured planes
 
-				 pcl::PointCloud<PointType> pc(*cloud);
-				 correctDistances(cloud, &pc);
+				pcl::PointCloud<PointType> pc(*cloud);
+				correctDistances(cloud, &pc);
 
-				 				
+
 				vector<vector<int>> clusterIndicies = floodFillAll(1000, 20);//DBSCAN(G_epsilon, G_minpts);
 				cloud_ = cloud;
 				vector<Plane> planes = ClusterToAveragePlane(clusterIndicies);
 
-				
+
 				ofstream myfile;
 				myfile.open("planes.txt",ios::app);
 				myfile << planes.size() << endl;
@@ -168,9 +169,9 @@ class QCVision
 						myfile << planes[i].covariance[j][0] << " " << planes[i].covariance[j][1] << " " << planes[i].covariance[j][2] << " " << planes[i].covariance[j][3] << endl;
 					}
 					myfile << planes[i].indicies.size() << endl;
-					
+
 				}
-				
+
 				myfile << t2 << endl;
 				myfile << "<<<" << endl; 
 
@@ -192,72 +193,78 @@ class QCVision
 				cloud_ = inputtmp;
 
 				new_cloud_ = true;
-		  }
-	  }
-	  else{
-		  cloud_ = cloud;
-		  if (!(eventflag & 0x1)){
-			  new_cloud_ = true;
-			  hasrun = false;
-		  }
+			}
+		}
+		else{
+			cloud_ = cloud;
+			if (!(eventflag & 0x1)){
+				new_cloud_ = true;
+				hasrun = false;
+			}
+		}
 		//apply transform based on camera location 
 		if(Perseventflag & 0x1){
-			MatrixXf Tran(4,3);
+			MatrixXf Tran(4,4);
 			Tran.block<3,3>(0,0)= *DCM;
-			Tran.block<3,1>(4,1)= stateVector->segment<3>(0);
+			Tran.block<3,1>(3,1)= stateVector->segment<3>(0);
+			//Tran.block<1,1>(3,3)= 1;
+			pcl::PointCloud<PointType> pc(*cloud_);
+			transformPointCloud(pc,pc,Tran);
+			CloudConstPtr inputtmp(new pcl::PointCloud<PointType>(pc));
+			cloud_ = inputtmp;
 		}
 		else{
 		}
-	  }
-    }
 
-    void viz_cb (pcl::visualization::PCLVisualizer& viz)
-    {
-      mtx_.lock ();
-      if (!cloud_ || !normals_)
-      {
-        //boost::this_thread::sleep(boost::posix_time::seconds(1));
-        mtx_.unlock ();
-        return;
-      }
+	}
 
-      CloudConstPtr temp_cloud;
-      pcl::PointCloud<pcl::Normal>::Ptr temp_normals;
+	void viz_cb (pcl::visualization::PCLVisualizer& viz)
+	{
+		mtx_.lock ();
+		if (!cloud_ || !normals_)
+		{
+			//boost::this_thread::sleep(boost::posix_time::seconds(1));
+			mtx_.unlock ();
+			return;
+		}
 
-      temp_cloud.swap (cloud_); //here we set cloud_ to null, so that
-      temp_normals.swap (normals_);
-      mtx_.unlock ();
+		CloudConstPtr temp_cloud;
+		pcl::PointCloud<pcl::Normal>::Ptr temp_normals;
 
-      if (!viz.updatePointCloud (temp_cloud, "OpenNICloud"))
-      {
-        viz.addPointCloud (temp_cloud, "OpenNICloud");
-		viz.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "OpenNICloud");
-        viz.resetCameraViewpoint ("OpenNICloud");
-      }
-      // Render the data
-      if (new_cloud_)
-      {
+		temp_cloud.swap (cloud_); //here we set cloud_ to null, so that
+		temp_normals.swap (normals_);
+		mtx_.unlock ();
 
-        viz.removePointCloud ("normalcloud");
+		if (!viz.updatePointCloud (temp_cloud, "OpenNICloud"))
+		{
+			viz.addPointCloud (temp_cloud, "OpenNICloud");
+			viz.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "OpenNICloud");
+			viz.resetCameraViewpoint ("OpenNICloud");
+		}
+		// Render the data
+		if (new_cloud_)
+		{
 
-        //viz.addPointCloudNormals<PointType, pcl::Normal> (temp_cloud, temp_normals, 5, 0.05f, "normalcloud");
-        new_cloud_ = false;
+			viz.removePointCloud ("normalcloud");
 
-      }
-    }
+			//viz.addPointCloudNormals<PointType, pcl::Normal> (temp_cloud, temp_normals, 5, 0.05f, "normalcloud");
+			new_cloud_ = false;
 
-    void keyboard_callback (const pcl::visualization::KeyboardEvent& event, void*)
-    {
+		}
+	}
+
+	void keyboard_callback (const pcl::visualization::KeyboardEvent& event, void*)
+	{
 		ofstream MyFile;
 		MyFile.open ("data1.csv", ios::out | ios::ate | ios::app) ;
-      boost::mutex::scoped_lock lock (mtx_);
-      
-	  switch (event.getKeyCode ())
-      {
-        case '1':
+		boost::mutex::scoped_lock lock (mtx_);
 
-       /*   ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::COVARIANCE_MATRIX);
-          std::cout << "switched to COVARIANCE_MATRIX method\n";
+		switch (event.getKeyCode ())
+		{
+		case '1':
+
+			/*   ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::COVARIANCE_MATRIX);
+			std::cout << "switched to COVARIANCE_MATRIX method\n";
 			(cloud_dbscanproc->width, cloud_dbscanproc->height, cloud_dbscanproc);*/
 			for (int p = 0; p <19200; p++){
 
@@ -267,21 +274,21 @@ class QCVision
 
 
 			MyFile << "//\n"; 
-          break;
-        case '2':
+			break;
+		case '2':
 
-		  
-          ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::AVERAGE_3D_GRADIENT);
-          std::cout << "switched to AVERAGE_3D_GRADIENT method\n";
-          break;
-        case '3':
-          ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::AVERAGE_DEPTH_CHANGE);
-          std::cout << "switched to AVERAGE_DEPTH_CHANGE method\n";
-          break;
-        case '4':
-          ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::SIMPLE_3D_GRADIENT);
-          std::cout << "switched to SIMPLE_3D_GRADIENT method\n";
-          break;
+
+			ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::AVERAGE_3D_GRADIENT);
+			std::cout << "switched to AVERAGE_3D_GRADIENT method\n";
+			break;
+		case '3':
+			ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::AVERAGE_DEPTH_CHANGE);
+			std::cout << "switched to AVERAGE_DEPTH_CHANGE method\n";
+			break;
+		case '4':
+			ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::SIMPLE_3D_GRADIENT);
+			std::cout << "switched to SIMPLE_3D_GRADIENT method\n";
+			break;
 		case '5':
 			ne_.setMaxDepthChangeFactor (G_depthdepend);
 			ne_.setNormalSmoothingSize (G_smoothsize);
@@ -296,34 +303,34 @@ class QCVision
 		case '8':
 			Perseventflag &= ~0x1;
 			break;
-      }
-    }
+		}
+	}
 
-    void run ()
-    {
-      pcl::Grabber* interface = new pcl::OpenNIGrabber (device_id_, RESOLUTION_MODE, RESOLUTION_MODE);
+	void run ()
+	{
+		pcl::Grabber* interface = new pcl::OpenNIGrabber (device_id_, RESOLUTION_MODE, RESOLUTION_MODE);
 
-      boost::function<void (const CloudConstPtr&)> f = boost::bind (&QCVision::cloud_cb, this, _1);
-      boost::signals2::connection c = interface->registerCallback (f);
+		boost::function<void (const CloudConstPtr&)> f = boost::bind (&QCVision::cloud_cb, this, _1);
+		boost::signals2::connection c = interface->registerCallback (f);
 
-      viewer.runOnVisualizationThread (boost::bind(&QCVision::viz_cb, this, _1), "viz_cb");
+		viewer.runOnVisualizationThread (boost::bind(&QCVision::viz_cb, this, _1), "viz_cb");
 
-      interface->start ();
+		interface->start ();
 
-      while (!viewer.wasStopped ())
-      {
-        boost::this_thread::sleep(boost::posix_time::seconds(1));
-      }
+		while (!viewer.wasStopped ())
+		{
+			boost::this_thread::sleep(boost::posix_time::seconds(1));
+		}
 
-      interface->stop ();
-    }
-	
+		interface->stop ();
+	}
+
 	vector<Plane> ClusterToAveragePlane(vector<vector<int>> clusters) 
 	{
 		vector<Plane> planes;
 
 		for(int i = 0; i < clusters.size(); i++) {
-						
+
 			float 
 				accum_x = 0.0,
 				accum_y = 0.0,
@@ -336,8 +343,8 @@ class QCVision
 				accum_y += normals_->points[clusters[i][j]].normal_y;
 				accum_z += normals_->points[clusters[i][j]].normal_z;
 				accum_d -= ((cloud_->points[clusters[i][j]].x * normals_->points[clusters[i][j]].normal_x)
-							+ (cloud_->points[clusters[i][j]].y * normals_->points[clusters[i][j]].normal_y)
-							+ (cloud_->points[clusters[i][j]].z * normals_->points[clusters[i][j]].normal_z));
+					+ (cloud_->points[clusters[i][j]].y * normals_->points[clusters[i][j]].normal_y)
+					+ (cloud_->points[clusters[i][j]].z * normals_->points[clusters[i][j]].normal_z));
 			}
 
 			planes.push_back(Plane(accum_x/clusters[i].size(), accum_y/clusters[i].size(), accum_z/clusters[i].size(), accum_d/clusters[i].size(),clusters[i]));
@@ -354,13 +361,13 @@ class QCVision
 
 		//Clusters
 		vector<vector<int>> clusters;
-		
+
 		int clusterInd = 0;
 
 		for(int i = 0; i<sizeOfData; i++){
 			if(Visited[i]==false){
 				Visited[i] = true;
-			
+
 				vector<int> NeighborPts = regionQuery(planes, i, epsilon);
 				vector<bool> pointsInNeighborPts(sizeOfData, false);
 
@@ -376,7 +383,7 @@ class QCVision
 		}
 
 		cout << "Planes merging from " << planes.size() << " to " << clusters.size() << endl;
-		
+
 
 		//Now create a structure with the planes averaged according to how many elements are within the plane
 		//Make each element unique
@@ -395,7 +402,7 @@ class QCVision
 				mergingPlane.D += (planes[(*it)].D * planes[(*it)].indicies.size());
 				mergingPlane.indicies.insert(mergingPlane.indicies.end(), planes[(*it)].indicies.begin(), planes[(*it)].indicies.end());
 				nTotalIndicies += planes[(*it)].indicies.size();
-			
+
 			}
 			mergingPlane.A /= nTotalIndicies; mergingPlane.B /= nTotalIndicies; mergingPlane.C /= nTotalIndicies; mergingPlane.D /= nTotalIndicies;
 			mergingPlane.calculateCovarianceMatrix(planes_);
@@ -406,7 +413,7 @@ class QCVision
 		//mergeMelo(mergedPlanes[0], mergedPlanes[1]);
 
 		//myfile << mergedPlanes.size() << endl;
-		
+
 
 
 		return mergedPlanes;
@@ -430,23 +437,23 @@ class QCVision
 	}
 
 	void expandCluster(	int inputInd, vector<int> NeighborPts, vector<bool> pointsInNeighborPts, vector<int> &currentCluster,
-					double radius, int minPoints, vector<bool> &Visited, vector<bool> &addedToCluster, vector<Plane> &planes){
+		double radius, int minPoints, vector<bool> &Visited, vector<bool> &addedToCluster, vector<Plane> &planes){
 
-		currentCluster.push_back(inputInd);
+			currentCluster.push_back(inputInd);
 
-		for(int j = 0; j < NeighborPts.size(); j++)
-		{
-			if(Visited[NeighborPts[j]]==false){
-				Visited[NeighborPts[j]]=true;
-				vector<int> secondNeighborPts = regionQuery(planes, NeighborPts[j],radius);
-				if(secondNeighborPts.size()>=minPoints){
-					conditionalInsert(NeighborPts, pointsInNeighborPts, secondNeighborPts);
+			for(int j = 0; j < NeighborPts.size(); j++)
+			{
+				if(Visited[NeighborPts[j]]==false){
+					Visited[NeighborPts[j]]=true;
+					vector<int> secondNeighborPts = regionQuery(planes, NeighborPts[j],radius);
+					if(secondNeighborPts.size()>=minPoints){
+						conditionalInsert(NeighborPts, pointsInNeighborPts, secondNeighborPts);
+					}
 				}
-			}
-			if (!addedToCluster[j])
-				currentCluster.push_back(NeighborPts[j]);
+				if (!addedToCluster[j])
+					currentCluster.push_back(NeighborPts[j]);
 				//if neighborPts[j] has yet to be added to a cluster add it to this one
-		}
+			}
 
 	}
 
@@ -458,12 +465,12 @@ class QCVision
 			}
 		}
 	}
-	
+
 	//Flood fill
 	vector<vector<int>> floodFillAll(int minPts, int maxTries) 
 	{
 		vector<vector<int>> clusters;
-		
+
 		//Calculate planes for each point with normal. Required for checking if 2 points lie within the same plane
 		calculatePlanes_();
 
@@ -488,7 +495,7 @@ class QCVision
 		}
 
 		cout << clusters.size() << " found.";
-		
+
 		return clusters;
 	}
 
@@ -496,7 +503,7 @@ class QCVision
 	{
 		const int row = 160;
 		vector<int> clusterPoints;
-		
+
 		std::vector<int> Q;
 		Q.push_back(rootNode);
 
@@ -544,16 +551,16 @@ class QCVision
 
 	bool samePlaneNormal(int pointOfInterest, int rootPoint, double epsilon) {
 		if	((abs(planes_[rootPoint].A - planes_[pointOfInterest].A) < epsilon) 
-		&&	(abs(planes_[rootPoint].B - planes_[pointOfInterest].B) < epsilon) 
-		&&	(abs(planes_[rootPoint].C - planes_[pointOfInterest].C) < epsilon)
-		&&	(abs(planes_[rootPoint].D - planes_[pointOfInterest].D) < 
-					(
-					abs(normals_->points[rootPoint].normal_z * cloud_->points[rootPoint].z * cloud_->points[rootPoint].z)
-				+	abs(normals_->points[pointOfInterest].normal_z * cloud_->points[pointOfInterest].z * cloud_->points[pointOfInterest].z)
-					) * epsilon
+			&&	(abs(planes_[rootPoint].B - planes_[pointOfInterest].B) < epsilon) 
+			&&	(abs(planes_[rootPoint].C - planes_[pointOfInterest].C) < epsilon)
+			&&	(abs(planes_[rootPoint].D - planes_[pointOfInterest].D) < 
+			(
+			abs(normals_->points[rootPoint].normal_z * cloud_->points[rootPoint].z * cloud_->points[rootPoint].z)
+			+	abs(normals_->points[pointOfInterest].normal_z * cloud_->points[pointOfInterest].z * cloud_->points[pointOfInterest].z)
+			) * epsilon
 			)) 
 			return true;
-		
+
 		return false;
 	}
 
@@ -563,17 +570,17 @@ class QCVision
 
 			if (cloud->points[i].z > 0.5) {
 				int index = (cloud->points[i].z * 10) - 4;
-						 
+
 				float zRatiof = 
 					((correction_table[i][(int) index + 1] - correction_table[i][(int) index])
 					/(((index + 1 + 4.0) / 10.0) - ((index + 4.0) / 10.0))
 					* (cloud->points[i].z - ((index + 4.0) / 10.0)) 
 					+ correction_table[i][(int) index]) / cloud->points[i].z;
-						
+
 				mutable_cloud->points[i].z *= zRatiof;
 				mutable_cloud->points[i].y *= zRatiof;
 				mutable_cloud->points[i].x *= zRatiof;
-			
+
 			}
 
 		}
@@ -584,61 +591,61 @@ class QCVision
 
 void usage (char ** argv)
 {
-  std::cout << "usage: " << argv[0] << " [<device_id>]\n\n";
+	std::cout << "usage: " << argv[0] << " [<device_id>]\n\n";
 
-  openni_wrapper::OpenNIDriver& driver = openni_wrapper::OpenNIDriver::getInstance ();
-  if (driver.getNumberDevices () > 0)
-  {
-    for (unsigned deviceIdx = 0; deviceIdx < driver.getNumberDevices (); ++deviceIdx)
-    {
-      cout << "Device: " << deviceIdx + 1 << ", vendor: " << driver.getVendorName (deviceIdx) << ", product: " << driver.getProductName (deviceIdx)
-              << ", connected: " << driver.getBus (deviceIdx) << " @ " << driver.getAddress (deviceIdx) << ", serial number: \'" << driver.getSerialNumber (deviceIdx) << "\'" << endl;
-      cout << "device_id may be #1, #2, ... for the first second etc device in the list or" << endl
-           << "                 bus@address for the device connected to a specific usb-bus / address combination (works only in Linux) or" << endl
-           << "                 <serial-number> (only in Linux and for devices which provide serial numbers)"  << endl;
-    }
-  }
-  else
-    cout << "No devices connected." << endl;
+	openni_wrapper::OpenNIDriver& driver = openni_wrapper::OpenNIDriver::getInstance ();
+	if (driver.getNumberDevices () > 0)
+	{
+		for (unsigned deviceIdx = 0; deviceIdx < driver.getNumberDevices (); ++deviceIdx)
+		{
+			cout << "Device: " << deviceIdx + 1 << ", vendor: " << driver.getVendorName (deviceIdx) << ", product: " << driver.getProductName (deviceIdx)
+				<< ", connected: " << driver.getBus (deviceIdx) << " @ " << driver.getAddress (deviceIdx) << ", serial number: \'" << driver.getSerialNumber (deviceIdx) << "\'" << endl;
+			cout << "device_id may be #1, #2, ... for the first second etc device in the list or" << endl
+				<< "                 bus@address for the device connected to a specific usb-bus / address combination (works only in Linux) or" << endl
+				<< "                 <serial-number> (only in Linux and for devices which provide serial numbers)"  << endl;
+		}
+	}
+	else
+		cout << "No devices connected." << endl;
 }
 
 int main (int argc, char ** argv)
 {
 
 
-	  std::string arg;
-  if (argc > 1)
-    arg = std::string (argv[1]);
+	std::string arg;
+	if (argc > 1)
+		arg = std::string (argv[1]);
 
-  openni_wrapper::OpenNIDriver& driver = openni_wrapper::OpenNIDriver::getInstance ();
-  if (arg == "--help" || arg == "-h" || driver.getNumberDevices () == 0)
-  {
-    usage (argv);
-    return 1;
-  }
-  std::cout << "hi";
-  std::cout << "Press following keys to switch to the different integral image normal estimation methods:\n";
-  std::cout << "<1> COVARIANCE_MATRIX method\n";
-  std::cout << "<2> AVERAGE_3D_GRADIENT method\n";
-  std::cout << "<3> AVERAGE_DEPTH_CHANGE method\n";
-  std::cout << "<4> SIMPLE_3D_GRADIENT method\n";
-  std::cout << "<Q,q> quit\n\n";
+	openni_wrapper::OpenNIDriver& driver = openni_wrapper::OpenNIDriver::getInstance ();
+	if (arg == "--help" || arg == "-h" || driver.getNumberDevices () == 0)
+	{
+		usage (argv);
+		return 1;
+	}
+	std::cout << "hi";
+	std::cout << "Press following keys to switch to the different integral image normal estimation methods:\n";
+	std::cout << "<1> COVARIANCE_MATRIX method\n";
+	std::cout << "<2> AVERAGE_3D_GRADIENT method\n";
+	std::cout << "<3> AVERAGE_DEPTH_CHANGE method\n";
+	std::cout << "<4> SIMPLE_3D_GRADIENT method\n";
+	std::cout << "<Q,q> quit\n\n";
 
 
 
-  pcl::OpenNIGrabber grabber("", RESOLUTION_MODE, RESOLUTION_MODE);
-  if (grabber.providesCallback<pcl::OpenNIGrabber::sig_cb_openni_point_cloud_rgba> ())
-  {
-    PCL_INFO ("PointXYZRGBA mode enabled.\n");
-    QCVision v ("");
-    v.run ();
-  }
-  else
-  {
-    PCL_INFO ("PointXYZ mode enabled crash.\n");
-    //QCVision<pcl::PointXYZ> v ("");
-    //v.run ();
-  }
+	pcl::OpenNIGrabber grabber("", RESOLUTION_MODE, RESOLUTION_MODE);
+	if (grabber.providesCallback<pcl::OpenNIGrabber::sig_cb_openni_point_cloud_rgba> ())
+	{
+		PCL_INFO ("PointXYZRGBA mode enabled.\n");
+		QCVision v ("");
+		v.run ();
+	}
+	else
+	{
+		PCL_INFO ("PointXYZ mode enabled crash.\n");
+		//QCVision<pcl::PointXYZ> v ("");
+		//v.run ();
+	}
 
-  return (0);
+	return (0);
 }
