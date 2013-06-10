@@ -18,7 +18,8 @@
 #include <time.h>
 //#include "C:/Users/Prof/Documents/GitHub/QuadCopter/PCL/tvmet/include/tvmet/Matrix.h"
 #include "Depth_Correction_Array.txt"
-
+#include <Eigen/Dense>
+using namespace Eigen;
 #define RESOLUTION_MODE pcl::OpenNIGrabber::OpenNI_QQVGA_30Hz
 
 #define FPS_CALC(_WHAT_) \
@@ -41,6 +42,7 @@ float G_depthdepend = 0.02f;
 #endif
 
 typedef pcl::PointXYZRGBA PointType;
+typedef Matrix< float , 16 , 1> Vector16f;
 class QCVision
 {
 
@@ -53,7 +55,13 @@ class QCVision
 	typedef Cloud::Ptr CloudPtr; //typename
     typedef Cloud::ConstPtr CloudConstPtr; //typename
 
+	Vector16f* stateVector;
+
+	Matrix3f* DCM; 
+
 	unsigned int eventflag; 
+	unsigned int Perseventflag; 
+
 	
     pcl::visualization::CloudViewer viewer;
     std::string device_id_;
@@ -185,12 +193,18 @@ class QCVision
 
 				new_cloud_ = true;
 		  }
-	  }else{
+	  }
+	  else{
 		  cloud_ = cloud;
 		  if (!(eventflag & 0x1)){
 			  new_cloud_ = true;
 			  hasrun = false;
 		  }
+		//apply transform based on camera location 
+		if(Perseventflag & 0x1){
+		}
+		else{
+		}
 	  }
     }
 
@@ -272,6 +286,13 @@ class QCVision
 			break;
 		case '6':
 			eventflag &= ~0x1;
+			break;
+		case '7':
+			Perseventflag |= ~0x1;
+			break;
+		case '8':
+			Perseventflag &= ~0x1;
+			break;
       }
     }
 
