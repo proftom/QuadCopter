@@ -1,7 +1,8 @@
 #include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/thread.hpp>
-#include "PCL_Conncetor.h"
+//#include "PCL_Conncetor.h"
 #include "Vision.h"
+#include "kalman.cpp"
 
 void usage (char ** argv)
 {
@@ -53,12 +54,12 @@ int main (int argc, char ** argv)
 		PCL_INFO ("PointXYZRGBA mode enabled.\n");	
 		
 		QCVision vision("");	
-		dummy d(&vision);
+		//dummy d(&vision);
 		boost::thread* thr = new boost::thread(boost::bind(&QCVision::run, &vision));
-		boost::thread dthr(boost::bind(&dummy::runny, &d));
-			
+		//boost::thread dthr(boost::bind(&kalman));
+		kalman(&vision);	
 		thr->join();
-		dthr.join();
+		//dthr.join();
 	;
 
 	

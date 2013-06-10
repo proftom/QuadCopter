@@ -18,7 +18,6 @@
 #include <time.h>
 
 #include "Depth_Correction_Array.txt"
-#include "PCL_Conncetor.h"
 #include <queue>
 
 #define RESOLUTION_MODE pcl::OpenNIGrabber::OpenNI_QQVGA_30Hz
