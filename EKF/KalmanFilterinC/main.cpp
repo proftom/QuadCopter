@@ -96,6 +96,7 @@ int main() {
 				timeSteps++;
 				
 				while(!getNewMeasurementThalamus()){
+					cout <<"wait"<<endl;
 					boost::this_thread::sleep(boost::posix_time::millisec(2));
 				}
 
@@ -108,12 +109,13 @@ int main() {
 				getNewObservation();
 
 				update();
-				cout << "state at time t = " << timeSteps << endl<< state << endl<<endl;
+				//cout << "state at time t = " << timeSteps << endl<< state << endl<<endl;
 				statehistory.push_back(state);
 			}
+
+	printf("Time taken: %.2fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
 	for (int i = 0; i < (int)statehistory.size(); i++)
 		cout << "state at time t = " << i << endl<< statehistory[i] << endl<<endl;
-	printf("Time taken: %.2fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
 	return 0;
 }
 
@@ -197,11 +199,11 @@ void state_prediction () {
 	xdelta.segment(10,6) << 0,0,0,0,0,0;
 	//Biases
 	//xdelta.block<6,1>(10,1) = 0;
-	cout << "xdelta" << endl << xdelta << endl<<endl;
+//	cout << "xdelta" << endl << xdelta << endl<<endl;
 	state += Sampling_Time*xdelta;
 	//normalise quaternions.
 	state.segment(6,4)/=state.segment(6,4).norm();
-	cout << "state predicted" << endl << state << endl<<endl;
+//	cout << "state predicted" << endl << state << endl<<endl;
 }
 MatrixXf Xi_fn() {
 	MatrixXf Xi_t(4,3);
@@ -376,9 +378,9 @@ void update() {
 		for (int j = 0; j < (int)landmarks.size(); j++) {
 			Vector4f diff;
 			diff << inP - transPlane*landmarks[j];
-			cout << "inP" << endl << inP << endl << endl;
-			cout << "transPlane" << endl << transPlane << endl << endl;
-			cout << "landmarks.[j]" << endl << landmarks[j] << endl << endl;
+//			cout << "inP" << endl << inP << endl << endl;
+//			cout << "transPlane" << endl << transPlane << endl << endl;
+//			cout << "landmarks.[j]" << endl << landmarks[j] << endl << endl;
 //			cout << "Diff" << endl << diff << endl << endl;
 			MatrixXf H(H_fn(j));
 			//Build the optimised P.
@@ -403,18 +405,18 @@ void update() {
 		}
 		//Update States
 		MatrixXf kalmanGain(P_min_opt * minH.transpose() * minS.inverse());
-		cout << "minH" << endl << minH << endl << endl;
-		cout << "P_opt" << endl << P_min_opt << endl << endl;
-		cout << "minS inverse" << endl << minS.inverse() << endl << endl;
-		cout << "minS" << endl << minS << endl << endl;
-		cout << "minDiff" << endl << minDiff << endl << endl;
-		cout << "kalmanGain" << endl << kalmanGain << endl << endl;
+//		cout << "minH" << endl << minH << endl << endl;
+//		cout << "P_opt" << endl << P_min_opt << endl << endl;
+//		cout << "minS inverse" << endl << minS.inverse() << endl << endl;
+//		cout << "minS" << endl << minS << endl << endl;
+//		cout << "minDiff" << endl << minDiff << endl << endl;
+//		cout << "kalmanGain" << endl << kalmanGain << endl << endl;
 		VectorXf change(kalmanGain * minDiff);
 //		cout<< "state increment" << endl << change.segment(0,16)<<endl<<endl;
 		state += change.segment(0,16);
 		//normalise quaternions.
 		state.segment(6,4)/=state.segment(6,4).norm();
-		cout<< "state update stage" << endl << state<<endl<<endl;
+//		cout<< "state update stage" << endl << state<<endl<<endl;
 //		cout<< "Ptr" << endl << ptr<<endl<<endl;
 		//Update State Covariances
 		P_min_opt -= kalmanGain*minH*P_min_opt;
