@@ -3,6 +3,10 @@
 //#include "PCL_Conncetor.h"
 #include "Vision.h"
 
+#include "Depth_Correction_Array.txt"
+float G_smoothsize = 20.0f;
+float G_depthdepend = 0.02f;
+
 //prototype
 int kalman(QCVision& vision);
 

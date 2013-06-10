@@ -60,7 +60,7 @@ void update();
 void getNewMeasurement();
 bool getNewMeasurementThalamus();
 void getNewObservation();
-void getNewObservationLive();
+void getNewObservationLive(QCVision& vision);
 //void run();
 
 
@@ -100,7 +100,7 @@ int kalman(QCVision& vision) {
 		covariance_prediction();
 		vision.m_mutexLockPlanes.lock();
 		if (vision.bNewSetOfPlanes){
-			getNewObservationLive();
+			getNewObservationLive(vision);
 			vision.m_mutexLockPlanes.unlock();
 			update();
 		}

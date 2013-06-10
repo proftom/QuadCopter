@@ -17,7 +17,8 @@
 #include "Plane.h"
 #include <time.h>
 
-#include "Depth_Correction_Array.txt"
+//#include "Depth_Correction_Array.txt"
+extern float correction_table[19200][56];
 #include <queue>
 
 #define RESOLUTION_MODE pcl::OpenNIGrabber::OpenNI_QQVGA_30Hz
@@ -37,8 +38,8 @@ do \
     } \
 }while(false)
 
-float G_smoothsize = 20.0f;
-float G_depthdepend = 0.02f;
+extern float G_smoothsize;
+extern float G_depthdepend;
 
 typedef pcl::PointXYZRGBA PointType;
 
