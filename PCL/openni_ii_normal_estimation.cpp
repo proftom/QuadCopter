@@ -202,6 +202,9 @@ class QCVision
 		  }
 		//apply transform based on camera location 
 		if(Perseventflag & 0x1){
+			MatrixXf Tran(4,3);
+			Tran.block<3,3>(0,0)= *DCM;
+			Tran.block<3,1>(4,1)= stateVector->segment<3>(0);
 		}
 		else{
 		}
