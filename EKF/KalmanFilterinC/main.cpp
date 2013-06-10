@@ -434,7 +434,7 @@ void update() {
 }
 
 bool getNewMeasurementThalamus(){
-	static Serial SP("\\\\.\\COM10");
+	static Serial SP("\\\\.\\COM62");
 	if (SP.BytesAvailable() >= 10)
 	{
 		char sync[2];
@@ -443,7 +443,7 @@ bool getNewMeasurementThalamus(){
 		if (sync[0] == 11)
 		{
 			short GyroRaw[3];
-			SP.ReadData(GyroRaw,sizeof(GyroRaw));
+			SP.ReadData((char*)GyroRaw,sizeof(GyroRaw));
 
 			Vector3f gyro_t;
 			gyro_t << GyroRaw[0], GyroRaw[1], GyroRaw[2];
@@ -455,20 +455,27 @@ bool getNewMeasurementThalamus(){
 
 
 			short AccRaw[3];
-			SP.ReadData(AccRaw,sizeof(AccRaw));
+			SP.ReadData((char*)AccRaw,sizeof(AccRaw));
+
+			Vector3f acc_t;
+			acc_t << AccRaw[0], AccRaw[1], AccRaw[2];
+			acc_t*=(9.816 /pow(2.00,14));
+			acc << acc_t(2), -acc_t(0), -acc_t(1);
+			Vector3f accBias(state.segment(13,3));
+			//	cout << "acc measured" << endl << acc << endl << endl;
+			acc-=accBias;
 
 			short MagRaw[3];
-			SP.ReadData(MagRaw,sizeof(MagRaw));
+			SP.ReadData((char*)MagRaw,sizeof(MagRaw));
+
+			return true;
 		}
-
-
-
 	}
-	else
-		return false;
+	
+	return false;
 }
 
-
+/*
 void getNewMeasurement() {
 	//Process Accelerometer reading.
 	Vector3f acc_t;
@@ -497,6 +504,7 @@ void getNewMeasurement() {
 //	cout << "acc" << endl << acc << endl << endl;
 //	cout << "gyro" << endl << gyro << endl << endl;
 }
+*/
 
 
 void getNewObservation() {

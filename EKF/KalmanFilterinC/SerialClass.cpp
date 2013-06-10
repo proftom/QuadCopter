@@ -138,7 +138,7 @@ bool Serial::IsConnected()
     return this->connected;
 }
 
-int BytesAvailable()
+int Serial::BytesAvailable()
 {
     //Use the ClearCommError function to get status info on the Serial port
     ClearCommError(this->hSerial, &this->errors, &this->status);
