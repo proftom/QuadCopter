@@ -2,7 +2,9 @@
 #include <boost/thread/thread.hpp>
 //#include "PCL_Conncetor.h"
 #include "Vision.h"
-#include "kalman.cpp"
+
+//prototype
+int kalman(QCVision& vision);
 
 void usage (char ** argv)
 {

@@ -14,8 +14,9 @@
 #include <Eigen/StdVector>
 #include <boost/thread/thread.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include "SerialClass.h"
 #include "Vision.h"
+#include "SerialClass.h"
+
 using namespace std;
 using namespace Eigen;
 
@@ -59,6 +60,7 @@ void update();
 void getNewMeasurement();
 bool getNewMeasurementThalamus();
 void getNewObservation();
+void getNewObservationLive();
 //void run();
 
 
@@ -98,7 +100,7 @@ int kalman(QCVision& vision) {
 		covariance_prediction();
 		vision.m_mutexLockPlanes.lock();
 		if (vision.bNewSetOfPlanes){
-			getNewObservation();
+			getNewObservationLive();
 			vision.m_mutexLockPlanes.unlock();
 			update();
 		}
