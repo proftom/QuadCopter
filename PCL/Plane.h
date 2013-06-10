@@ -1,3 +1,6 @@
+#ifndef PCL_PLANE_H_
+#define PCL_PLANE_H_
+
 #include <vector>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -108,3 +111,5 @@ public:
 	}
 
 };
+
+#endif
