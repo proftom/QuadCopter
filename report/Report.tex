@@ -121,23 +121,6 @@ A Lovely Abstract full of insight and long words that makes it apparent we did l
 \section{Executive Summary} % (fold)
 \label{sec:executive_summary}
 \subsection{Introduction}
-
-
-
-\subsection{Extended Kalman Filter}
-The job of the extended kalman filter(EKF) is to perform an optimal evaluation of the robot's state given the presence of uncertainities in measurements. The EKF is a non-linear extension of the kalman filter which is itself a linear quadratic estimatator capable of giving optimal values of a measurement in the presence of noise. Its results are more accurate than those obtained from single measurements. The EKF operates iteratively producing optimal values around the current mean and covariance. The other alternative to the EKF is the particle filter. The main difference is that the EKF produces optimal results using an approximate mathematical model while the particle filter produces optimal results based on physical models.
-Based on a comparative study on the diference between the two approached, for guassian noise model the kalman filter will always produce a better result in less computation time.
-
-The state of the robot consists of its position, velocity, attitude, accelerometer bias, gyroscope biases  and landmark positions.The non-trivial state components, the biases due to heat variation and manufacture process errors are stored because they exhibit a random walk and thus depend on their previous values. \textbf{Insert reference for bias behaviour here}. The kalman filter iteratively update the robot's state along with its uncertainties called its covariance matrix.
-
-The below image shows the basic concept of the EKF:
-
-If more than one plane is observed, the update step is run for each plane re-observed. If a new plane is observed, it is added as a new landmark into the kalman filter and its covariance is added onto the covariance matrix.
-\clearpage
-
-
-\section{Introduction}  % (fold)
-\label{sec:introduction}
 In the present world of increasing machine usage and autonomy, it is important for robots to be able to correctly estimate their position, velocity and in general their current state at any given time in order to perform tasks with much better accuracy. For our project we focused on determining the indoor state also known as the indoor localisation problem of quadcopters. Quadcopters have become a famous hobbyist platform but more importantly, they can be used in autonomous rescue operations. Our project is in essence a first step towards implementing indoor simultaneous localisation and mapping (SLAM). With this in mind, we served as consultants to a startup company called UAir which specialises in developing unmanned aerial vehicles(UAVs), supporting electronics and software. Our mission is to enhance UAir's interest and research by developing an indoor state estimator that can be used for autonomous quadcopter. They inturn provide us with necessary tools including an R10 quadcopter, a wireless remote controller, and basic code for controlling the UAV.
 
 Our state estimator involves a moving agent like a quadcopter which embarks one sensor to gather information about its surroundings. This is called an exteroceptive sensor and in our case, we use a depth camera. We also incorporate extra sensors to measure the agent's own movement. These are called preprioceptive sensors and we used an accelerometer and a gyroscope. The state evaluation process involves the following steps:
@@ -150,9 +133,7 @@ There is a need to model this motion to in implementing our state evaluation. Th
 
 \textbf{The robot re-observes landmarks and it uses them to  make corrections to its self-localisation and landmark position.} Thus reducing uncertainities on both. We also need a mathematical model to predict the values of the measurement from the predicted landmark location and the robot localisatio. This will be the direct observation model.
 
-The tasks can be group into two main categories feature extraction and extended kalman filter implementation.
-
-
+The tasks can be group into two main categories feature extraction and extended kalman filter implementation. However, we will first in
 
 \subsection{Feature Extraction}
 The agent needs to properly observe its environment in order to be able to have some information of its relationship within the environment. First, we must chose a suitable sensor for our implementation taking into account the type of feature we want to extract. We chose to use a visual sensor/camera with depth information called the Xtion Pro as it is more more accurate and less prone to interference than using sound to observe the agent's environment. The camera essentially collects raw depth map data of 640 by 480 pixels at 30 frames per second. This is a huge amount of data to process especially in an embedded environment with limited resources. Moreover, the data in its raw form doesn't give much information in and off itself as it is only pixels with their depth information.
@@ -171,11 +152,6 @@ The state of the robot consists of its position, velocity, attitude, acceleromet
 The below image shows the basic concept of the EKF:
 
 If more than one plane is observed, the update step is run for each plane re-observed. If a new plane is observed, it is added as a new landmark into the kalman filter and its covariance is added onto the covariance matrix.
-\clearpage
-% section introduction (end)
-
-
-
 \clearpage
 
 \section{Problem Specification}
