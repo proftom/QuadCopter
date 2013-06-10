@@ -15,6 +15,7 @@
 #include <boost/thread/thread.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include "SerialClass.h"
+#include <Vision.h>
 using namespace std;
 using namespace Eigen;
 
@@ -88,7 +89,7 @@ int gyroPtr = 0;
 int accPtr = 0;
 int planePtr = 0;
 int planeSteps = 0;
-int main() {
+int kalman() {
 	clock_t tStart = clock();
 
 	initialisation ();

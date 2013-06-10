@@ -57,7 +57,7 @@ int main (int argc, char ** argv)
 		//dummy d(&vision);
 		boost::thread* thr = new boost::thread(boost::bind(&QCVision::run, &vision));
 		//boost::thread dthr(boost::bind(&kalman));
-		kalman(&vision);	
+		kalman(vision);	
 		thr->join();
 		//dthr.join();
 	;
