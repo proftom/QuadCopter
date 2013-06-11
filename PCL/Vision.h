@@ -97,7 +97,7 @@ class QCVision
 	
 	void cloud_cb (const CloudConstPtr& cloud)
     {
-	  t2 = clock(); 
+	  //t2 = clock(); 
 	  boost::mutex::scoped_lock lock (mtx_);
  
       //lock while we set our cloud;
@@ -109,11 +109,11 @@ class QCVision
       normals_.reset (new pcl::PointCloud<pcl::Normal>);
 	  //cld_render_ptr.reset(new pcl::PointCloud<PointType>);
 	  
-      double start = pcl::getTime ();
+      //double start = pcl::getTime ();
       ne_.setInputCloud (cloud);
 	  ne_.compute (*normals_); 
 
-      double stop = pcl::getTime ();
+      //double stop = pcl::getTime ();
  
       cloud_ = cloud;
 
@@ -188,23 +188,23 @@ class QCVision
 
 				
 
-				//Colour clusters
-				for(int i = 0; i < clusterIndicies.size(); i++) 
-				{
-					char r,b,g;
-					r = rand()%256;
-					g = rand()%256;
-					b = rand()%256;
-					for(int j = 0; j < clusterIndicies[i].size(); j++) 
-					{
-						pc.points[clusterIndicies[i][j]].r = r;
-						pc.points[clusterIndicies[i][j]].g = g;
-						pc.points[clusterIndicies[i][j]].b = b;
-					}
-				}
+				////Colour clusters
+				//for(int i = 0; i < clusterIndicies.size(); i++) 
+				//{
+				//	char r,b,g;
+				//	r = rand()%256;
+				//	g = rand()%256;
+				//	b = rand()%256;
+				//	for(int j = 0; j < clusterIndicies[i].size(); j++) 
+				//	{
+				//		pc.points[clusterIndicies[i][j]].r = r;
+				//		pc.points[clusterIndicies[i][j]].g = g;
+				//		pc.points[clusterIndicies[i][j]].b = b;
+				//	}
+				//}
 
-				CloudConstPtr inputtmp(new pcl::PointCloud<PointType>(pc));
-				cloud_ = inputtmp;
+				//CloudConstPtr inputtmp(new pcl::PointCloud<PointType>(pc));
+				//cloud_ = inputtmp;
 
 				new_cloud_ = true;
 		  }
