@@ -67,7 +67,7 @@ MatrixXf E_r_fn(Vector4f plane);
 
 //Variables
 vector<Vector4f, Eigen::aligned_allocator<Vector4f> > landmarks;
-vector<Vector16f, Eigen::aligned_allocator<Vector16f> > statehistory;
+//vector<Vector16f, Eigen::aligned_allocator<Vector16f> > statehistory;
 vector<planeStruct, Eigen::aligned_allocator<planeStruct> > newPlanes;
 Vector3f acc;
 Vector3f gyro;
@@ -102,8 +102,8 @@ int main() {
 
 	kalmanFilter();
 
-	for (int i = 0; i < (int)statehistory.size(); i++)
-		cout << "state at time t = " << i << endl<< statehistory[i] << endl<<endl;
+//	for (int i = 0; i < (int)statehistory.size(); i++)
+//		cout << "state at time t = " << i << endl<< statehistory[i] << endl<<endl;
 	printf("Time taken: %.2fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
 	return 0;
 }
@@ -112,7 +112,7 @@ void kalmanFilter() {
 	landmarks.clear();
 	P = P.block(0,0,16,16);
 	cout << "initial P and state" << endl<<P<<endl<<endl<<state<<endl;
-	while(timeSteps < 180) {
+	while(timeSteps < 200) {
 
 				getNewMeasurement();
 
@@ -125,8 +125,9 @@ void kalmanFilter() {
 				getNewObservation();
 
 				processObservation();
-				statehistory.push_back(state);
+//				statehistory.push_back(state);
 				timeSteps++;
+				cout << "no of landmarks: " << landmarks.size() << " at timestep " << timeSteps << endl <<endl;
 			}
 }
 
@@ -146,7 +147,7 @@ void kalmanInitialiser() {
 				getNewObservation();
 
 				update();
-				statehistory.push_back(state);
+//				statehistory.push_back(state);
 				timeSteps++;
 			}
 }
@@ -466,6 +467,13 @@ association_struct dataAssociation(planeStruct planeData) {
 	Vector4f diff;
 	float dist;
 
+	bool first = true;
+	float tempDist = 2e25;
+	Vector4f minDiff;
+	MatrixXf minH(4,20);
+	Matrix4f minS;
+	MatrixXf P_min_opt(20,20);
+	int ptr;
 
 	for (int index = 0; index < (int)landmarks.size(); index++) {
 		MatrixXf H(H_fn(index));
@@ -473,22 +481,31 @@ association_struct dataAssociation(planeStruct planeData) {
 		//	Build the optimised P.
 		P_opt << P.block(0,0, 16,16), P.block(0,16+4*index, 16,4),
 				P.block(16+4*index,0,4,16), P.block(16+4*index, 16+4*index, 4, 4);
-
 		S = H*P_opt*H.transpose() + inC;
 		diff = inP - transPlane*landmarks[index];
 		dist = diff.transpose() *  S.inverse() *   diff;
 		dist = abs(dist);
-		if (dist < distThreshold) {
-			data.planeId = index;
-			data.distance = dist;
-			data.m_error = diff;
-			data.P_opt = P_opt;
-			data.H_opt = H;
-			data.S = S;
-			break;
-		}
 
+		if ((first == true) || (dist < tempDist)) {
+						first = false;
+						tempDist = dist;
+						minH = H;
+						minS = S;
+						minDiff = diff;
+						P_min_opt = P_opt;
+						ptr = index;
+		}
 	}
+
+	if (tempDist < distThreshold) {
+		data.planeId = ptr;
+		data.distance = tempDist;
+		data.m_error = minDiff;
+		data.P_opt = P_min_opt;
+		data.H_opt = minH;
+		data.S = minS;
+	}
+
 	return data;
 }
 
@@ -507,7 +524,7 @@ void processObservation() {
 //			cout << "updated lm: "<< data.planeId << endl<<endl;
 			update(data);
 		} else {	// Data NOT associated so register new plane.
-			cout << "added at time t= "<< timeSteps<<endl<<endl;
+
 			registration(i, data);
 		}
 	}
@@ -550,7 +567,7 @@ void registration (int newPlaneIndex, association_struct data) {
 // Add new plane to landmark.
 	int i = newPlaneIndex;
 	//If statement for extra precaution.
-	if (data.planeId == -1) { // Plane was not associated.
+	if ((data.planeId == -1) &&(landmarks.size() < 3 ) ) { // Plane was not associated.
 		// First transform to world coordinate using small g.
 		// Convert the plane eqn to world frame.
 		Vector4f plane = e_fn()*newPlanes[i].plane;
@@ -569,8 +586,8 @@ void registration (int newPlaneIndex, association_struct data) {
 		P.block(0, P.cols()-4, 16,4) = P.block(P.rows()-4, 0, 4, 16).transpose();
 		P.block(P.rows()-4, P.cols()-4, 4, 4) = E_r * P.block<16,16>(0, 0) * E_r.transpose() +
 		E_y * newPlanes[i].cov * E_y.transpose();
+		cout << "added at time t= "<< timeSteps<<endl<<endl;
 	}
-//	cout << "No of Landmarks" << endl << landmarks.size() << endl << endl;
 }
 
 Matrix4f e_fn() {
