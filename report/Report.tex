@@ -122,8 +122,9 @@ A Lovely Abstract full of insight and long words that makes it apparent we did l
 \label{sec:executive_summary}
 \subsection{Introduction}
 In the present world of increasing machine usage and autonomy, it is important for robots to be able to correctly estimate their position, velocity and in general their current state at any given time in order to perform tasks with much better accuracy. For our project we focused on determining the indoor state also known as the indoor localisation problem of quadcopters. Quadcopters have become a famous hobbyist platform but more importantly, they can be used in autonomous rescue operations. Our project is in essence a first step towards implementing indoor simultaneous localisation and mapping (SLAM). With this in mind, we served as consultants to a startup company called MARVRX which specialises in developing unmanned aerial vehicles(UAVs), supporting electronics and software. Our mission is to enhance MAVRX's interest and research by developing an indoor state estimator that can be used for autonomous quadcopter. They inturn provide us with necessary tools including an R10 quadcopter, a wireless remote controller, and basic code for controlling the UAV.
-\subsection{Other's Approach to the Problem}
-\subsection{Our solution}
+\subsection{Our Solution}
+While there has been lots of work done in the area of localisation, we propose a unique solution targetting indoor environments specifically that consisting of using on-board processing and RGB-D cameras as our primary sensor combined with accelerometer and gyroscope sensors. Our approach levarages the powerful yet cheap capabilities of the Xtion Pro camera. A typical solution to localisation involves modelling the motion of the agent as it moves in the environment, extracting features from the environment using sensors and using this information to approximate its location within the environment. We decided to track wall planes as our feature extracting plane equations from the Xtion Pro using DBScan algorithm because of its resistance to noise and bounded-time operation. For the actual state estimation, we employ the kalman filter algorithm as it produces optimal solutions in the presence of noise.  
+\subsection{Results}
 \subsection{Conclusion}
 
 \clearpage
