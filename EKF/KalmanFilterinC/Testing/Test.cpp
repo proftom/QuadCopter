@@ -19,7 +19,7 @@ typedef Matrix< float , 16 , 16> Matrix16f;
 typedef Matrix< float , 16 , 1> Vector16f;
 #define STATENUM 16
 #define Sampling_Time 0.01	// unit is seconds.
-#define distThreshold 1000
+#define distThreshold 990
 
 typedef struct {
 	Vector4f plane;
@@ -468,12 +468,6 @@ association_struct dataAssociation(planeStruct planeData) {
 	float dist;
 
 	bool first = true;
-	float tempDist = 2e25;
-	Vector4f minDiff;
-	MatrixXf minH(4,20);
-	Matrix4f minS;
-	MatrixXf P_min_opt(20,20);
-	int ptr;
 
 	for (int index = 0; index < (int)landmarks.size(); index++) {
 		MatrixXf H(H_fn(index));
@@ -486,24 +480,19 @@ association_struct dataAssociation(planeStruct planeData) {
 		dist = diff.transpose() *  S.inverse() *   diff;
 		dist = abs(dist);
 
-		if ((first == true) || (dist < tempDist)) {
-						first = false;
-						tempDist = dist;
-						minH = H;
-						minS = S;
-						minDiff = diff;
-						P_min_opt = P_opt;
-						ptr = index;
+		if ((first == true) || (dist < data.distance)) {
+			first = false;
+			data.distance = dist;
+			data.H_opt = H;
+			data.S  = S;
+			data.m_error = diff;
+			data.P_opt = P_opt;
+			data.planeId = index;
 		}
 	}
 
-	if (tempDist < distThreshold) {
-		data.planeId = ptr;
-		data.distance = tempDist;
-		data.m_error = minDiff;
-		data.P_opt = P_min_opt;
-		data.H_opt = minH;
-		data.S = minS;
+	if (data.distance > distThreshold) {
+		data.planeId = -1;
 	}
 
 	return data;
@@ -567,7 +556,7 @@ void registration (int newPlaneIndex, association_struct data) {
 // Add new plane to landmark.
 	int i = newPlaneIndex;
 	//If statement for extra precaution.
-	if ((data.planeId == -1) &&(landmarks.size() < 3 ) ) { // Plane was not associated.
+	if ((data.planeId == -1)  ) { // Plane was not associated.
 		// First transform to world coordinate using small g.
 		// Convert the plane eqn to world frame.
 		Vector4f plane = e_fn()*newPlanes[i].plane;
