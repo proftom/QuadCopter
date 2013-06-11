@@ -1,5 +1,5 @@
-#ifndef PCL_PLANE_H_
-#define PCL_PLANE_H_
+#ifndef PCL_planeCloud_H_
+#define PCL_planeCloud_H_
 
 #include <vector>
 #include <pcl/point_cloud.h>

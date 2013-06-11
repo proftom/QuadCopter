@@ -101,11 +101,14 @@ int kalman(QCVision& vision) {
 		vision.m_mutexLockPlanes.lock();
 		if (vision.bNewSetOfPlanes){
 			getNewObservationLive(vision);
+			vision.bNewSetOfPlanes = false;
 			vision.m_mutexLockPlanes.unlock();
 			update();
-		}
-		vision.m_mutexLockPlanes.unlock();
+			cout << "state at time t = " << timeSteps << endl<< state.segment(0,3) << endl<<endl;
 
+		} else {
+		vision.m_mutexLockPlanes.unlock();
+		}
 		//cout << "state at time t = " << timeSteps << endl<< state << endl<<endl;
 
 		//uncomment for epic memory depletion
@@ -122,13 +125,13 @@ int kalman(QCVision& vision) {
 void initialisation () { //Incomplete.
 
 	//Initialise landmarks.
-	Vector4f plane_t;
-	plane_t << -1,0,0,0;
-	landmarks.push_back(plane_t);
-	plane_t << 0,1,0,0;
-	landmarks.push_back(plane_t);
-	plane_t << 0,0,1,0;
-	landmarks.push_back(plane_t);
+	Vector4f planeCloud_t;
+	planeCloud_t << -1,0,0,0;
+	landmarks.push_back(planeCloud_t);
+	planeCloud_t << 0,1,0,0;
+	landmarks.push_back(planeCloud_t);
+	planeCloud_t << 0,0,1,0;
+	landmarks.push_back(planeCloud_t);
 
 	//initialise landmarks and P
 	Matrix3f block1 = Matrix3f::Identity();
@@ -436,9 +439,13 @@ void update() {
 }
 
 bool getNewMeasurementThalamus(){
-	static Serial SP("\\\\.\\COM62");
-	if (SP.BytesAvailable() >= 10)
+	static Serial SP("\\\\.\\COM25"); 
+	int SPba = SP.BytesAvailable();
+	if (SPba >= 10)
 	{
+		//if(SPba > 100)
+			//cout << "bytebacklog is " << SPba << endl;
+
 		char sync[2];
 		SP.ReadData(sync,sizeof(sync));
 
@@ -517,11 +524,11 @@ void getNewObservationLive(QCVision& vision){
 	{
 		Plane& currplane = pv[i];
 		vector<vector<float>>& inC = currplane.covariance;
-		Vector4f plane_t;
+		Vector4f planeCloud_t;
 		Matrix4f cov_t;
 
 
-		plane_t << currplane.A, currplane.B, currplane.C, currplane.D;
+		planeCloud_t << currplane.A, currplane.B, currplane.C, currplane.D;
 		cov_t << inC[0][0], inC[0][1], inC[0][2], inC[0][3],
 				 inC[1][0], inC[1][1], inC[1][2], inC[1][3],
 				 inC[2][0], inC[2][1], inC[2][2], inC[2][3],
@@ -529,7 +536,7 @@ void getNewObservationLive(QCVision& vision){
 
 		planes_struct temp;
 		temp.cov = cov_t;
-		temp.plane = plane_t;
+		temp.plane = planeCloud_t;
 		newPlanes.push_back(temp);
 	}
 }
@@ -539,16 +546,16 @@ void getNewObservation() {
 	newPlanes.clear();
 	int len = planeList[planePtr++];
 	for (int i = 0; i<len; i++) {
-		Vector4f plane_t;
+		Vector4f planeCloud_t;
 		Matrix4f cov_t;
-		plane_t << planeList[planePtr], planeList[planePtr+1], planeList[planePtr+2],planeList[planePtr+3];
+		planeCloud_t << planeList[planePtr], planeList[planePtr+1], planeList[planePtr+2],planeList[planePtr+3];
 		cov_t << planeList[planePtr+4], planeList[planePtr+5], planeList[planePtr+6],planeList[planePtr+7],
 			planeList[planePtr+8], planeList[planePtr+9], planeList[planePtr+10],planeList[planePtr+11],
 			planeList[planePtr+12], planeList[planePtr+13], planeList[planePtr+14],planeList[planePtr+15],
 			planeList[planePtr+16], planeList[planePtr+17], planeList[planePtr+18],planeList[planePtr+19];
 		planes_struct temp;
 		temp.cov = cov_t;
-		temp.plane = plane_t;
+		temp.plane = planeCloud_t;
 		newPlanes.push_back(temp);
 		planePtr+=20;
 	}

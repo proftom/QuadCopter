@@ -75,7 +75,7 @@ class QCVision
 	//PCL_Connector con;						//
 	
 
-	QCVision (const std::string& device_id = "") : viewer ("PCL OpenNI NormalEstimation Viewer"), device_id_(device_id), eventflag(0)
+	QCVision (const std::string& device_id = "") : viewer ("PCL OpenNI NormalEstimation Viewer"), device_id_(device_id), eventflag(1)
     {
 
       ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::SIMPLE_3D_GRADIENT);
@@ -84,13 +84,14 @@ class QCVision
       ne_.setNormalSmoothingSize (G_smoothsize);
       new_cloud_ = false;
       viewer.registerKeyboardCallback(&QCVision::keyboard_callback, *this);
+	  //Plane cloud
 	  planes_.assign(19200, Plane(0,0,0,0));
 
     }
 
 	vector<Plane> getPlanes()
 	{
-		return planes;
+		return planeBuffer;
 	}
 
 	
@@ -116,12 +117,11 @@ class QCVision
  
       cloud_ = cloud;
 
-	  	  
 	  static bool hasrun = false;
 	  if(eventflag & 0x1){
 		  if(!hasrun){
 				//hasrun = true;
-
+				
 				//ofstream myfile;
 				//myfile.open("planes.txt",ios::app);
 				//myfile << planes.size() << endl;
@@ -147,28 +147,31 @@ class QCVision
 
 				pcl::PointCloud<PointType> pc(*cloud);
 				correctDistances(cloud, &pc);
-				 
-				 				
+
+				CloudConstPtr correctedCloud(new pcl::PointCloud<PointType>(pc));
+				cloud_ = correctedCloud;				
+				
+				//Now flood fill 
 				vector<vector<int>> clusterIndicies = floodFillAll(1000, 20);//DBSCAN(G_epsilon, G_minpts);
-				cloud_ = cloud;
+				//Found planes
 				planes = ClusterToAveragePlane(clusterIndicies);
 
-				ofstream myfile;
-				myfile.open("planes.txt",ios::app);
-				myfile << planes.size() << endl;
+				//ofstream myfile;
+				//myfile.open("planes.txt",ios::app);
+				//myfile << planes.size() << endl;
 
 				//Lock anything from trying to read the planes
 				
 
 				for (int i = 0; i < planes.size(); i++) {
 					planes[i].calculateCovarianceMatrix(planes_);
-					float dist = sqrt( (planes[i].A * planes[i].A) + (planes[i].B * planes[i].B) + (planes[i].C * planes[i].C));
+					//float dist = sqrt( (planes[i].A * planes[i].A) + (planes[i].B * planes[i].B) + (planes[i].C * planes[i].C));
 
-					myfile << planes[i].A * (1.0 / dist) << " " << planes[i].B * (1.0 / dist) << " " << planes[i].C * (1.0 / dist) << " " << planes[i].D << endl;
-					for (int j = 0; j < planes[i].covariance.size(); j++) {
-						myfile << planes[i].covariance[j][0] << " " << planes[i].covariance[j][1] << " " << planes[i].covariance[j][2] << " " << planes[i].covariance[j][3] << endl;
-					}
-					myfile << planes[i].indicies.size() << endl;
+					//myfile << planes[i].A * (1.0 / dist) << " " << planes[i].B * (1.0 / dist) << " " << planes[i].C * (1.0 / dist) << " " << planes[i].D << endl;
+					//for (int j = 0; j < planes[i].covariance.size(); j++) {
+					//	myfile << planes[i].covariance[j][0] << " " << planes[i].covariance[j][1] << " " << planes[i].covariance[j][2] << " " << planes[i].covariance[j][3] << endl;
+					//}
+					//myfile << planes[i].indicies.size() << endl;
 					
 				}
 
@@ -180,8 +183,8 @@ class QCVision
 				//cout << "Unlocked planes in Vision class";
 				m_mutexLockPlanes.unlock();
 				
-				myfile << t2 << endl;
-				myfile << "<<<" << endl; 
+				//myfile << t2 << endl;
+				//myfile << "<<<" << endl; 
 
 				
 
