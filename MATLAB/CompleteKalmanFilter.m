@@ -91,8 +91,8 @@ function [X, P, lastplanedata] = processObservation(X, P, Planedata, lastplaneda
 
                 S = H*P*H.' + inC;
                 mdp = z.'*inv(S)*z;
-            
-                if ( mdp < 800 )
+                mdp = abs(mdp);
+                if ( mdp < 1000 )
                    %Data is associated.
 %                     mini = i;
                     %mdtrace(thisplane) = md;
@@ -106,8 +106,8 @@ function [X, P, lastplanedata] = processObservation(X, P, Planedata, lastplaneda
             %update or register
             if ( index ~= -1) %update
                 K = (P*H.') / S;
-            
                 X = X + K*z;
+                X(7:10) = X(7:10)/norm(X(7:10));
                 P = (eye(length(P)) - K*H)*P;
             else
                 %add new plane to state and add its cov to P
