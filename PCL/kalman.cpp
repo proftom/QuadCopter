@@ -83,7 +83,9 @@ MatrixXf Q(12,12);
 
 int kalman(QCVision& vision) {
 	clock_t tStart = clock();
-
+	vision.DCM = &DCM;
+	vision.stateVector = &state;
+	
 	initialisation ();
 	while(true) {
 
@@ -439,7 +441,7 @@ void update() {
 }
 
 bool getNewMeasurementThalamus(){
-	static Serial SP("\\\\.\\COM25"); 
+	static Serial SP("\\\\.\\COM22"); 
 	int SPba = SP.BytesAvailable();
 	if (SPba >= 10)
 	{
