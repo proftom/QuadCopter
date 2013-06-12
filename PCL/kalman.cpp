@@ -77,11 +77,11 @@ bool getNewMeasurementThalamus();
 void getNewObservation();
 void getNewObservationLive(QCVision& vision);
 void processObservation(bool regActive);
-void update(association_struct data);
-void registration (int newPlaneIndex, association_struct data);
-association_struct dataAssociation(planeStruct planeData);
+void update(const association_struct& data);
+void registration (int newPlaneIndex, const association_struct& data);
+association_struct dataAssociation(const planeStruct& planeData);
 Matrix4f e_fn();
-MatrixXf E_r_fn(Vector4f plane);
+MatrixXf E_r_fn(const Vector4f& plane);
 //void run();
 
 
@@ -375,7 +375,7 @@ MatrixXf H_fn(int planeId) {
 	return H;
 }
 
-association_struct dataAssociation(planeStruct planeData) {
+association_struct dataAssociation(const planeStruct& planeData) {
 /*
  * The idea here is to return the index of the landmark planeData is associated with.
  * -1 means no association.
@@ -445,7 +445,7 @@ void processObservation(bool regActive) {
 	}
 }
 
-void update(association_struct data) {
+void update(const association_struct& data) {
 	// Unpack data.
 	MatrixXf P_opt(data.P_opt);
 	MatrixXf H_opt(data.H_opt);
@@ -478,7 +478,7 @@ void update(association_struct data) {
 //	cout << "Distance" << endl << data.distance << endl << endl;
 }
 
-void registration (int newPlaneIndex, association_struct data) {
+void registration (int newPlaneIndex, const association_struct& data) {
 // Add new plane to landmark.
 	int i = newPlaneIndex;
 	//If statement for extra precaution.
@@ -520,7 +520,7 @@ Matrix4f e_fn() {
 	return InvTransPlane;
 }
 
-MatrixXf E_r_fn(Vector4f plane) { // D is h inverse
+MatrixXf E_r_fn(const Vector4f& plane) { // D is h inverse
 	Vector3f Nglob(DCM.transpose() * plane.segment(0,3));
 
 	Vector4f GNqparts(Xi * plane.segment(0,3));
@@ -643,7 +643,7 @@ void getNewObservationLive(QCVision& vision){
 				 inC[2][0], inC[2][1], inC[2][2], inC[2][3],
 				 inC[3][0], inC[3][1], inC[3][2], inC[3][3];
 
-		planes_struct temp;
+		planeStruct temp;
 		temp.cov = hypermute*(cov_t*XtionCovarFudge)* hypermute.transpose();
 		temp.plane = hypermute*planeCloud_t;
 		newPlanes.push_back(temp);
