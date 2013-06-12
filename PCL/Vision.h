@@ -5,7 +5,7 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/io/openni_grabber.h>
-#include <pcl/io/pcd_io.h>
+#include <pcl/io/pcd_io.h>	
 #include <pcl/io/openni_camera/openni_driver.h>
 #include <pcl/features/integral_image_normal.h>
 #include <pcl/console/parse.h>
@@ -65,12 +65,11 @@ class QCVision
 	boost::mutex m_mutexLockPlanes;
 	vector<Plane> planeBuffer;
 
-
     // Data
     CloudConstPtr cloud_;						//Raw cloud
 	pcl::PointCloud<pcl::Normal>::Ptr normals_; //Normal cloud
 	pcl::IntegralImageNormalEstimation<PointType, pcl::Normal> ne_; //Normal estimation object
-	vector<Plane> planes_;						//Found planes
+	vector<Plane> planeCloud_;						//Found planes
 	bool bNewSetOfPlanes;						//New planes computed
 	//PCL_Connector con;						//
 	
@@ -85,7 +84,7 @@ class QCVision
       new_cloud_ = false;
       viewer.registerKeyboardCallback(&QCVision::keyboard_callback, *this);
 	  //Plane cloud
-	  planes_.assign(19200, Plane(0,0,0,0));
+	  planeCloud_.assign(19200, Plane(0,0,0,0));
 
     }
 
@@ -97,7 +96,7 @@ class QCVision
 	
 	void cloud_cb (const CloudConstPtr& cloud)
     {
-	  //t2 = clock(); 
+	  t2 = clock(); 
 	  boost::mutex::scoped_lock lock (mtx_);
  
       //lock while we set our cloud;
@@ -109,11 +108,11 @@ class QCVision
       normals_.reset (new pcl::PointCloud<pcl::Normal>);
 	  //cld_render_ptr.reset(new pcl::PointCloud<PointType>);
 	  
-      //double start = pcl::getTime ();
+      double start = pcl::getTime ();
       ne_.setInputCloud (cloud);
 	  ne_.compute (*normals_); 
 
-      //double stop = pcl::getTime ();
+      double stop = pcl::getTime ();
  
       cloud_ = cloud;
 
@@ -127,7 +126,7 @@ class QCVision
 				//myfile << planes.size() << endl;
 
 				//for (int i = 0; i < planes.size(); i++) {
-				//	planes[i].calculateCovarianceMatrix(planes_);
+				//	planes[i].calculateCovarianceMatrix(planeCloud_);
 				//	double dist = sqrt( (planes[i].A * planes[i].A) + (planes[i].B * planes[i].B) + (planes[i].C * planes[i].C));
 
 				//	myfile << planes[i].A * (1.0 / dist) << " " << planes[i].B * (1.0 / dist) << " " << planes[i].C * (1.0 / dist) << " " << planes[i].D << endl;
@@ -152,7 +151,7 @@ class QCVision
 				cloud_ = correctedCloud;				
 				
 				//Now flood fill 
-				vector<vector<int>> clusterIndicies = floodFillAll(1000, 20);//DBSCAN(G_epsilon, G_minpts);
+				vector<vector<int> > clusterIndicies = floodFillAll(1000, 20);//DBSCAN(G_epsilon, G_minpts);
 				//Found planes
 				planes = ClusterToAveragePlane(clusterIndicies);
 
@@ -160,19 +159,19 @@ class QCVision
 				//myfile.open("planes.txt",ios::app);
 				//myfile << planes.size() << endl;
 
-				//Lock anything from trying to read the planes
-				
+				////Lock anything from trying to read the planes
+				//
 
 				for (int i = 0; i < planes.size(); i++) {
-					planes[i].calculateCovarianceMatrix(planes_);
-					//float dist = sqrt( (planes[i].A * planes[i].A) + (planes[i].B * planes[i].B) + (planes[i].C * planes[i].C));
+					planes[i].calculateCovarianceMatrix(planeCloud_);
+				//	float dist = sqrt( (planes[i].A * planes[i].A) + (planes[i].B * planes[i].B) + (planes[i].C * planes[i].C));
 
-					//myfile << planes[i].A * (1.0 / dist) << " " << planes[i].B * (1.0 / dist) << " " << planes[i].C * (1.0 / dist) << " " << planes[i].D << endl;
-					//for (int j = 0; j < planes[i].covariance.size(); j++) {
-					//	myfile << planes[i].covariance[j][0] << " " << planes[i].covariance[j][1] << " " << planes[i].covariance[j][2] << " " << planes[i].covariance[j][3] << endl;
-					//}
-					//myfile << planes[i].indicies.size() << endl;
-					
+				//	myfile << planes[i].A * (1.0 / dist) << " " << planes[i].B * (1.0 / dist) << " " << planes[i].C * (1.0 / dist) << " " << planes[i].D << endl;
+				//	for (int j = 0; j < planes[i].covariance.size(); j++) {
+				//		myfile << planes[i].covariance[j][0] << " " << planes[i].covariance[j][1] << " " << planes[i].covariance[j][2] << " " << planes[i].covariance[j][3] << endl;
+				//	}
+				//	myfile << planes[i].indicies.size() << endl;
+				//	
 				}
 
 
@@ -183,8 +182,8 @@ class QCVision
 				//cout << "Unlocked planes in Vision class";
 				m_mutexLockPlanes.unlock();
 				
-				//myfile << t2 << endl;
-				//myfile << "<<<" << endl; 
+//				myfile << t2 << endl;
+//				myfile << "<<<" << endl; 
 
 				
 
@@ -317,7 +316,7 @@ class QCVision
       interface->stop ();
     }
 	
-	vector<Plane> ClusterToAveragePlane(vector<vector<int>> clusters) 
+	vector<Plane> ClusterToAveragePlane(vector<vector<int> > clusters) 
 	{
 		vector<Plane> planes;
 
@@ -352,7 +351,7 @@ class QCVision
 		vector<bool> addedToCluster(sizeOfData, false);
 
 		//Clusters
-		vector<vector<int>> clusters;
+		vector<vector<int> > clusters;
 		
 		int clusterInd = 0;
 
@@ -397,7 +396,7 @@ class QCVision
 			
 			}
 			mergingPlane.A /= nTotalIndicies; mergingPlane.B /= nTotalIndicies; mergingPlane.C /= nTotalIndicies; mergingPlane.D /= nTotalIndicies;
-			mergingPlane.calculateCovarianceMatrix(planes_);
+			mergingPlane.calculateCovarianceMatrix(planeCloud_);
 			mergedPlanes.push_back(mergingPlane);
 
 		}
@@ -459,12 +458,12 @@ class QCVision
 	}
 	
 	//Flood fill
-	vector<vector<int>> floodFillAll(int minPts, int maxTries) 
+	vector<vector<int> > floodFillAll(int minPts, int maxTries) 
 	{
-		vector<vector<int>> clusters;
+		vector<vector<int> > clusters;
 		
 		//Calculate planes for each point with normal. Required for checking if 2 points lie within the same plane
-		calculatePlanes_();
+		calculateplaneCloud_();
 
 		int dataSize = normals_->size();
 		vector<bool> isInCluster(dataSize, false);
@@ -530,22 +529,22 @@ class QCVision
 		return clusterPoints;
 	}
 
-	void calculatePlanes_() 
+	void calculateplaneCloud_() 
 	{
 		for (int i = 0; i < 19200; i++) {
-			planes_[i].A = normals_->points[i].normal_x;
-			planes_[i].B = normals_->points[i].normal_y;
-			planes_[i].C = normals_->points[i].normal_z;
-			planes_[i].D = -1 * ( planes_[i].A * cloud_->points[i].x + planes_[i].B * cloud_->points[i].y + planes_[i].C * cloud_->points[i].z);
+			planeCloud_[i].A = normals_->points[i].normal_x;
+			planeCloud_[i].B = normals_->points[i].normal_y;
+			planeCloud_[i].C = normals_->points[i].normal_z;
+			planeCloud_[i].D = -1 * ( planeCloud_[i].A * cloud_->points[i].x + planeCloud_[i].B * cloud_->points[i].y + planeCloud_[i].C * cloud_->points[i].z);
 		}
 
 	}
 
 	bool samePlaneNormal(int pointOfInterest, int rootPoint, float epsilon) {
-		if	((abs(planes_[rootPoint].A - planes_[pointOfInterest].A) < epsilon) 
-		&&	(abs(planes_[rootPoint].B - planes_[pointOfInterest].B) < epsilon) 
-		&&	(abs(planes_[rootPoint].C - planes_[pointOfInterest].C) < epsilon)
-		&&	(abs(planes_[rootPoint].D - planes_[pointOfInterest].D) < 
+		if	((abs(planeCloud_[rootPoint].A - planeCloud_[pointOfInterest].A) < epsilon) 
+		&&	(abs(planeCloud_[rootPoint].B - planeCloud_[pointOfInterest].B) < epsilon) 
+		&&	(abs(planeCloud_[rootPoint].C - planeCloud_[pointOfInterest].C) < epsilon)
+		&&	(abs(planeCloud_[rootPoint].D - planeCloud_[pointOfInterest].D) < 
 					(
 					abs(normals_->points[rootPoint].normal_z * cloud_->points[rootPoint].z * cloud_->points[rootPoint].z)
 				+	abs(normals_->points[pointOfInterest].normal_z * cloud_->points[pointOfInterest].z * cloud_->points[pointOfInterest].z)

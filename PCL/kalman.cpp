@@ -27,7 +27,7 @@ typedef Matrix< float , 16 , 1> Vector16f;
 #define covFactor 1000
 #define distThreshold 800
 
-struct planes_struct {
+struct planeCloud_struct {
 	Vector4f plane;
 	Matrix4f cov;
 	bool isMatched;
@@ -68,7 +68,7 @@ void getNewObservationLive(QCVision& vision);
 vector<Vector4f, Eigen::aligned_allocator<Vector4f> > landmarks;
 int timeSteps = 0;
 vector<Vector16f, Eigen::aligned_allocator<Vector16f> > statehistory;
-vector<planes_struct, Eigen::aligned_allocator<planes_struct> > newPlanes;
+vector<planeCloud_struct, Eigen::aligned_allocator<planeCloud_struct> > newPlanes;
 
 Vector3f acc;
 Vector3f gyro;
@@ -534,7 +534,7 @@ void getNewObservationLive(QCVision& vision){
 				 inC[2][0], inC[2][1], inC[2][2], inC[2][3],
 				 inC[3][0], inC[3][1], inC[3][2], inC[3][3];
 
-		planes_struct temp;
+		planeCloud_struct temp;
 		temp.cov = cov_t;
 		temp.plane = planeCloud_t;
 		newPlanes.push_back(temp);
@@ -553,7 +553,7 @@ void getNewObservation() {
 			planeList[planePtr+8], planeList[planePtr+9], planeList[planePtr+10],planeList[planePtr+11],
 			planeList[planePtr+12], planeList[planePtr+13], planeList[planePtr+14],planeList[planePtr+15],
 			planeList[planePtr+16], planeList[planePtr+17], planeList[planePtr+18],planeList[planePtr+19];
-		planes_struct temp;
+		planeCloud_struct temp;
 		temp.cov = cov_t;
 		temp.plane = planeCloud_t;
 		newPlanes.push_back(temp);
