@@ -523,7 +523,7 @@ void getNewObservationLive(QCVision& vision){
 	for (int i = 0; i < pv.size(); ++i)
 	{
 		Plane& currplane = pv[i];
-		vector<vector<float>>& inC = currplane.covariance;
+		vector<vector<float> >& inC = currplane.covariance;
 		Vector4f planeCloud_t;
 		Matrix4f cov_t;
 
