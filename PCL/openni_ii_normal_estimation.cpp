@@ -23,6 +23,8 @@
 using namespace Eigen;
 #define RESOLUTION_MODE pcl::OpenNIGrabber::OpenNI_QQVGA_30Hz
 
+
+
 #define FPS_CALC(_WHAT_) \
 	do \
 { \
@@ -60,6 +62,7 @@ public:
 
 	Matrix3f* DCM; 
 
+
 	unsigned int eventflag; 
 	unsigned int Perseventflag; 
 
@@ -75,7 +78,7 @@ public:
 	vector<Plane> planes_;						//Found planes
 
 
-	QCVision (const std::string& device_id = "")
+	QCVision (const std::string& device_id = "",Matrix3f* DCM_in = NULL, Vector16f* stateVector_in = NULL)
 		: viewer ("PCL OpenNI NormalEstimation Viewer")
 		, device_id_(device_id)
 		, eventflag(0)
@@ -88,6 +91,11 @@ public:
 		new_cloud_ = false;
 		viewer.registerKeyboardCallback(&QCVision::keyboard_callback, *this);
 		planes_.assign(19200, Plane(0,0,0,0));
+;
+		DCM = DCM_in;
+
+		stateVector = stateVector_in;
+
 
 	}
 
@@ -206,8 +214,8 @@ public:
 		if(Perseventflag & 0x1){
 			MatrixXf Tran(4,4);
 			Tran.block<3,3>(0,0)= *DCM;
-			Tran.block<3,1>(3,1)= stateVector->segment<3>(0);
-			//Tran.block<1,1>(3,3)= 1;
+			Tran.block<3,1>(0,3)= stateVector->segment<3>(0);
+			Tran.block<1,1>(3,3) << 1;
 			pcl::PointCloud<PointType> pc(*cloud_);
 			transformPointCloud(pc,pc,Tran);
 			CloudConstPtr inputtmp(new pcl::PointCloud<PointType>(pc));
@@ -298,7 +306,7 @@ public:
 			eventflag &= ~0x1;
 			break;
 		case '7':
-			Perseventflag |= ~0x1;
+			Perseventflag |= 0x1;
 			break;
 		case '8':
 			Perseventflag &= ~0x1;
@@ -612,6 +620,17 @@ void usage (char ** argv)
 int main (int argc, char ** argv)
 {
 
+	
+
+	Matrix3f* DCMglob = new Matrix3f; 
+
+	Vector16f* stateVectorglob = new Vector16f;
+
+	*DCMglob <<	1,0,0,
+				0,1,0,
+				0,0,1;
+	*stateVectorglob << 1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0;
+
 
 	std::string arg;
 	if (argc > 1)
@@ -637,7 +656,7 @@ int main (int argc, char ** argv)
 	if (grabber.providesCallback<pcl::OpenNIGrabber::sig_cb_openni_point_cloud_rgba> ())
 	{
 		PCL_INFO ("PointXYZRGBA mode enabled.\n");
-		QCVision v ("");
+		QCVision v ("",DCMglob,stateVectorglob);
 		v.run ();
 	}
 	else
