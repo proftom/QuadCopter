@@ -31,7 +31,7 @@ public:
 
 	Plane(float a, float b, float c, float d, vector<int> ind)  {
 		A = a;
-		B = b;git c
+		B = b;
 		C = c;
 		D = d;
 		indicies = ind;
