@@ -541,7 +541,7 @@ MatrixXf E_r_fn(const Vector4f& plane) { // D is h inverse
 }
 
 bool getNewMeasurementThalamus(){
-	static Serial SP("\\\\.\\COM25"); 
+	static Serial SP("\\\\.\\COM62"); 
 	int SPba = SP.BytesAvailable();
 	if (SPba >= 10)
 	{
