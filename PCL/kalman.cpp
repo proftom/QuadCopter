@@ -28,6 +28,7 @@ typedef Matrix< float , 16 , 1> Vector16f;
 #define startupConvergeTimesteps 1000
 #define XtionCovarFudge 100
 
+
 struct imuRawS
 {
 	int accX;
@@ -83,7 +84,6 @@ association_struct dataAssociation(const planeStruct& planeData);
 Matrix4f e_fn();
 MatrixXf E_r_fn(const Vector4f& plane);
 //void run();
-
 
 //Variables
 vector<Vector4f, Eigen::aligned_allocator<Vector4f> > landmarks;
@@ -631,7 +631,7 @@ void getNewObservationLive(QCVision& vision){
 	for (int i = 0; i < pv.size(); ++i)
 	{
 		Plane& currplane = pv[i];
-		vector<vector<float>>& inC = currplane.covariance;
+		vector<vector<float> >& inC = currplane.covariance;
 		Vector4f planeCloud_t;
 		Matrix4f cov_t;
 
@@ -691,3 +691,4 @@ void getNewObservation() {
 	}
 }
 */
+
