@@ -16,9 +16,17 @@
 #include <fstream>
 #include "Plane.h"
 #include <time.h>
+#include <Eigen/Dense>
+#include <Eigen/StdVector>
+#include <pcl/common/transforms.h>
 
 //#include "Depth_Correction_Array.txt"
 extern float correction_table[19200][56];
+using namespace std;
+using namespace Eigen;
+typedef Matrix< float , 16 , 16> Matrix16f;
+typedef Matrix< float , 16 , 1> Vector16f;
+
 #include <queue>
 
 #define RESOLUTION_MODE pcl::OpenNIGrabber::OpenNI_QQVGA_30Hz
@@ -58,6 +66,7 @@ class QCVision
     typedef Cloud::ConstPtr CloudConstPtr; //typename
 
 	unsigned int eventflag; 
+	unsigned int Perseventflag; 
 	
     pcl::visualization::CloudViewer viewer;
     std::string device_id_;
@@ -65,6 +74,9 @@ class QCVision
 	boost::mutex m_mutexLockPlanes;
 	vector<Plane> planeBuffer;
 
+	Vector16f* stateVector;
+
+	Matrix3f* DCM;
     // Data
     CloudConstPtr cloud_;						//Raw cloud
 	pcl::PointCloud<pcl::Normal>::Ptr normals_; //Normal cloud
@@ -214,6 +226,19 @@ class QCVision
 			  hasrun = false;
 		  }
 	  }
+
+	  if(Perseventflag & 0x1){
+			MatrixXf Tran(4,4);
+			Tran.block<3,3>(0,0)= *DCM;
+			Tran.block<3,1>(0,3)= stateVector->segment<3>(0);
+			Tran.block<1,1>(3,3) << 1;
+			pcl::PointCloud<PointType> pc(*cloud_);
+			transformPointCloud(pc,pc,Tran);
+			CloudConstPtr inputtmp(new pcl::PointCloud<PointType>(pc));
+			cloud_ = inputtmp;
+		}
+		else{
+		}
     }
 
     void viz_cb (pcl::visualization::PCLVisualizer& viz)
@@ -294,6 +319,13 @@ class QCVision
 			break;
 		case '6':
 			eventflag &= ~0x1;
+			break;
+		case '7':
+			Perseventflag |= 0x1;
+			break;
+		case '8':
+			Perseventflag &= ~0x1;
+			break;
       }
     }
 

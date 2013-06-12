@@ -105,7 +105,10 @@ int timeSteps = 0;
 int kalman(QCVision& vision) {
 	clock_t tStart = clock();
 
-	initialisation();
+	vision.DCM = &DCM;
+	vision.stateVector = &state;
+	
+	initialisation ();
 
 	while(true) {
 
@@ -541,7 +544,7 @@ MatrixXf E_r_fn(const Vector4f& plane) { // D is h inverse
 }
 
 bool getNewMeasurementThalamus(){
-	static Serial SP("\\\\.\\COM62"); 
+	static Serial SP("\\\\.\\COM22");
 	int SPba = SP.BytesAvailable();
 	if (SPba >= 10)
 	{
