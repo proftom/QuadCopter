@@ -19,7 +19,7 @@ typedef Matrix< float , 16 , 16> Matrix16f;
 typedef Matrix< float , 16 , 1> Vector16f;
 #define STATENUM 16
 #define Sampling_Time 0.01	// unit is seconds.
-#define distThreshold 990
+#define distThreshold 1000
 
 typedef struct {
 	Vector4f plane;
@@ -488,6 +488,8 @@ association_struct dataAssociation(planeStruct planeData) {
 			data.m_error = diff;
 			data.P_opt = P_opt;
 			data.planeId = index;
+			cout << "diff " << endl << diff << endl << endl;
+			cout << "dist " << endl << dist << endl << endl;
 		}
 	}
 
@@ -575,7 +577,14 @@ void registration (int newPlaneIndex, association_struct data) {
 		P.block(0, P.cols()-4, 16,4) = P.block(P.rows()-4, 0, 4, 16).transpose();
 		P.block(P.rows()-4, P.cols()-4, 4, 4) = E_r * P.block<16,16>(0, 0) * E_r.transpose() +
 		E_y * newPlanes[i].cov * E_y.transpose();
+//		P.block(P.rows()-4, 0, 4, 16) = MatrixXf::Zero(4,16);
+//		P.block(0, P.cols()-4, 16,4) = MatrixXf::Zero(16,4);
+//		P.block(P.rows()-4, P.cols()-4, 4, 4) = MatrixXf::Zero(4,4);
+
+
+
 		cout << "added at time t= "<< timeSteps<<endl<<endl;
+		cout << "P is : "<< P << endl << endl;
 	}
 }
 
@@ -590,7 +599,6 @@ Matrix4f e_fn() {
 MatrixXf E_r_fn(Vector4f plane) { // D is h inverse
 	Vector3f Nglob(DCM.transpose() * plane.segment(0,3));
 
-//	Vector4f GNqparts(Xi_fn() * Nglob);
 	Vector4f GNqparts(Xi * plane.segment(0,3));
 
 	MatrixXf GNq(3,4);
