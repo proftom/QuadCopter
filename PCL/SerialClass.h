@@ -3,14 +3,32 @@
 
 #define ARDUINO_WAIT_TIME 2000
 
-#include <windows.h>
-#include <stdio.h>
-#include <stdlib.h>
+// Include for windows
+#if defined (_WIN32) || defined( _WIN64)
+	#include <windows.h>
+	#include <stdio.h>
+	#include <stdlib.h>
+#endif
+
+// Include for Linux
+#ifdef __linux__
+    #include <stdlib.h>
+    #include <sys/types.h>
+    #include <sys/shm.h>
+    #include <termios.h>
+    #include <string.h>
+    #include <iostream>
+    // File control definitions
+    #include <fcntl.h>
+    #include <unistd.h>
+    #include <sys/ioctl.h>
+#endif
 
 class Serial
 {
     private:
         //Serial comm handler
+#if defined (_WIN32) || defined( _WIN64)	
         HANDLE hSerial;
         //Connection status
         bool connected;
@@ -18,7 +36,11 @@ class Serial
         COMSTAT status;
         //Keep track of last error
         DWORD errors;
+#endif
 
+#ifdef __linux__
+    int             fd;
+#endif
     public:
         //Initialize Serial communication with the given COM port
         Serial(char *portName);

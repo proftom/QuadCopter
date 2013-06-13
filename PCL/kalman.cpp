@@ -16,6 +16,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include "Vision.h"
 #include "SerialClass.h"
+//#include "serialib.h"
 
 using namespace std;
 using namespace Eigen;
@@ -412,8 +413,8 @@ association_struct dataAssociation(const planeStruct& planeData) {
 			data.m_error = diff;
 			data.P_opt = P_opt;
 			data.planeId = index;
-			cout << "diff " << endl << diff << endl << endl;
-			cout << "dist " << endl << dist << endl << endl;
+			//cout << "diff " << endl << diff << endl << endl;
+			//cout << "dist " << endl << dist << endl << endl;
 		}
 	}
 
@@ -435,7 +436,7 @@ void processObservation(bool regActive) {
 		//Perform association.
 		association_struct data = dataAssociation(newPlanes[i]);
 		//Either register plane or update kalman equations
-		if (data.planeId != -1) {	//Data was associated!
+		if ((data.planeId != -1)|| (regActive == true)) {	//Data was associated!
 //			cout << "updated lm: "<< data.planeId << endl<<endl;
 			update(data);
 		} else {	// Data NOT associated so register new plane.
@@ -474,7 +475,7 @@ void update(const association_struct& data) {
 //	cout << "P_opt" << endl << P_opt << endl << endl;
 //	cout << "S.inverse" << endl << S.inverse() << endl << endl;
 //	cout << "kalmanGain" << endl << kalmanGain << endl << endl;
-	cout << "State Update to landmark " << index <<";" << endl << state << endl <<"Update Above to landmark: "<< index << endl <<endl;
+//	cout << "State Update to landmark " << index <<";" << endl << state << endl <<"Update Above to landmark: "<< index << endl <<endl;
 //	cout << "Distance" << endl << data.distance << endl << endl;
 }
 
@@ -507,8 +508,8 @@ void registration (int newPlaneIndex, const association_struct& data) {
 
 
 
-		cout << "added at time t= "<< timeSteps<<endl<<endl;
-		cout << "P is : "<< P << endl << endl;
+//		cout << "added at time t= "<< timeSteps<<endl<<endl;
+//		cout << "P is : "<< P << endl << endl;
 	}
 }
 
@@ -539,16 +540,21 @@ MatrixXf E_r_fn(const Vector4f& plane) { // D is h inverse
 	E_r << block, MatrixXf::Zero(4,3),block2, MatrixXf::Zero(4,6);
 	return E_r;
 }
-
+	
 bool getNewMeasurementThalamus(){
 	static Serial SP("\\\\.\\COM25"); 
+	//static serialib sp;
+	 //sp.Open("COM25",9600);
+	
 	int SPba = SP.BytesAvailable();
-	if (SPba >= 10)
+	//int SPba = sp.Peek();
+	 if (SPba >= 10)
 	{
 		//if(SPba > 100)
 			//cout << "bytebacklog is " << SPba << endl;
-
 		char sync[2];
+		
+		//SP.Read(sync,2,0);
 		SP.ReadData(sync,sizeof(sync));
 
 		if (sync[0] == 11)
