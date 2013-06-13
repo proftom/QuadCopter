@@ -135,7 +135,7 @@ class QCVision
 				cloud_ = correctedCloud;				
 				
 				//Now flood fill 
-				vector<vector<int>> clusterIndicies = floodFillAll(1000, 20);
+				vector<vector<int> > clusterIndicies = floodFillAll(1000, 20);
 
 				planes = ClusterToAveragePlane(clusterIndicies);
 
@@ -201,7 +201,7 @@ class QCVision
       interface->stop ();
     }
 	
-	vector<Plane> ClusterToAveragePlane(vector<vector<int>> clusters) 
+	vector<Plane> ClusterToAveragePlane(vector<vector<int> > clusters) 
 	{
 		vector<Plane> planes;
 
@@ -232,9 +232,9 @@ class QCVision
 	
 	
 	//Flood fill
-	vector<vector<int>> floodFillAll(int minPts, int maxTries) 
+	vector<vector<int> > floodFillAll(int minPts, int maxTries) 
 	{
-		vector<vector<int>> clusters;
+		vector<vector<int> > clusters;
 		
 		//Calculate planes for each point with normal. Required for checking if 2 points lie within the same plane
 		calculatePlanes_();
