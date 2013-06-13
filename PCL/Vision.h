@@ -231,9 +231,10 @@ class QCVision
 
 	  if(Perseventflag & 0x1){
 			MatrixXf Tran(4,4);
-			Tran.block<3,3>(0,0)= *DCM;
+			Tran.block<3,3>(0,0)= DCM->transpose();
 			Tran.block<3,1>(0,3)= stateVector->segment<3>(0);
 			Tran.block<1,1>(3,3) << 1;
+			cout << Tran<< endl;
 			pcl::PointCloud<PointType> pc(*cloud_);
 			transformPointCloud(pc,pc,Tran);
 			CloudConstPtr inputtmp(new pcl::PointCloud<PointType>(pc));
