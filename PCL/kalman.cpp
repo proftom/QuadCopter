@@ -24,9 +24,11 @@ typedef Matrix< float , 16 , 16> Matrix16f;
 typedef Matrix< float , 16 , 1> Vector16f;
 #define STATENUM 16
 #define Sampling_Time 0.01	// unit is seconds.
-#define distThreshold 1000
+//#define distThreshold 5000
+#define distThreshold 25
 #define startupConvergeTimesteps 1000
-#define XtionCovarFudge 100
+//#define XtionCovarFudge 100
+#define XtionCovarFudge 40000
 
 
 struct imuRawS
@@ -130,6 +132,7 @@ int kalman(QCVision& vision) {
 			vision.m_mutexLockPlanes.unlock();
 			processObservation(timeSteps > startupConvergeTimesteps);
 			cout << "state at time t = " << timeSteps << endl<< state.segment(0,3) << endl<<endl;
+			cout << "numplanes: " << landmarks.size() << endl;
 
 		} else {
 			vision.m_mutexLockPlanes.unlock();
@@ -149,10 +152,12 @@ void initialisation () { //Incomplete.
 	//Initialise landmarks.
 	Vector4f planeCloud_t;
 	planeCloud_t << -1,0,0,0;
+	//planeCloud_t << 1,0,0,0;
 	landmarks.push_back(planeCloud_t);
 	planeCloud_t << 0,1,0,0;
 	landmarks.push_back(planeCloud_t);
 	planeCloud_t << 0,0,1,0;
+	//planeCloud_t << 0,0,-1,0;
 	landmarks.push_back(planeCloud_t);
 
 	//initialise landmarks and P
@@ -168,6 +173,7 @@ void initialisation () { //Incomplete.
 	Q = noiseMatrix();
 	//initialise state vector.
 	state <<-2.2, 2.2, 2.2, 0, 0, 0, 0.853553, 0.146447, 0.353553, -0.353553,
+	//state << 1, 1, -1, 0, 0, 0, 0.353553, -0.353553, -0.146447, -0.853553, 
 		-0.0456 ,   0.0069,   -0.0048 ,  -0.0331  ,  0.1024 ,   0.1473;
 	//	cout << "state initial" << endl << state << endl << endl;
 }
@@ -379,10 +385,7 @@ MatrixXf H_fn(int planeId) {
 }
 
 association_struct dataAssociation(const planeStruct& planeData) {
-/*
- * The idea here is to return the index of the landmark planeData is associated with.
- * -1 means no association.
- */
+
 	Matrix4f transPlane;
 	transPlane << DCM, Vector3f::Zero(), state.segment(0,3).transpose(), 1;
 
@@ -415,13 +418,9 @@ association_struct dataAssociation(const planeStruct& planeData) {
 			data.m_error = diff;
 			data.P_opt = P_opt;
 			data.planeId = index;
-			cout << "diff " << endl << diff << endl << endl;
-			cout << "dist " << endl << dist << endl << endl;
+			//cout << "diff " << endl << diff << endl << endl;
+			//cout << "dist " << endl << dist << endl << endl;
 		}
-	}
-
-	if (data.distance > distThreshold) {
-		data.planeId = -1;
 	}
 
 	return data;
@@ -438,11 +437,13 @@ void processObservation(bool regActive) {
 		//Perform association.
 		association_struct data = dataAssociation(newPlanes[i]);
 		//Either register plane or update kalman equations
-		if (data.planeId != -1) {	//Data was associated!
-//			cout << "updated lm: "<< data.planeId << endl<<endl;
+		if (data.distance <= distThreshold || !regActive) {	//Data was associated!
+			//cout << "updated lm: "<< data.planeId << endl<<endl;
+			if(data.planeId == 3)
+				cout << "--------------------------------------stuff will go to shit" << endl;
 			update(data);
 		} else {	// Data NOT associated so register new plane.
-
+			cout << "reghit-------------------------------------------------------" <<endl;
 			registration(i, data);
 		}
 	}
@@ -454,7 +455,7 @@ void update(const association_struct& data) {
 	MatrixXf H_opt(data.H_opt);
 	Matrix4f S(data.S);
 	Vector4f diff = data.m_error;
-	float index = data.planeId;
+	int index = data.planeId;
 
 	MatrixXf kalmanGain(P_opt  * H_opt.transpose() * S.inverse());
 	VectorXf change(kalmanGain * diff);
@@ -477,42 +478,43 @@ void update(const association_struct& data) {
 //	cout << "P_opt" << endl << P_opt << endl << endl;
 //	cout << "S.inverse" << endl << S.inverse() << endl << endl;
 //	cout << "kalmanGain" << endl << kalmanGain << endl << endl;
-	cout << "State Update to landmark " << index <<";" << endl << state << endl <<"Update Above to landmark: "<< index << endl <<endl;
+//	cout << "State Update to landmark " << index <<";" << endl << state << endl <<"Update Above to landmark: "<< index << endl <<endl;
 //	cout << "Distance" << endl << data.distance << endl << endl;
 }
 
 void registration (int newPlaneIndex, const association_struct& data) {
 // Add new plane to landmark.
 	int i = newPlaneIndex;
-	//If statement for extra precaution.
-	if ((data.planeId == -1)  ) { // Plane was not associated.
-		// First transform to world coordinate using small g.
-		// Convert the plane eqn to world frame.
-		Vector4f plane = e_fn()*newPlanes[i].plane;
-		landmarks.push_back(plane);
-		MatrixXf E_r(E_r_fn(newPlanes[i].plane));
-		//inverse observation function and its jacobian w.r.t Plane are the same.
-		Matrix4f E_y(e_fn());
+	// First transform to world coordinate using small g.
+	// Convert the plane eqn to world frame.
+	Vector4f plane = e_fn()*newPlanes[i].plane;
+	landmarks.push_back(plane);
+	MatrixXf E_r(E_r_fn(newPlanes[i].plane));
+	//inverse observation function and its jacobian w.r.t Plane are the same.
+	Matrix4f E_y(e_fn());
 
-		// Add new plane covariance to P. P is mostly sparse!
-		P.conservativeResize(P.rows()+ 4, P.cols()+4);
+	// Add new plane covariance to P. P is mostly sparse! NOT!
+	P.conservativeResize(P.rows()+ 4, P.cols()+4);
 
-		P.block(0, P.cols()-4, P.rows()-4,4) = MatrixXf::Zero(P.rows()-4, 4);
-		P.block(P.rows()-4, 0, 4, P.cols()) = MatrixXf::Zero(4, P.cols());
+	//P.block(0, P.cols()-4, P.rows()-4,4) = MatrixXf::Zero(P.rows()-4, 4);
+	//P.block(P.rows()-4, 0, 4, P.cols()) = MatrixXf::Zero(4, P.cols());
 
-		P.block(P.rows()-4, 0, 4, 16) = E_r * P.block(0, 0, 16, 16);
-		P.block(0, P.cols()-4, 16,4) = P.block(P.rows()-4, 0, 4, 16).transpose();
-		P.block(P.rows()-4, P.cols()-4, 4, 4) = E_r * P.block<16,16>(0, 0) * E_r.transpose() +
-		E_y * newPlanes[i].cov * E_y.transpose();
+	P.block(P.rows()-4, 0, 4, P.cols()-4) = E_r * P.block(0, 0, 16, P.cols()-4);
+	P.block(0, P.cols()-4, P.rows()-4,4) = P.block(P.rows()-4, 0, 4, P.cols()-4).transpose();
+	P.block(P.rows()-4, P.cols()-4, 4, 4) = E_r * P.block<16,16>(0, 0) * E_r.transpose() +
+	E_y * (newPlanes[i].cov * (1/100)) * E_y.transpose();
 //		P.block(P.rows()-4, 0, 4, 16) = MatrixXf::Zero(4,16);
 //		P.block(0, P.cols()-4, 16,4) = MatrixXf::Zero(16,4);
 //		P.block(P.rows()-4, P.cols()-4, 4, 4) = MatrixXf::Zero(4,4);
 
+	//cout << "Registered at time t= "<< timeSteps <<endl<<endl;
+	//cout << "at: "<< plane <<endl<<endl;
+	//cout << "E_r is: "<< E_r <<endl<<endl;
+	//cout << "E_y is: "<< E_y <<endl<<endl;
+	//cout << "EP is: "<< P.block(P.rows()-4, 0, 4, P.cols()-4) <<endl<<endl;
+	cout << "P4x4 is"<< P.block(P.rows()-4, P.cols()-4, 4, 4) <<endl<<endl;
 
-
-		cout << "added at time t= "<< timeSteps<<endl<<endl;
-		cout << "P is : "<< P << endl << endl;
-	}
+	//cout << "P is : "<< P << endl << endl;*/
 }
 
 Matrix4f e_fn() {
@@ -544,7 +546,7 @@ MatrixXf E_r_fn(const Vector4f& plane) { // D is h inverse
 }
 
 bool getNewMeasurementThalamus(){
-	static Serial SP("\\\\.\\COM22");
+	static Serial SP("\\\\.\\COM62");
 	int SPba = SP.BytesAvailable();
 	if (SPba >= 10)
 	{
@@ -673,7 +675,7 @@ void getNewObservation() {
 				 planeList[planePtr+12], planeList[planePtr+13], planeList[planePtr+14],planeList[planePtr+15],
 				 planeList[planePtr+16], planeList[planePtr+17], planeList[planePtr+18],planeList[planePtr+19];
 		cov << hypermute*cov_t* hypermute.transpose();
-		cov*= 100;
+		cov*= XtionCovarFudge;
 		planeStruct temp = {
 				 pl2,
 				 cov
