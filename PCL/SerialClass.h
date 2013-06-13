@@ -40,6 +40,7 @@ class Serial
 
 #ifdef __linux__
     int             fd;
+
 #endif
     public:
         //Initialize Serial communication with the given COM port

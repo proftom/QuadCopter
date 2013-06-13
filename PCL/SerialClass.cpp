@@ -2,10 +2,13 @@
 
 Serial::Serial(char *portName)
 {
-    //We're not yet connected
-    this->connected = false;
+
 
 #if defined (_WIN32) || defined( _WIN64)
+
+        //We're not yet connected
+    this->connected = false;
+
     //Try to connect to the given port throuh CreateFile
     this->hSerial = CreateFile(portName,
             GENERIC_READ | GENERIC_WRITE,
@@ -67,24 +70,23 @@ Serial::Serial(char *portName)
 #ifdef __linux__
     struct termios options;                                             // Structure with the device's options
 
-
     // Open device
-    fd = open(Device, O_RDWR | O_NOCTTY | O_NDELAY);                    // Open port
-    if (fd == -1) return -2;                                            // If the device is not open, return -1
+    fd = open(portName, O_RDWR | O_NOCTTY | O_NDELAY);                    // Open port
+    //if (fd == -1) return -2;                                            // If the device is not open, return -1
     fcntl(fd, F_SETFL, FNDELAY);                                        // Open the device in nonblocking mode
 
     // Set parameters
     tcgetattr(fd, &options);                                            // Get the current options of the port
     bzero(&options, sizeof(options));                                   // Clear all the options
     speed_t         Speed;
+    Speed = B9600;
     cfsetispeed(&options, Speed);                                       // Set the baud rate at 115200 bauds
     cfsetospeed(&options, Speed);
     options.c_cflag |= ( CLOCAL | CREAD |  CS8);                        // Configure the device : 8 bits, no parity, no control
     options.c_iflag |= ( IGNPAR | IGNBRK );
     options.c_cc[VTIME]=0;                                              // Timer unused
     options.c_cc[VMIN]=0;                                               // At least on character before satisfy reading
-    tcsetattr(fd, TCSANOW, &options);                                   // Activate the settings
-    return (1);      
+    tcsetattr(fd, TCSANOW, &options);                                   // Activate the settings     
 #endif
 }
 
@@ -149,12 +151,12 @@ int Serial::ReadData(char *buffer, unsigned int nbChar)
 #endif
 #ifdef __linux__
     unsigned int     NbByteRead=0;
-    unsigned char* Ptr=(unsigned char*)Buffer+NbByteRead;           // Compute the position of the current byte
-    int Ret=read(fd,(void*)Ptr,MaxNbBytes-NbByteRead);              // Try to read a byte on the device
+    unsigned char* Ptr=(unsigned char*)buffer+NbByteRead;           // Compute the position of the current byte
+    int Ret=read(fd,(void*)Ptr,nbChar-NbByteRead);              // Try to read a byte on the device
     if (Ret==-1) return -2;                                         // Error while reading
     if (Ret>0) {                                                    // One or several byte(s) has been read on the device
         NbByteRead+=Ret;                                            // Increase the number of read bytes
-        if (NbByteRead>=MaxNbBytes)                                 // Success : bytes has been read
+        if (NbByteRead>=nbChar)                                 // Success : bytes has been read
             return 1;
     }
 	return 0;
@@ -188,7 +190,7 @@ bool Serial::WriteData(char *buffer, unsigned int nbChar)
 bool Serial::IsConnected()
 {
     //Simply return the connection status
-    return this->connected;
+    return true;//this->connected;
 }
 
 int Serial::BytesAvailable()
@@ -199,7 +201,8 @@ int Serial::BytesAvailable()
     return this->status.cbInQue;
 #endif
 #ifdef __linux__
-    ioctl(fd, FIONREAD, &Nbytes);
-	return NBytes;
+    int nBytes = 0;
+    ioctl(fd, FIONREAD, &nBytes);
+	return nBytes;
 #endif
 }
