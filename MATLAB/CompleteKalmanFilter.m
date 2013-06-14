@@ -76,6 +76,9 @@ function [X, P, lastplanedata] = processObservation(X, P, Planedata, lastplaneda
             index = -1;
             [m,n] = size(P);
             num = (m-16)/4;
+            firsttime = 1;
+            md = 2e45;
+            
             for i = 1:num
                 currTP = X(idx1:idx2);
                 
@@ -91,24 +94,33 @@ function [X, P, lastplanedata] = processObservation(X, P, Planedata, lastplaneda
 
                 S = H*P*H.' + inC;
                 mdp = z.'*inv(S)*z;
-                mdp = abs(mdp);
-                if ( mdp < 1000 )
-                   %Data is associated.
+                if (firsttime == 1 ||( mdp < md) )
+                    firsttime = 0;
+                    md = mdp;
 %                     mini = i;
                     %mdtrace(thisplane) = md;
-                    index = i;
-                    break;
+                    minH = H;
+                    minS = S;
+                    minz = z;
                 end
+            
                 idx1 = idx1 + 4;
                 idx2 = idx2 + 4;
             end
             
+            if ( md < 800 )
+               %Data is associated.
+%                     mini = i;
+                %mdtrace(thisplane) = md;
+                index = i;
+            end
             %update or register
             if ( index ~= -1) %update
-                K = (P*H.') / S;
-                X = X + K*z;
+                K = (P*minH.') / minS;
+            
+                X = X + K*minz;
                 X(7:10) = X(7:10)/norm(X(7:10));
-                P = (eye(length(P)) - K*H)*P;
+                P = (eye(length(P)) - K*minH)*P;
             else
                 %add new plane to state and add its cov to P
                 InvTransPlane = [DCM.' zeros(3,1);...
@@ -334,7 +346,7 @@ function [X, P , lastplanedata] = update(X, P, Planedata,lastplanedata, T)
                 S = H*P*H.' + inC .* XtionCovarFudge;
                 mdp = z.'*inv(S)*z;
             
-                if (firsttime == 1 || mdp < md )
+                if (firsttime == 1 ||( mdp < md ))
                     firsttime = 0;
                     md = mdp;
 %                     mini = i;

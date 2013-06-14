@@ -1,0 +1,33 @@
+#include "SerialClass.h"
+#include <stdio.h>
+
+using namespace std;
+
+int main()
+{
+	//to test this, I set up the arudino to print "hello" to the serial port 
+	
+	Serial SP("/dev/ttyACM0");
+	
+	while(1) {
+		int nBytes = SP.BytesAvailable();
+		if( nBytes > 4) {
+			char sync[nBytes];
+			SP.ReadData(sync, nBytes);
+			//cout << sync[0] << endl << sync[1] << endl << sync[2] << endl << sync[3] << endl << sync[4] << endl;
+			cout  << "New data:" << endl;
+
+			for (int x = 0; x < nBytes; x++) {
+
+				
+				cout << sync[x] << endl;
+
+			}
+
+			cout << endl;
+
+		}
+
+	}
+
+}
