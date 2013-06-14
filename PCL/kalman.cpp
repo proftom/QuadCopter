@@ -26,10 +26,11 @@ typedef Matrix< float , 16 , 1> Vector16f;
 #define STATENUM 16
 #define Sampling_Time 0.01	// unit is seconds.
 //#define distThreshold 5000
-#define distThreshold 35
+int distThreshold = 35;
 #define startupConvergeTimesteps 1000
 //#define XtionCovarFudge 100
-#define XtionCovarFudge 40000
+int XtionCovarFudge = 40000;
+#define regmult 1
 
 
 struct imuRawS
@@ -57,7 +58,6 @@ public:
 	//-1 means it is not matched.
 	int planeId;
 	float distance;
-	MatrixXf P_opt;
 	MatrixXf H_opt;
 	Matrix4f S;
 	// measurement error in plane observation.
@@ -417,7 +417,6 @@ association_struct dataAssociation(const planeStruct& planeData) {
 			data.H_opt = H;
 			data.S  = S;
 			data.m_error = diff;
-			data.P_opt = P_opt;
 			data.planeId = index;
 			//cout << "diff " << endl << diff << endl << endl;
 			//cout << "dist " << endl << dist << endl << endl;
@@ -452,45 +451,36 @@ void processObservation(bool regActive) {
 
 void update(const association_struct& data) {
 	// Unpack data.
-	MatrixXf P_opt(data.P_opt);
 	MatrixXf H_opt(data.H_opt);
 	Matrix4f S(data.S);
 	Vector4f diff = data.m_error;
 	int index = data.planeId;
 
-	MatrixXf kalmanGain(P_opt  * H_opt.transpose() * S.inverse());
+	MatrixXf P_fullopt(P.rows(), (16+4));
+	P_fullopt << P.block(0, 0, 16, 16),				P.block(0, 16+4*index, 16, 4)
+				, P.block(16, 0, P.rows()-16, 16),	P.block(16, 16+4*index, P.rows()-16, 4);
+
+	MatrixXf kalmanGain(P_fullopt  * H_opt.transpose() * S.inverse());
+
 	VectorXf change(kalmanGain * diff);
 	state += change.segment(0,16);
 	//Normalise Quaternions.
 	state.segment(6,4)/=state.segment(6,4).norm();
 		//	Update landmarks equations.
-	Vector4f delta(change.segment(16,4));
-	landmarks[index] += delta;
 
+	for (int i = 0; i < landmarks.size(); ++i)
+	{
+		Vector4f delta(change.segment(16+4*i,4));
+		landmarks[i] += delta;
+	}
 
-	//	Update State Covariance.
-	// Recontruct KalmanGain. Done in place.
-	kalmanGain.conservativeResize(P.rows(), 4);
-	Matrix4f temp(kalmanGain.block(16,0,4,4)); 
+	P = P - kalmanGain * S * kalmanGain.transpose();
 
-
-	kalmanGain.block(16,0,P.rows() - 20,4) = MatrixXf::Zero(P.rows() - 16,4);
-
-	//Transfer gain to its proper location.
-	kalmanGain.block(16 + index*4,0,4,4) = temp;
-
-	//	Unpack P optimised into main P.
-	P.block(0,0, 16,16) = P_opt.block(0,0, 16,16);
-	P.block(0,16+4*index, 16,4) = P_opt.block(0,16, 16,4);
-	P.block(16+4*index, 0, 4, 16) = P_opt.block(16,0, 4,16);
-	P.block(16+4*index,16+4*index,4,4) = P_opt.block(16,16,4,4);
-
-	P = P - kalmanGain * P * kalmanGain.transpose();
-
-//	cout << "H_opt.transpose" << endl << H_opt.transpose() << endl << endl;
-//	cout << "P_opt" << endl << P_opt << endl << endl;
-//	cout << "S.inverse" << endl << S.inverse() << endl << endl;
-//	cout << "kalmanGain" << endl << kalmanGain << endl << endl;
+	cout << "change " << change << endl << endl;
+	cout << "P_fullopt: " << P_fullopt << endl << endl;
+	cout << "H_opt.transpose" << endl << H_opt.transpose() << endl << endl;
+	cout << "S.inverse" << endl << S.inverse() << endl << endl;
+	cout << "kalmanGain" << endl << kalmanGain << endl << endl;
 //	cout << "State Update to landmark " << index <<";" << endl << state << endl <<"Update Above to landmark: "<< index << endl <<endl;
 //	cout << "Distance" << endl << data.distance << endl << endl;
 }
@@ -515,7 +505,7 @@ void registration (int newPlaneIndex, const association_struct& data) {
 	P.block(P.rows()-4, 0, 4, P.cols()-4) = E_r * P.block(0, 0, 16, P.cols()-4);
 	P.block(0, P.cols()-4, P.rows()-4,4) = P.block(P.rows()-4, 0, 4, P.cols()-4).transpose();
 	P.block(P.rows()-4, P.cols()-4, 4, 4) = E_r * P.block<16,16>(0, 0) * E_r.transpose() +
-	E_y * (newPlanes[i].cov * (1/100)) * E_y.transpose();
+	E_y * (newPlanes[i].cov * regmult) * E_y.transpose();
 //		P.block(P.rows()-4, 0, 4, 16) = MatrixXf::Zero(4,16);
 //		P.block(0, P.cols()-4, 16,4) = MatrixXf::Zero(16,4);
 //		P.block(P.rows()-4, P.cols()-4, 4, 4) = MatrixXf::Zero(4,4);
