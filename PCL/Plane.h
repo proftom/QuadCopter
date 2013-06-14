@@ -1,3 +1,6 @@
+#ifndef PCL_planeCloud_H_
+#define PCL_planeCloud_H_
+
 #include <vector>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -8,9 +11,9 @@ class Plane  {
 	
 public:
 
-	double A, B, C, D;
+	float A, B, C, D;
 	vector<int> indicies;
-	vector<vector<double>> covariance;
+	vector< vector<float> > covariance;
 
 	Plane(float a, float b, float c, float d) : A(a), B(b), C(c), D(d){}
 	
@@ -41,10 +44,10 @@ public:
 	}
 
 	void calculateCovarianceMatrix(vector<Plane> &planes) {
-		vector<vector<double>> covarianceMatrix(4);
+		vector<vector<float> > covarianceMatrix(4);
 		covarianceMatrix[0].assign(4,0); covarianceMatrix[1].assign(4,0); covarianceMatrix[2].assign(4,0); covarianceMatrix[3].assign(4,0); 
 		
-		double 
+		float 
 			xbar  = 0.0, 
 			ybar  = 0.0, 
 			zbar  = 0.0, 
@@ -108,3 +111,5 @@ public:
 	}
 
 };
+
+#endif

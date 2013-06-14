@@ -119,6 +119,7 @@ function [X, P, lastplanedata] = processObservation(X, P, Planedata, lastplaneda
                 K = (P*minH.') / minS;
             
                 X = X + K*minz;
+                X(7:10) = X(7:10)/norm(X(7:10));
                 P = (eye(length(P)) - K*minH)*P;
             else
                 %add new plane to state and add its cov to P
