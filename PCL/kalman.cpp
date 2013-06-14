@@ -16,6 +16,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include "Vision.h"
 #include "SerialClass.h"
+//#include "serialib.h"
 
 using namespace std;
 using namespace Eigen;
@@ -544,16 +545,18 @@ MatrixXf E_r_fn(const Vector4f& plane) { // D is h inverse
 	E_r << block, MatrixXf::Zero(4,3),block2, MatrixXf::Zero(4,6);
 	return E_r;
 }
-
+	
 bool getNewMeasurementThalamus(){
 	static Serial SP("\\\\.\\COM62");
 	int SPba = SP.BytesAvailable();
-	if (SPba >= 10)
+	//int SPba = sp.Peek();
+	 if (SPba >= 10)
 	{
 		//if(SPba > 100)
 			//cout << "bytebacklog is " << SPba << endl;
-
 		char sync[2];
+		
+		//SP.Read(sync,2,0);
 		SP.ReadData(sync,sizeof(sync));
 
 		if (sync[0] == 11)
