@@ -462,17 +462,29 @@ void update(const association_struct& data) {
 	state += change.segment(0,16);
 	//Normalise Quaternions.
 	state.segment(6,4)/=state.segment(6,4).norm();
+		//	Update landmarks equations.
+	Vector4f delta(change.segment(16,4));
+	landmarks[index] += delta;
+
+
 	//	Update State Covariance.
-	P_opt -= kalmanGain*H_opt*P_opt;
+	// Recontruct KalmanGain. Done in place.
+	kalmanGain.conservativeResize(P.rows(), 4);
+	Matrix4f temp(kalmanGain.block(16,0,4,4)); 
+
+
+	kalmanGain.block(16,0,P.rows() - 20,4) = MatrixXf::Zero(P.rows() - 16,4);
+
+	//Transfer gain to its proper location.
+	kalmanGain.block(16 + index*4,0,4,4) = temp;
+
 	//	Unpack P optimised into main P.
 	P.block(0,0, 16,16) = P_opt.block(0,0, 16,16);
 	P.block(0,16+4*index, 16,4) = P_opt.block(0,16, 16,4);
 	P.block(16+4*index, 0, 4, 16) = P_opt.block(16,0, 4,16);
 	P.block(16+4*index,16+4*index,4,4) = P_opt.block(16,16,4,4);
 
-	//	Update landmarks equations.
-	Vector4f delta(change.segment(16,4));
-	landmarks[index] += delta;
+	P = P - kalmanGain * P * kalmanGain.transpose();
 
 //	cout << "H_opt.transpose" << endl << H_opt.transpose() << endl << endl;
 //	cout << "P_opt" << endl << P_opt << endl << endl;
