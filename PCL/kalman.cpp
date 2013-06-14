@@ -26,7 +26,7 @@ typedef Matrix< float , 16 , 1> Vector16f;
 #define STATENUM 16
 #define Sampling_Time 0.01	// unit is seconds.
 //#define distThreshold 5000
-#define distThreshold 25
+#define distThreshold 35
 #define startupConvergeTimesteps 1000
 //#define XtionCovarFudge 100
 #define XtionCovarFudge 40000
