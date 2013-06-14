@@ -654,7 +654,7 @@ For each measurement, we compute the expected measurment given our current state
 \begin{align}
 	z_k &= y_k - h(\hat{x}_{k|k-1}, \mathbb{E}[v_k]) \\
 	S_k &= \operatorname{cov}(z_k) \notag \\
-		&\approx H_k P_{k|k-1} H_k^\top + V_k R_k V_k^\top
+		&\approx H_k P_{k|k-1} H_k^\top + R_k
 \end{align}
 where $P$ and $R$ are defined in equation (\ref{eqn:noisedef}), and where whe assume that the noise has zero mean:
 \begin{align}
