@@ -21,6 +21,9 @@
 using namespace std;
 using namespace Eigen;
 
+#define PLANEGUN
+//#define ON_QUAD
+
 typedef Matrix< float , 16 , 16> Matrix16f;
 typedef Matrix< float , 16 , 1> Vector16f;
 #define STATENUM 16
@@ -483,6 +486,7 @@ void updateSonar(){
 	P -= K*s*K.transpose();
 }
 
+#ifdef PLANEGUN
 bool getNewMeasurementThalamus(){
 	static Serial SP("\\\\.\\COM62");
 	int SPba = SP.BytesAvailable();
@@ -531,36 +535,11 @@ bool getNewMeasurementThalamus(){
 	return false;
 }
 
-/*
-void getNewMeasurement() {
-	//Process Accelerometer reading.
-	Vector3f acc_t;
-	acc_t << accList[accPtr], accList[accPtr+1],accList[accPtr+2];
-	acc_t*=(9.816 /pow(2.00,14));
-	acc << acc_t(2), -acc_t(0), -acc_t(1);
-	Vector3f accBias(state.segment(13,3));
-	//	cout << "acc measured" << endl << acc << endl << endl;
-	acc-=accBias;
+#endif
 
-	// Process Gyro Reading.
-	Vector3f gyro_t;
-	gyro_t << gyroList[gyroPtr], gyroList[gyroPtr+1],gyroList[gyroPtr+2];
-	gyro_t /= 818.51113590117601252569;
-	gyro << gyro_t(2), -gyro_t(0), -gyro_t(1);
-	Vector3f gyroBias(state.segment(10,3));
-	//	cout << "gyro measured" << endl << gyro << endl << endl;
-	gyro  -= gyroBias;
+#ifdef ON_QUAD
 
-	accPtr+=3;
-	gyroPtr+=3;
-	if(accPtr >= Steps || gyroPtr >= Steps) {
-	accPtr  = 0;
-	gyroPtr = 0;
-	}
-	//	cout << "acc" << endl << acc << endl << endl;
-	//	cout << "gyro" << endl << gyro << endl << endl;
-}
-*/
+#endif
 
 
 void getNewObservationLive(QCVision& vision){
@@ -594,46 +573,4 @@ void getNewObservationLive(QCVision& vision){
 		newPlanes.push_back(temp);
 	}
 }
-
-/*
-void getNewObservation() {
-	newPlanes.clear();
-	Matrix4f hypermute;
-		hypermute << 	0, 0, 1,0,
-						1, 0,0,0,
-						0,1,0,0,
-						0,0,0,1;
-	int len = planeList[planePtr++];
-	for (int i = 0; i<len; i++) {
-		Vector4f plane_t, pl2;
-		Matrix4f cov_t, cov;
-		plane_t << planeList[planePtr], planeList[planePtr+1], planeList[planePtr+2],planeList[planePtr+3];
-		pl2 << hypermute*plane_t;
-
-		cov_t << planeList[planePtr+4], planeList[planePtr+5], planeList[planePtr+6],planeList[planePtr+7],
-				 planeList[planePtr+8], planeList[planePtr+9], planeList[planePtr+10],planeList[planePtr+11],
-				 planeList[planePtr+12], planeList[planePtr+13], planeList[planePtr+14],planeList[planePtr+15],
-				 planeList[planePtr+16], planeList[planePtr+17], planeList[planePtr+18],planeList[planePtr+19];
-		cov << hypermute*cov_t* hypermute.transpose();
-		cov*= XtionCovarFudge;
-		planeStruct temp = {
-				 pl2,
-				 cov
-		};
-
-		newPlanes.push_back(temp);
-		planePtr+=20;
-	}
-	planeSteps++;
-	if (planeSteps >= Steps) {
-		planePtr = 0;
-		planeSteps = 0;
-	}
-	//newPlanes
-	for (int i = 0; i < (int)newPlanes.size(); i++) {
-//		cout << "newPlane " << i<< endl << newPlanes[i].plane << endl << endl;
-//		cout << "new cov" << i << endl << newPlanes[i].cov << endl << endl;
-	}
-}
-*/
 
