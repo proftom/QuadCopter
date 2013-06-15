@@ -82,10 +82,7 @@ void getNewObservation();
 void getNewObservationLive(QCVision& vision);
 void processObservation(bool regActive);
 void update(const association_struct& data);
-void registration (int newPlaneIndex, const association_struct& data);
 association_struct dataAssociation(const planeStruct& planeData);
-Matrix4f e_fn();
-MatrixXf E_r_fn(const Vector4f& plane);
 //void run();
 
 //Variables
@@ -96,7 +93,7 @@ vector<planeStruct, Eigen::aligned_allocator<planeStruct> > newPlanes;
 Vector3f acc;
 Vector3f gyro;
 Vector16f state;
-MatrixXf P(28,28);
+MatrixXf P(16,16);
 MatrixXf bigH;
 Matrix3f DCM;
 MatrixXf Xi(4,3);
@@ -164,12 +161,12 @@ void initialisation () { //Incomplete.
 	//initialise landmarks and P
 	Matrix3f block1 = Matrix3f::Identity();
 	Matrix4f block2 = Matrix4f::Identity();
-	P << 	block1*0.09, MatrixXf::Zero(3,13 + 12),
-		MatrixXf::Zero(3,16+12),
-		MatrixXf::Zero(4,6), block2*0.01, MatrixXf::Zero(4,6+12),
-		MatrixXf::Zero(3,10), block1*0.0025, MatrixXf::Zero(3,3+12),
-		MatrixXf::Zero(3,13), block1,  MatrixXf::Zero(3,12),
-		MatrixXf::Zero(12,28);
+	P << 	block1*0.09, MatrixXf::Zero(3,13 + 0),
+		MatrixXf::Zero(3,16+0),
+		MatrixXf::Zero(4,6), block2*0.01, MatrixXf::Zero(4,6+0),
+		MatrixXf::Zero(3,10), block1*0.0025, MatrixXf::Zero(3,3+0),
+		MatrixXf::Zero(3,13), block1,  MatrixXf::Zero(3,0);
+		//MatrixXf::Zero(12,28);
 	//	cout << "P initial" << endl << P << endl << endl;
 	Q = noiseMatrix();
 	//initialise state vector.
@@ -330,16 +327,17 @@ MatrixXf G_fn() {
 	return G;
 }
 void covariance_prediction() {
-	Matrix16f P_old(P.block<16,16>(0,0));
 	MatrixXf G(G_fn());
 	MatrixXf F(F_fn());
 	P.block<16,16>(0,0) << F*P.block<16,16>(0,0)*F.transpose() + G*Q*G.transpose();
 	// Should we propagate any change to the other blocks of P?
+	/*
 	if (P.cols() > 16) {
 		MatrixXf P_temp(F*P.block(0,16, 16, P.cols() - 16));
 		P.block(0,16, 16, P.cols() - 16) = P_temp;
 		P.block(16,0, P.rows() - 16,16)  = P_temp.transpose();
 	}
+	*/
 //	cout << "P" << endl << P << endl << endl;
 
 }
@@ -356,7 +354,7 @@ MatrixXf Xip_fn() {
 }
 
 MatrixXf H_fn(int planeId) {
-	MatrixXf H(4, 20);
+	MatrixXf H(4, 16);
 	// Build H for each plane.
 
 
@@ -373,14 +371,12 @@ MatrixXf H_fn(int planeId) {
 	//	cout << "Hq" << endl << Hq << endl << endl;
 	MatrixXf block(4,3);
 	Matrix4f block2;
-	Matrix4f block3(4,4);
+	//Matrix4f block3(4,4);
 	block << MatrixXf::Zero(3,3), plane.segment(0,3).transpose();
 	block2 << Hq, Matrix<float, 1, 4>::Zero();
 
-	block3 << DCM,  Matrix<float, 3, 1>::Zero(), state.segment(0,3).transpose(), 1;
-
-	H << 	block,  	MatrixXf::Zero(4,3), 	block2,		MatrixXf::Zero(4,6),
-		block3;
+	H << 	block,  	MatrixXf::Zero(4,3), 	block2,		MatrixXf::Zero(4,6);
+	//block3;
 	//	cout << "H" << endl << H << endl << endl;
 	return H;
 }
@@ -393,7 +389,6 @@ association_struct dataAssociation(const planeStruct& planeData) {
 	Vector4f inP(planeData.plane);
 	Matrix4f inC(planeData.cov);
 	association_struct data;
-	MatrixXf P_opt(20,20);
 	MatrixXf S;
 	Vector4f diff;
 	float dist;
@@ -404,18 +399,15 @@ association_struct dataAssociation(const planeStruct& planeData) {
 		MatrixXf H(H_fn(index));
 
 		//	Build the optimised P.
-		P_opt << P.block(0,0, 16,16), P.block(0,16+4*index, 16,4),
-				P.block(16+4*index,0,4,16), P.block(16+4*index, 16+4*index, 4, 4);
-		S = H*P_opt*H.transpose() + inC;
+		S = H * P * H.transpose() + inC;
 		diff = inP - transPlane*landmarks[index];
-		dist = diff.transpose() *  S.inverse() *   diff;
-		dist = abs(dist);
+		dist = diff.transpose() *  S.inverse() * diff;
 
 		if ((first == true) || (dist < data.distance)) {
 			first = false;
 			data.distance = dist;
 			data.H_opt = H;
-			data.S  = S;
+			data.S = S;
 			data.m_error = diff;
 			data.planeId = index;
 			//cout << "diff " << endl << diff << endl << endl;
@@ -439,12 +431,9 @@ void processObservation(bool regActive) {
 		//Either register plane or update kalman equations
 		if (data.distance <= distThreshold || !regActive) {	//Data was associated!
 			//cout << "updated lm: "<< data.planeId << endl<<endl;
-			if(data.planeId == 3)
-				cout << "--------------------------------------stuff will go to shit" << endl;
 			update(data);
 		} else {	// Data NOT associated so register new plane.
-			cout << "reghit-------------------------------------------------------" <<endl;
-			registration(i, data);
+			cout << "-------------------------------------------------------NOISE" <<endl;
 		}
 	}
 }
@@ -456,98 +445,24 @@ void update(const association_struct& data) {
 	Vector4f diff = data.m_error;
 	int index = data.planeId;
 
-	MatrixXf P_fullopt(P.rows(), (16+4));
-	P_fullopt << P.block(0, 0, 16, 16),				P.block(0, 16+4*index, 16, 4)
-				, P.block(16, 0, P.rows()-16, 16),	P.block(16, 16+4*index, P.rows()-16, 4);
-
-	MatrixXf kalmanGain(P_fullopt  * H_opt.transpose() * S.inverse());
+	MatrixXf kalmanGain(P * H_opt.transpose() * S.inverse());
 
 	VectorXf change(kalmanGain * diff);
 	state += change.segment(0,16);
 	//Normalise Quaternions.
-	state.segment(6,4)/=state.segment(6,4).norm();
-		//	Update landmarks equations.
+	state.segment(6,4) /= state.segment(6,4).norm();
 
-	for (int i = 0; i < landmarks.size(); ++i)
-	{
-		Vector4f delta(change.segment(16+4*i,4));
-		landmarks[i] += delta;
-	}
+	P -= kalmanGain * S * kalmanGain.transpose();
 
-	P = P - kalmanGain * S * kalmanGain.transpose();
-
-	cout << "change " << change << endl << endl;
-	cout << "P_fullopt: " << P_fullopt << endl << endl;
-	cout << "H_opt.transpose" << endl << H_opt.transpose() << endl << endl;
-	cout << "S.inverse" << endl << S.inverse() << endl << endl;
-	cout << "kalmanGain" << endl << kalmanGain << endl << endl;
+//	cout << "change " << change << endl << endl;
+//	cout << "P: " << P << endl << endl;
+//	cout << "H_opt.transpose" << endl << H_opt.transpose() << endl << endl;
+//	cout << "S.inverse" << endl << S.inverse() << endl << endl;
+//	cout << "kalmanGain" << endl << kalmanGain << endl << endl;
 //	cout << "State Update to landmark " << index <<";" << endl << state << endl <<"Update Above to landmark: "<< index << endl <<endl;
 //	cout << "Distance" << endl << data.distance << endl << endl;
 }
 
-void registration (int newPlaneIndex, const association_struct& data) {
-// Add new plane to landmark.
-	int i = newPlaneIndex;
-	// First transform to world coordinate using small g.
-	// Convert the plane eqn to world frame.
-	Vector4f plane = e_fn()*newPlanes[i].plane;
-	landmarks.push_back(plane);
-	MatrixXf E_r(E_r_fn(newPlanes[i].plane));
-	//inverse observation function and its jacobian w.r.t Plane are the same.
-	Matrix4f E_y(e_fn());
-
-	// Add new plane covariance to P. P is mostly sparse! NOT!
-	P.conservativeResize(P.rows()+ 4, P.cols()+4);
-
-	//P.block(0, P.cols()-4, P.rows()-4,4) = MatrixXf::Zero(P.rows()-4, 4);
-	//P.block(P.rows()-4, 0, 4, P.cols()) = MatrixXf::Zero(4, P.cols());
-
-	P.block(P.rows()-4, 0, 4, P.cols()-4) = E_r * P.block(0, 0, 16, P.cols()-4);
-	P.block(0, P.cols()-4, P.rows()-4,4) = P.block(P.rows()-4, 0, 4, P.cols()-4).transpose();
-	P.block(P.rows()-4, P.cols()-4, 4, 4) = E_r * P.block<16,16>(0, 0) * E_r.transpose() +
-	E_y * (newPlanes[i].cov * regmult) * E_y.transpose();
-//		P.block(P.rows()-4, 0, 4, 16) = MatrixXf::Zero(4,16);
-//		P.block(0, P.cols()-4, 16,4) = MatrixXf::Zero(16,4);
-//		P.block(P.rows()-4, P.cols()-4, 4, 4) = MatrixXf::Zero(4,4);
-
-	//cout << "Registered at time t= "<< timeSteps <<endl<<endl;
-	//cout << "at: "<< plane <<endl<<endl;
-	//cout << "E_r is: "<< E_r <<endl<<endl;
-	//cout << "E_y is: "<< E_y <<endl<<endl;
-	//cout << "EP is: "<< P.block(P.rows()-4, 0, 4, P.cols()-4) <<endl<<endl;
-	cout << "P4x4 is"<< P.block(P.rows()-4, P.cols()-4, 4, 4) <<endl<<endl;
-
-	//cout << "P is : "<< P << endl << endl;*/
-}
-
-Matrix4f e_fn() {
-	Matrix4f InvTransPlane;
-
-	InvTransPlane << DCM.transpose(), MatrixXf::Zero(3,1),
-		        -state.segment(0,3).transpose() * DCM.transpose(), 1;
-	return InvTransPlane;
-}
-
-MatrixXf E_r_fn(const Vector4f& plane) { // D is h inverse
-	Vector3f Nglob(DCM.transpose() * plane.segment(0,3));
-
-	Vector4f GNqparts(Xi * plane.segment(0,3));
-
-	MatrixXf GNq(3,4);
-	GNq << 		GNqparts(1), -GNqparts(0), GNqparts(3), -GNqparts(2),
-	            GNqparts(2), -GNqparts(3), -GNqparts(0), GNqparts(1),
-	            GNqparts(3), GNqparts(2), -GNqparts(1), -GNqparts(0);
-	GNq *= 2;
-	MatrixXf E_r(4,16);
-	MatrixXf block(4,3);
-	block << Matrix3f::Zero(), -Nglob.transpose();
-	Matrix4f block2;
-	block2 << GNq, -state.segment(0,3).transpose()*GNq;
-
-	E_r << block, MatrixXf::Zero(4,3),block2, MatrixXf::Zero(4,6);
-	return E_r;
-}
-	
 bool getNewMeasurementThalamus(){
 	static Serial SP("\\\\.\\COM62");
 	int SPba = SP.BytesAvailable();
