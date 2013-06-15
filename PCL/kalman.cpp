@@ -31,8 +31,8 @@ int distThreshold = 35;
 //#define XtionCovarFudge 100
 int XtionCovarFudge = 40000;
 #define regmult 1
-
-
+int counts = 0;
+Matrix4f avecov(Matrix4f::Zero());
 struct imuRawS
 {
 	int accX;
@@ -455,6 +455,22 @@ void update(const association_struct& data) {
 	Matrix4f S(data.S);
 	Vector4f diff = data.m_error;
 	int index = data.planeId;
+	if (index == 0) {
+		ofstream output("output.txt", ios::out | ios::app);
+		output << diff;
+		output.close();
+		avecov = (counts * avecov + P.block(16+index*4, 16 + index*4, 4,4));
+		counts++;
+		avecov  = avecov/counts;
+
+		if (timeSteps == 1600) {
+			ofstream output;
+			output.open("output.txt", ios::out | ios::app);
+			output << diff;
+			output.close();
+		}
+	}
+	
 
 	MatrixXf P_fullopt(P.rows(), (16+4));
 	P_fullopt << P.block(0, 0, 16, 16),				P.block(0, 16+4*index, 16, 4)
