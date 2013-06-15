@@ -326,7 +326,7 @@ Matrix16f F_fn() {
 }
 
 MatrixXf G_fn() {
-	MatrixXf Gqww(0.5 * Xi_fn());
+	MatrixXf Gqww(0.5 * Xi);
 	Matrix3f Gvwa(DCM.transpose());
 	Matrix <float, 16, 12>G;
 	G << Matrix<float, 3, 12>::Zero(),
@@ -341,7 +341,7 @@ MatrixXf G_fn() {
 void covariance_prediction() {
 	MatrixXf G(G_fn());
 	MatrixXf F(F_fn());
-	P.block<16,16>(0,0) << F*P.block<16,16>(0,0)*F.transpose() + G*Q*G.transpose();
+	P = F * P * F.transpose() + G * Q * G.transpose();
 	// Should we propagate any change to the other blocks of P?
 	/*
 	if (P.cols() > 16) {
