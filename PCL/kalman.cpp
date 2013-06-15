@@ -317,7 +317,7 @@ Matrix16f F_fn() {
 }
 
 MatrixXf G_fn() {
-	MatrixXf Gqww(0.5 * Xi_fn());
+	MatrixXf Gqww(0.5 * Xi);
 	Matrix3f Gvwa(DCM.transpose());
 	Matrix <float, 16, 12>G;
 	G << Matrix<float, 3, 12>::Zero(),
