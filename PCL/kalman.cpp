@@ -83,6 +83,7 @@ void getNewObservationLive(QCVision& vision);
 void processObservation(bool regActive);
 void update(const association_struct& data);
 association_struct dataAssociation(const planeStruct& planeData);
+void updateSonar();
 //void run();
 
 //Variables
@@ -92,6 +93,10 @@ vector<planeStruct, Eigen::aligned_allocator<planeStruct> > newPlanes;
 
 Vector3f acc;
 Vector3f gyro;
+float sonarAlt;
+float sonarVariance = 0.02*0.02;
+bool newsonar = false;
+
 Vector16f state;
 MatrixXf P(16,16);
 MatrixXf bigH;
@@ -122,6 +127,11 @@ int kalman(QCVision& vision) {
 
 		state_prediction();
 		covariance_prediction();
+
+		if (newsonar)
+		{
+			updateSonar();
+		}
 
 		vision.m_mutexLockPlanes.lock();
 		if (vision.bNewSetOfPlanes){
@@ -174,6 +184,8 @@ void initialisation () { //Incomplete.
 	//state << 1, 1, -1, 0, 0, 0, 0.353553, -0.353553, -0.146447, -0.853553, 
 		-0.0456 ,   0.0069,   -0.0048 ,  -0.0331  ,  0.1024 ,   0.1473;
 	//	cout << "state initial" << endl << state << endl << endl;
+
+	sonarAlt = state(2);
 }
 
 Matrix3f DCM_fn() { //There is a round off error in dcm(2,3). May cause an issue.
@@ -461,6 +473,14 @@ void update(const association_struct& data) {
 //	cout << "kalmanGain" << endl << kalmanGain << endl << endl;
 //	cout << "State Update to landmark " << index <<";" << endl << state << endl <<"Update Above to landmark: "<< index << endl <<endl;
 //	cout << "Distance" << endl << data.distance << endl << endl;
+}
+
+void updateSonar(){
+	float y = sonarAlt - state(2);
+	float s = P(2,2) + sonarVariance;
+	VectorXf K = P.col(2) / s;
+	state += K*y;
+	P -= K*s*K.transpose();
 }
 
 bool getNewMeasurementThalamus(){
