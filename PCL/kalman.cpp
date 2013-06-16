@@ -35,7 +35,6 @@ int distThreshold = 35;
 int XtionCovarFudge = 10000;
 #define regmult 1
 
-
 struct imuRawS
 {
 	int accX;
@@ -87,6 +86,7 @@ void processObservation(bool regActive);
 void update(const association_struct& data);
 association_struct dataAssociation(const planeStruct& planeData);
 void updateSonar();
+void controlCraft();
 //void run();
 
 //Variables
@@ -148,6 +148,8 @@ int kalman(QCVision& vision) {
 		} else {
 			vision.m_mutexLockPlanes.unlock();
 		}
+
+		controlCraft();
 
 		timeSteps++;
 	}
@@ -491,6 +493,11 @@ void updateSonar(){
 
 
 #ifdef PLANEGUN
+
+void controlCraft(){
+	//do nothing here
+}
+
 bool getNewMeasurementThalamus(){
 	static Serial SP("\\\\.\\COM62");
 	int SPba = SP.BytesAvailable();
@@ -538,9 +545,21 @@ bool getNewMeasurementThalamus(){
 
 #endif
 
-#ifdef ON_QUAD
+//#ifdef ON_QUAD
 
-#endif
+void controlCraft(){
+	Vector2f horizSetpoint(3,3);
+	Vector2f currPos(state.segment<2>(0));
+	Vector2f posErr = horizSetpoint - currPos;
+
+	//rotate the error into the crafts frame, then project only the x and y axies onto the horizontal plane
+	Matrix2f DCM2D = DCM_fn().block<2,2>(0,0);
+	Vector2f posErrBody = DCM2D * posErr;
+	Vector2f velBody = DCM2D * state.segment<2>(3);
+
+}
+
+//#endif
 
 
 void getNewObservationLive(QCVision& vision){
