@@ -1187,9 +1187,12 @@ where
 \end{align}
 
 % subsection landmark_initialization (end)
+\subsection{Kalman Filter Parameters Tuning} % (fold)
+\label{sub:tuning_kalman}
+ The filter behaviour can be changed by altering the process and measurement noise. In order to
 
-\subsection{Implementation} % (fold)
-\label{sub:implementation}
+\subsection{Optimisation} % (fold)
+\label{sub:optimisation}
 
 SerialUpdate: \cite{OpenPilotPaper} and chapter 4.2.2 of \cite{KFBookSerialupdate}, and also mentioned in \cite{Sola2013}
 The referenced papers perform an optimization which assumes an entirerly uncorrelated measurment noise covariance matrix. That is the $R$ matrix is purely diagonal.
