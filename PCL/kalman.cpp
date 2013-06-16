@@ -495,13 +495,10 @@ bool getNewMeasurementThalamus(){
 	static Serial SP("\\\\.\\COM62");
 	int SPba = SP.BytesAvailable();
 	//int SPba = sp.Peek();
-	 if (SPba >= 10)
+	if (SPba >= 10*2)
 	{
-		//if(SPba > 100)
-			//cout << "bytebacklog is " << SPba << endl;
 		char sync[2];
 		
-		//SP.Read(sync,2,0);
 		SP.ReadData(sync,sizeof(sync));
 
 		if (sync[0] == 11)
