@@ -1190,6 +1190,10 @@ where
 \subsection{Kalman Filter Parameters Tuning} % (fold)
 \label{sub:tuning_kalman}
  The filter behaviour can be changed by altering the process and measurement noise. In order to
+\subsection{Testing and Results} % (fold)
+\label{sub:testing_kalman}
+In order to verify that our system works, we ran our system consisting of the Thalamus chip containing the inertial sensors and Xtion Pro taped together from our default initial position leaving it stationary. Below is the trajectory results. It shows that our kalman filter does indeed converge to a good estimate of our real position. [insert graphs].
+In the second test, we moved the xtion in a perfect circle whilst ensuring that three orthogonal planes are always observable. 
 
 \subsection{Optimisation} % (fold)
 \label{sub:optimisation}
