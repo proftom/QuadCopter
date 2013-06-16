@@ -32,7 +32,7 @@ typedef Matrix< float , 16 , 1> Vector16f;
 int distThreshold = 35;
 #define startupConvergeTimesteps 1000
 //#define XtionCovarFudge 100
-int XtionCovarFudge = 40000;
+int XtionCovarFudge = 10000;
 #define regmult 1
 
 
@@ -141,7 +141,7 @@ int kalman(QCVision& vision) {
 			getNewObservationLive(vision);
 			vision.bNewSetOfPlanes = false;
 			vision.m_mutexLockPlanes.unlock();
-			processObservation(timeSteps > startupConvergeTimesteps);
+			processObservation(true); //timeSteps > startupConvergeTimesteps);
 			cout << "state at time t = " << timeSteps << endl<< state.segment(0,3) << endl<<endl;
 			cout << "numplanes: " << landmarks.size() << endl;
 
@@ -174,11 +174,11 @@ void initialisation () { //Incomplete.
 	//initialise landmarks and P
 	Matrix3f block1 = Matrix3f::Identity();
 	Matrix4f block2 = Matrix4f::Identity();
-	P << 	block1*0.09, MatrixXf::Zero(3,13 + 0),
-		MatrixXf::Zero(3,16+0),
-		MatrixXf::Zero(4,6), block2*0.01, MatrixXf::Zero(4,6+0),
-		MatrixXf::Zero(3,10), block1*0.0025, MatrixXf::Zero(3,3+0),
-		MatrixXf::Zero(3,13), block1,  MatrixXf::Zero(3,0);
+	P << 	block1*0.09, MatrixXf::Zero(3,13),
+		MatrixXf::Zero(3,16),
+		MatrixXf::Zero(4,6), block2*0.01, MatrixXf::Zero(4,6),
+		MatrixXf::Zero(3,10), block1*0.0025, MatrixXf::Zero(3,3),
+		MatrixXf::Zero(3,13), block1;
 		//MatrixXf::Zero(12,28);
 	//	cout << "P initial" << endl << P << endl << endl;
 	Q = noiseMatrix();
@@ -417,6 +417,7 @@ association_struct dataAssociation(const planeStruct& planeData) {
 		S = H * P * H.transpose() + inC;
 		diff = inP - transPlane*landmarks[index];
 		dist = diff.transpose() *  S.inverse() * diff;
+		cout << "dist " << endl << dist << endl << endl;
 
 		if ((first == true) || (dist < data.distance)) {
 			first = false;
@@ -462,12 +463,12 @@ void update(const association_struct& data) {
 
 	MatrixXf kalmanGain(P * H_opt.transpose() * S.inverse());
 
-	VectorXf change(kalmanGain * diff);
-	state += change.segment(0,16);
+	state += kalmanGain * diff;
 	//Normalise Quaternions.
 	state.segment(6,4) /= state.segment(6,4).norm();
 
-	P -= kalmanGain * S * kalmanGain.transpose();
+	//P -= kalmanGain * S * kalmanGain.transpose();
+	P = (Matrix<float, 16, 16>::Identity() - kalmanGain * H_opt) * P;
 
 //	cout << "change " << change << endl << endl;
 //	cout << "P: " << P << endl << endl;
@@ -478,13 +479,16 @@ void update(const association_struct& data) {
 //	cout << "Distance" << endl << data.distance << endl << endl;
 }
 
+
 void updateSonar(){
 	float y = sonarAlt - state(2);
 	float s = P(2,2) + sonarVariance;
 	VectorXf K = P.col(2) / s;
 	state += K*y;
-	P -= K*s*K.transpose();
+	//P -= K*s*K.transpose();
+	P -= K*P.row(2);
 }
+
 
 #ifdef PLANEGUN
 bool getNewMeasurementThalamus(){

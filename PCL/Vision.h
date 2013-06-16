@@ -329,7 +329,7 @@ class QCVision
 			break;
 		case '9':
 			ifstream myfile;
-			myfile.open("../vars.txt");
+			myfile.open("vars.txt");
 			myfile >> XtionCovarFudge;
 			myfile >> distThreshold;
 			myfile.close();
