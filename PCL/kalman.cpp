@@ -8,6 +8,7 @@
 
 #include <Eigen/Dense>
 #include <iostream>
+#include <fstream>
 #include <math.h>
 #include <vector>
 #include <time.h>
@@ -87,6 +88,11 @@ void update(const association_struct& data);
 association_struct dataAssociation(const planeStruct& planeData);
 void updateSonar();
 void controlCraft();
+
+// Tests
+//void writeXtionDataToFile(Vector4f plane, Matrix4f cov);
+void writeInovToFile(const Vector4f& diff, const Matrix4f& S);
+void writeStateToFile();
 //void run();
 
 //Variables
@@ -151,6 +157,7 @@ int kalman(QCVision& vision) {
 
 		controlCraft();
 
+		writeStateToFile();
 		timeSteps++;
 	}
 
@@ -465,13 +472,14 @@ void update(const association_struct& data) {
 
 	MatrixXf kalmanGain(P * H_opt.transpose() * S.inverse());
 
-	state += kalmanGain * diff;
+	state += kalmanGain * diff ;
 	//Normalise Quaternions.
 	state.segment(6,4) /= state.segment(6,4).norm();
 
 	//P -= kalmanGain * S * kalmanGain.transpose();
 	P = (Matrix<float, 16, 16>::Identity() - kalmanGain * H_opt) * P;
-
+	
+	writeInovToFile(diff, S);
 //	cout << "change " << change << endl << endl;
 //	cout << "P: " << P << endl << endl;
 //	cout << "H_opt.transpose" << endl << H_opt.transpose() << endl << endl;
@@ -479,6 +487,19 @@ void update(const association_struct& data) {
 //	cout << "kalmanGain" << endl << kalmanGain << endl << endl;
 //	cout << "State Update to landmark " << index <<";" << endl << state << endl <<"Update Above to landmark: "<< index << endl <<endl;
 //	cout << "Distance" << endl << data.distance << endl << endl;
+}
+
+void writeInovToFile(const Vector4f& diff, const Matrix4f& S) {
+	ofstream file("errorsamples.txt",ios::out | ios::app);
+	file << diff.transpose()<<endl;
+	file << S<<endl;
+	file.close();
+}
+
+void writeStateToFile() {
+	ofstream file("statesamples.txt",ios::out | ios::app);
+	file <<state.segment(0,16).transpose()<<endl;
+	file.close();
 }
 
 
@@ -545,7 +566,7 @@ bool getNewMeasurementThalamus(){
 
 #endif
 
-//#ifdef ON_QUAD
+#ifdef ON_QUAD
 
 void controlCraft(){
 	Vector2f horizSetpoint(3,3);
@@ -559,7 +580,7 @@ void controlCraft(){
 
 }
 
-//#endif
+#endif
 
 
 void getNewObservationLive(QCVision& vision){
