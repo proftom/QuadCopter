@@ -559,6 +559,23 @@ void controlCraft(){
 
 }
 
+/*
+[04:17:13] Ryan: struct bridge_sensor_packet_t
+{
+    char sync_byte;
+    int16_t imu_data[9];
+    float sonar_data;
+};
+ 
+struct host_attitude_packet_t
+{
+    char sync_byte;
+    float yaw_rate;
+    float pitch;
+    float roll;
+};
+*/
+
 //#endif
 
 
