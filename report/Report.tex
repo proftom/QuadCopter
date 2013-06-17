@@ -1078,10 +1078,6 @@ In the implementation, we take advantage of this sparsity and compute matrix mul
 
 % subsection system_model (end)
 
-\subsection{Landmark Association} % (fold)
-\label{sub:landmark_association}
-We use the statistic measurement called the mahalanobis distance to evaluate how closely a newly observed plane is related to the ones in the state map. In general the mahalanobis distance is a normalised measure that is used to identify and guage similarity of an unknown sample to a known data set. Using this measure, we leverage the stochastic properties of our system to reduce modelling inaccuracies as opposed to using Euler distance. We use a distance threshold/ validation date such that 99\% of true measurements are accepted.. For our 4 dimensional plane measurement, this evaluates to:
-$ d = chi2inv(0.99,4) = 13.2767$. In order to perform association,the procedure is we find the mahalanobis distance between our new observation and all the planes in the map, keeping the minimum. If this minimum is less than the threshold, then the data is associated, if not it is discarded as an outlier.
 
 \begin{figure}[tb]
 	\begin{center}
@@ -1190,6 +1186,12 @@ where
 \subsection{Kalman Filter Parameters Tuning} % (fold)
 \label{sub:tuning_kalman}
  The filter behaviour can be changed by altering the process and measurement noise. In order to
+
+\subsection{Landmark Association} % (fold)
+\label{sub:landmark_association}
+We use the statistic measurement called the mahalanobis distance to evaluate how closely a newly observed plane is related to the ones in the state map. In general the mahalanobis distance is a normalised measure that is used to identify and guage similarity of an unknown sample to a known data set. Using this measure, we leverage the stochastic properties of our system to reduce modelling inaccuracies as opposed to using Euler distance. We use a distance threshold/ validation date such that 99\% of true measurements are accepted.. For our 4 dimensional plane measurement, this evaluates to:
+$ d = chi2inv(0.99,4) = 13.2767$. In order to perform association,the procedure is we find the mahalanobis distance between our new observation and all the planes in the map, keeping the minimum. If this minimum is less than the threshold, then the data is associated, if not it is discarded as an outlier.
+
 \subsection{Testing and Results} % (fold)
 \label{sub:testing_kalman}
 In order to verify that our system works, we ran our system consisting of the Thalamus chip containing the inertial sensors and Xtion Pro taped together from our default initial position leaving it stationary. Below is the trajectory results. It shows that our kalman filter does indeed converge to a good estimate of our real position. [insert graphs].
