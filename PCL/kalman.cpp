@@ -547,15 +547,59 @@ bool getNewMeasurementThalamus(){
 
 //#ifdef ON_QUAD
 
+struct host_attitude_packet_t
+{
+    char sync_byte = 0xbe;
+    float yaw_rate;
+    float pitch;
+    float roll;
+};
+
 void controlCraft(){
+
+	//Pitch Roll section
+
+	const float P = 0.0072;
+	const float I = 6.26e-5;
+	const float D = 0.2;
+
 	Vector2f horizSetpoint(3,3);
 	Vector2f currPos(state.segment<2>(0));
 	Vector2f posErr = horizSetpoint - currPos;
 
+	Vector2f setpointVel(0,0);
+	Vector2f currVel(state.segment<2>(3));
+	Vector2f velErr = setpointVel - currVel;
+
 	//rotate the error into the crafts frame, then project only the x and y axies onto the horizontal plane
-	Matrix2f DCM2D = DCM_fn().block<2,2>(0,0);
+	Matrix3f DCM = DCM_fn();
+	float normFactor = 1/(DCM.row(0).segment<2>(0).norm());
+	float DCM11N = DCM(1,1)*normFactor;
+	float DCM12N = DCM(1,2)*normFactor;
+	Matrix2f DCM2D;
+	DCM2D << DCM11N, DCM12N,
+			-DCM12N, DCM11N;
+	//matrix needs renormalising. Figure out if normalising rows or columns is required
 	Vector2f posErrBody = DCM2D * posErr;
-	Vector2f velBody = DCM2D * state.segment<2>(3);
+	Vector2f velErrBody = DCM2D * velErr;
+
+	static Vector2f bias(0,0);
+	bias += I * posErrBody;
+
+	Vector2f attitudeXY = P*posErrBody + bias + D*velErrBody;
+
+	//yaw section
+
+	const float Pyaw = 3.5;
+	const float Iyaw = 0.2;
+
+
+
+	//output section
+	
+	host_attitude_packet_t outpacket;
+	outpacket.roll = attitudeXY(0);
+	outpacket.pitch = attitudeXY(1);
 
 }
 
