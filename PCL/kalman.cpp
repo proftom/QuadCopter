@@ -1,4 +1,4 @@
-//============================================================================
+g//============================================================================
 // Name        : Test.cpp
 // Author      : Chinemelu Ezeh
 // Version     :
@@ -86,6 +86,9 @@ void registration (int newPlaneIndex, const association_struct& data);
 association_struct dataAssociation(const planeStruct& planeData);
 Matrix4f e_fn();
 MatrixXf E_r_fn(const Vector4f& plane);
+//For tests
+void writeXtionDataToFile(Vector4f plane, Matrix4f cov);
+void writeInovToFile(Vector4f diff, Matrix4f S);
 //void run();
 
 //Variables
@@ -474,13 +477,19 @@ void update(const association_struct& data) {
 	//	Update landmarks equations.
 	Vector4f delta(change.segment(16,4));
 	landmarks[index] += delta;
-
+    writeInovToFile(diff, S);
 //	cout << "H_opt.transpose" << endl << H_opt.transpose() << endl << endl;
 //	cout << "P_opt" << endl << P_opt << endl << endl;
 //	cout << "S.inverse" << endl << S.inverse() << endl << endl;
 //	cout << "kalmanGain" << endl << kalmanGain << endl << endl;
 //	cout << "State Update to landmark " << index <<";" << endl << state << endl <<"Update Above to landmark: "<< index << endl <<endl;
 //	cout << "Distance" << endl << data.distance << endl << endl;
+}
+void writeInovToFile(Vector4f diff, Matrix4f S) {
+    ofstream file("errorsamples.txt"|ios::out | ios::app);
+    file << diff.transpose();
+    file << S;
+    file.close();
 }
 
 void registration (int newPlaneIndex, const association_struct& data) {
@@ -655,7 +664,15 @@ void getNewObservationLive(QCVision& vision){
 		temp.cov = hypermute*(cov_t*XtionCovarFudge)* hypermute.transpose();
 		temp.plane = hypermute*planeCloud_t;
 		newPlanes.push_back(temp);
+        writeXtionDataToFile(temp.plane, temp.cov);
 	}
+}
+//For Tests.
+void writeXtionDataToFile(Vector4f plane, Matrix4f cov) {
+    ofstream file("planesamples.txt"|ios::out | ios::app);
+    file << plane.transpose();
+    file << cov;
+    file.close();
 }
 
 /*
