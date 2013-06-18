@@ -545,7 +545,7 @@ bool getNewMeasurementThalamus(){
 
 #endif
 
-//#ifdef ON_QUAD
+#ifdef ON_QUAD
 
 struct host_attitude_packet_t
 {
@@ -620,7 +620,7 @@ struct host_attitude_packet_t
 };
 */
 
-//#endif
+#endif
 
 
 void getNewObservationLive(QCVision& vision){
