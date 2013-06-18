@@ -189,8 +189,13 @@ bool Serial::WriteData(char *buffer, unsigned int nbChar)
 
 bool Serial::IsConnected()
 {
-    //Simply return the connection status
-    return true;//this->connected;
+	#if defined (_WIN32) || defined( _WIN64)
+		//Simply return the connection status
+		return this->connected;
+	#endif
+	#ifdef __linux__
+		return true;
+	#endif
 }
 
 int Serial::BytesAvailable()

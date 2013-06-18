@@ -554,11 +554,12 @@ bool getNewMeasurementThalamus(){
 
 #ifdef ON_QUAD
 
-Serial SP("\\\\.\\COM62");
+Serial SP("\\\\.\\COM66");
 
 struct bridge_sensor_packet_t
 {
-    char sync_byte;
+    //char sync_byte;
+	//consumed by syncer
     int16_t imu_data[9];
     float sonar_data;
 };
@@ -575,9 +576,14 @@ struct host_attitude_packet_t
 bool getNewMeasurementThalamus(){
 	int SPba = SP.BytesAvailable();
 	if (SPba >= sizeof(bridge_sensor_packet_t)){
-		bridge_sensor_packet_t inbuff;
-		SP.ReadData((char*)&inbuff, sizeof(inbuff));
-		if(inbuff.sync_byte == 0xbe){
+
+		unsigned char sync;
+		int bytesread = SP.ReadData((char*)&sync, 1);
+		
+		if(sync == 0xbe){
+
+			bridge_sensor_packet_t inbuff;
+			SP.ReadData((char*)&inbuff, sizeof(inbuff));
 
 			const float invSqrt2 = 1/(sqrt(2.0));
 			Matrix3f mountrot;
