@@ -567,14 +567,14 @@ The filter is based on the following discrete time update model
 \end{align}
 where $x_k$ is the state vector at time $k$, $f$ is the state transition function, $u$ is the control input vector at time $k$, $w_k$ is the process noise vector at time $k$, $y_k$ is the measurment vector at time $k$, $h$ is the function that maps the state space to the observed space, and $v_k$ is the measurment noise vector.
 
-For compartibility with the kalman filter, the noise in the system is assumed to be gaussian white noise as follows
+For compartibility with the kalman filter, we assumed the noise in the system to be gaussian white noise as follows
 \begin{align}
 	w_k &\sim N(0,Q_k) \notag \\
 	v_k &\sim N(0,R_k) \notag \\
 	x_0 &\sim N(\hat{x}_0,P_0)
 	\label{eqn:noisedef}
 \end{align}
-where $Q_k$ and $R_k$ are the process noise and measurment noise covariance matricies, at time $k$, respectivly. The initial state estimate error is assumed to be drawn from a normal distrubution with covariance $P_0$.
+where $Q_k$ and $R_k$ are the process noise and measurement noise covariance matricies, at time $k$, respectivly. The initial state estimate error is assumed to be drawn from a normal distrubution with covariance $P_0$.
 
 We define
 \begin{align}
@@ -796,7 +796,7 @@ $R_{eb}$, the body to earth rotation matrix and $\Xi$ is the matrix that maps th
 \end{align}
 where $a_m$ and $\omega_m$ are the measured accelerations and angular velocities in the body frame, respectively, and $g_b$ is the acceleration due to gravity in the body frame.
 
-The process noise is defined as follows
+The process noise is defined as defined and it represents the noise in the inertial sensors. To derive a close enough estimate of this noise, we computed the variance of a sample from the sensors at a stationary position[Insert link to code].
 \begin{align}
 	w &= 
 	\left[
@@ -807,6 +807,34 @@ The process noise is defined as follows
 		w_{ba}
 	\end{matrix}
 	\right]
+	% \omega_w0 = 
+	% \begin{bmatrix}
+	% 	 0.0001679  &-6.15e-05 &-0.0001051 \\
+	% 	 -6.15e-05   &0.000132 & -6.54e-05\\
+	% 	-0.0001051  &-6.54e-05 & 0.0002536\\
+	% \end{bmatrix}
+	% \right]
+	% \omega_a0 = 
+	% \begin{bmatrix}
+	% 	 0.000667   3.77e-05  -6.48e-05 \\
+	% 	 -3.77e-05  0.0008222 -0.0001422\\
+	% 	--6.48e-05 -0.0001422  0.0027314\\
+	% \end{bmatrix}
+	% \right]
+	% \omega_bw0 = 
+	% \begin{bmatrix}
+	% 	 0.0003552  -3.23e-05 -0.0002509 \\
+	% 	 3.23e-05  0.0002822 -0.0002381\\
+	% 	-0.0002509 -0.0002381  0.0005686\\
+	% \end{bmatrix}
+	% \right]
+	% \omega_ba0 = 
+	% \begin{bmatrix}
+	% 	 0.003501  -0.001312   0.002149 \\
+	% 	 -0.001312   0.004719  -0.002273\\
+	% 	 0.002149  -0.002273    0.01367\\
+	% \end{bmatrix}
+	% \right]
 \end{align}
 
 $f$ in equation (\ref{eqn:system}) and (\ref{eqn:predictx}) operates in discrete time, but we have established our model in continous time. As such, we perform a first order approximation to the continous time system:
@@ -1183,9 +1211,6 @@ where
 \end{align}
 
 % subsection landmark_initialization (end)
-\subsection{Kalman Filter Parameters Tuning} % (fold)
-\label{sub:tuning_kalman}
- The filter behaviour can be changed by altering the process and measurement noise. In order to
 
 \subsection{Landmark Association} % (fold)
 \label{sub:landmark_association}
@@ -1194,35 +1219,25 @@ $ d = chi2inv(0.99,4) = 13.2767$. In order to perform association,the procedure 
 
 \subsection{Testing and Results} % (fold)
 \label{sub:testing_kalman}
-In order to verify that our system works, we ran our system consisting of the Thalamus chip containing the inertial sensors and Xtion Pro taped together from our default initial position leaving it stationary. Below is the trajectory results. It shows that our kalman filter does indeed converge to a good estimate of our real position. [insert graphs].
-In the second test, we moved the xtion in a perfect circle whilst ensuring that three orthogonal planes are always observable. 
+In our test setup, we based our coordinate system in a vertex of the room as origin defining the x,y and z coordinates to be along the three wall edges connected to the origin vertex. Out test system consist of Thalamus chip containing the inertial sensors and Xtion Pro taped together. To ensure a functional kalman filter, full observability of system in the x,y and z axis is needed. Thus we decided to observe three orthogonal planes formed by the wall that meet at the origin. 
 
-\subsection{Optimisation} % (fold)
-\label{sub:optimisation}
+In order to verify that our system works, we ran our system from our default initial position leaving it stationary. Below is the trajectory results. It shows that our kalman filter does indeed converge to a good estimate of our real position. The result is a point cloud of points showing the kalman filter's state estimate about the true position. This proves that the system does indeed converge due to full observability. 
+\begin{figure}[H]
+	\centering     %%% not \center
+	\subfloat[A]{
+		\label{fig:A}
+		\includegraphics[width=0.4\textwidth]{notmoving22a.PNG}
+	}
+	\;
+	\subfloat[B]{
+		\label{fig:B}
+		\includegraphics[width=0.4\textwidth]{notmoving22b.PNG}
+	}
+	\caption{AB}
+	\label{fig:AB}
+\end{figure}
 
-SerialUpdate: \cite{OpenPilotPaper} and chapter 4.2.2 of \cite{KFBookSerialupdate}, and also mentioned in \cite{Sola2013}
-The referenced papers perform an optimization which assumes an entirerly uncorrelated measurment noise covariance matrix. That is the $R$ matrix is purely diagonal.
-We, on the other hand, use a measurment model that includes the measurment of planes. These measurements consist of the estimated plane equation in hessian normal form. As the plane is in a three dimensional space, and thus the measurment error will have three degrees of freedom, and this form has four dimensions, the covariance matrix cannot be uncorrelated.
-That is, as the hessian normal form uses a unit vector, the length of this vector is bound to unity. As such, the probability distrubution of the error of the components of this normal vector cannot be spherical.
-In fact, after linearization, this distrubution is projected onto a plane tangential to the actual distrubution. 
-%TODO: insert picture of distrubution projected onto plane
-
-While we cannot serialise the individual componets of a plane measurment, the measurment error between planes are uncorrelated, so we can still make use of the serial update strategy. As such, at each time there is a new frame that has finished feature extraction, we serially apply the measurment updates for each plane, without running the predict loop in-between.
-That means the update stage will only have to invert $v$ matricies of size $4\times4$, instead of inverting a $4v \times 4v$ matrix. 
-As a further optimization, we find that the equation that transforms the state covariance matrix (\ref{eqn:predictP}) forms a seperable system. That is, the Jacobian matrix $F$ as defined in (\ref{eqn:F}) does not carry any information regarding the craft to the planes, and vica versa.
-In fact, all terms in $F$ regarding the planes are zero, execpt the main diagonal, which is unity. This means that not only is it a seperable system, but the plane subsystem is fully static.
-Because the system is seperable, and because the second half is static, we can ignore the second half of the system when computing (\ref{eqn:predictP}).
-This makes an enormous difference in the scalability of the kalman filter approach. If the entire matrix-matrix multiplication is required, then the algorithm will scale like $O(n^3)$ where $n$ is the number of planes in the state vector. Now that this cubic dependence on $n$ is removed, only $O(n^2)$ terms remain, along with other terms.
-%TODO: explore complexity
-%TODO: incorporate reasoning from Sola2013
-
-	We crosscheck our implementation against a similar open source implementation by the OpenPilot team %\cite{OpenPilotinsgps}. \cite{Holz2011}
-
-% subsection implementation (end)
-
-\subsection{Testing} % (fold)
-\label{sub:testing}
-
+In the second test, we moved the setup by hand in a pseudo straight line whilst ensuring that three orthogonal planes are always observed. The trajectory suggests noisy inertial sensors.[insert graph] 
 Covariance
 \begin{align}
 	10^{-3}
@@ -1246,23 +1261,28 @@ sqrt covariance
 	\end{matrix}
 	\right]
 \end{align}
+\subsection{Optimisation} % (fold)
+\label{sub:optimisation}
 
-\begin{figure}[tb]
-	\centering     %%% not \center
-	\subfloat[A]{
-		\label{fig:A}
-		\includegraphics[width=0.4\textwidth]{notmoving22a.PNG}
-	}
-	\;
-	\subfloat[B]{
-		\label{fig:B}
-		\includegraphics[width=0.4\textwidth]{notmoving22b.PNG}
-	}
-	\caption{AB}
-	\label{fig:AB}
-\end{figure}
+SerialUpdate: \cite{OpenPilotPaper} and chapter 4.2.2 of \cite{KFBookSerialupdate}, and also mentioned in \cite{Sola2013}
+The referenced papers perform an optimization which assumes an entirerly uncorrelated measurment noise covariance matrix. That is the $R$ matrix is purely diagonal.
+We, on the other hand, use a measurment model that includes the measurment of planes. These measurements consist of the estimated plane equation in hessian normal form. As the plane is in a three dimensional space, and thus the measurment error will have three degrees of freedom, and this form has four dimensions, the covariance matrix cannot be uncorrelated.
+That is, as the hessian normal form uses a unit vector, the length of this vector is bound to unity. As such, the probability distrubution of the error of the components of this normal vector cannot be spherical.
+In fact, after linearization, this distrubution is projected onto a plane tangential to the actual distrubution. 
+%TODO: insert picture of distrubution projected onto plane
 
-% subsection testing (end)
+While we cannot serialise the individual componets of a plane measurment, the measurment error between planes are uncorrelated, so we can still make use of the serial update strategy. As such, at each time there is a new frame that has finished feature extraction, we serially apply the measurment updates for each plane, without running the predict loop in-between.
+That means the update stage will only have to invert $v$ matricies of size $4\times4$, instead of inverting a $4v \times 4v$ matrix. 
+As a further optimization, we find that the equation that transforms the state covariance matrix (\ref{eqn:predictP}) forms a seperable system. That is, the Jacobian matrix $F$ as defined in (\ref{eqn:F}) does not carry any information regarding the craft to the planes, and vica versa.
+In fact, all terms in $F$ regarding the planes are zero, execpt the main diagonal, which is unity. This means that not only is it a seperable system, but the plane subsystem is fully static.
+Because the system is seperable, and because the second half is static, we can ignore the second half of the system when computing (\ref{eqn:predictP}).
+This makes an enormous difference in the scalability of the kalman filter approach. If the entire matrix-matrix multiplication is required, then the algorithm will scale like $O(n^3)$ where $n$ is the number of planes in the state vector. Now that this cubic dependence on $n$ is removed, only $O(n^2)$ terms remain, along with other terms.
+%TODO: explore complexity
+%TODO: incorporate reasoning from Sola2013
+
+	We crosscheck our implementation against a similar open source implementation by the OpenPilot team %\cite{OpenPilotinsgps}. \cite{Holz2011}
+
+% subsection implementation (end)
 
 % section ekf (end)
 
