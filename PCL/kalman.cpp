@@ -94,6 +94,9 @@ void controlCraft();
 void writeInovToFile(const Vector4f& diff, const Matrix4f& S);
 void writeStateToFile();
 //void run();
+//For tests.
+void writeStateToFile();
+
 
 //Variables
 vector<Vector4f, Eigen::aligned_allocator<Vector4f> > landmarks;
@@ -156,7 +159,6 @@ int kalman(QCVision& vision) {
 		}
 
 		controlCraft();
-
 		writeStateToFile();
 		timeSteps++;
 	}
@@ -166,7 +168,11 @@ int kalman(QCVision& vision) {
 	printf("Time taken: %.2fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
 	return 0;
 }
-
+void writeStateToFile(){
+	ofstream file("statesamples.txt", ios::out|ios::app);
+	file << state.transpose()<< endl;
+	file.close();
+}
 void initialisation () { //Incomplete.
 
 	//Initialise landmarks.
