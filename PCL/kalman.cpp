@@ -16,13 +16,17 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include "Vision.h"
 #include "SerialClass.h"
+
+static const float     PI= 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348;
+static const float TWO_PI= 6.2831853071795864769252867665590057683943387987502116419498891846156328125724179972560696;
+
 //#include "serialib.h"
 
 using namespace std;
 using namespace Eigen;
 
-#define PLANEGUN
-//#define ON_QUAD
+//#define PLANEGUN
+#define ON_QUAD
 
 typedef Matrix< float , 16 , 16> Matrix16f;
 typedef Matrix< float , 16 , 1> Vector16f;
@@ -419,7 +423,7 @@ association_struct dataAssociation(const planeStruct& planeData) {
 		S = H * P * H.transpose() + inC;
 		diff = inP - transPlane*landmarks[index];
 		dist = diff.transpose() *  S.inverse() * diff;
-		cout << "dist " << endl << dist << endl << endl;
+		//cout << "dist " << endl << dist << endl << endl;
 
 		if ((first == true) || (dist < data.distance)) {
 			first = false;
@@ -489,14 +493,17 @@ void updateSonar(){
 	state += K*y;
 	//P -= K*s*K.transpose();
 	P -= K*P.row(2);
+	newsonar = false;
 }
 
 
 #ifdef PLANEGUN
 
+
 void controlCraft(){
 	//do nothing here
 }
+
 
 bool getNewMeasurementThalamus(){
 	static Serial SP("\\\\.\\COM62");
@@ -547,13 +554,60 @@ bool getNewMeasurementThalamus(){
 
 #ifdef ON_QUAD
 
+Serial SP("\\\\.\\COM62");
+
+struct bridge_sensor_packet_t
+{
+    char sync_byte;
+    int16_t imu_data[9];
+    float sonar_data;
+};
+
+
 struct host_attitude_packet_t
 {
-    char sync_byte = 0xbe;
+    char sync_byte;
     float yaw_rate;
     float pitch;
     float roll;
 };
+
+bool getNewMeasurementThalamus(){
+	int SPba = SP.BytesAvailable();
+	if (SPba >= sizeof(bridge_sensor_packet_t)){
+		bridge_sensor_packet_t inbuff;
+		SP.ReadData((char*)&inbuff, sizeof(inbuff));
+		if(inbuff.sync_byte == 0xbe){
+
+			const float invSqrt2 = 1/(sqrt(2.0));
+			Matrix3f mountrot;
+			mountrot << invSqrt2, invSqrt2, 0,
+					   -invSqrt2, invSqrt2, 0,
+					   0,		0,			1;
+
+			Vector3f gyro_t;
+			gyro_t << inbuff.imu_data[0], inbuff.imu_data[1], inbuff.imu_data[2];
+			gyro_t /= 818.51113590117601252569;
+			gyro_t << mountrot * gyro_t;
+			gyro_t -= state.segment(10,3);
+			gyro = gyro_t;
+
+			Vector3f acc_t;
+			acc_t << inbuff.imu_data[3], inbuff.imu_data[4], inbuff.imu_data[5];
+			acc_t *= (9.816 / pow(2.00,14));;
+			acc_t << mountrot * acc_t;
+			acc_t -= state.segment(13,3);
+			acc = acc_t;
+			
+			sonarAlt = inbuff.sonar_data;
+			newsonar = true;
+
+			return true;
+		}
+	}
+
+	return false;
+}
 
 void controlCraft(){
 
@@ -563,7 +617,7 @@ void controlCraft(){
 	const float I = 6.26e-5;
 	const float D = 0.2;
 
-	Vector2f horizSetpoint(3,3);
+	Vector2f horizSetpoint(-1,3);
 	Vector2f currPos(state.segment<2>(0));
 	Vector2f posErr = horizSetpoint - currPos;
 
@@ -574,8 +628,8 @@ void controlCraft(){
 	//rotate the error into the crafts frame, then project only the x and y axies onto the horizontal plane
 	Matrix3f DCM = DCM_fn();
 	float normFactor = 1/(DCM.row(0).segment<2>(0).norm());
-	float DCM11N = DCM(1,1)*normFactor;
-	float DCM12N = DCM(1,2)*normFactor;
+	float DCM11N = DCM(0,0)*normFactor;
+	float DCM12N = DCM(0,1)*normFactor;
 	Matrix2f DCM2D;
 	DCM2D << DCM11N, DCM12N,
 			-DCM12N, DCM11N;
@@ -584,41 +638,50 @@ void controlCraft(){
 	Vector2f velErrBody = DCM2D * velErr;
 
 	static Vector2f bias(0,0);
-	bias += I * posErrBody;
+	bias += I * posErrBody * Sampling_Time;
 
 	Vector2f attitudeXY = P*posErrBody + bias + D*velErrBody;
+
 
 	//yaw section
 
 	const float Pyaw = 3.5;
 	const float Iyaw = 0.2;
 
+	float setpointYawAngle = atan2(-currPos(1), -currPos(0));
+	float currYawAngle = atan2(DCM12N,DCM11N);
+	float YawAngleErr = setpointYawAngle - currYawAngle;
+
+	//angle wrap without fmod and division because revolutions will be small
+	while (YawAngleErr >= PI) YawAngleErr -= TWO_PI;
+	while (YawAngleErr < -PI) YawAngleErr += TWO_PI;
+
+	static float yawbias = 0;
+	yawbias += Iyaw * YawAngleErr * Sampling_Time;
+
+	float yawrate = Pyaw * YawAngleErr + yawbias;
 
 
 	//output section
 	
 	host_attitude_packet_t outpacket;
-	outpacket.roll = attitudeXY(0);
-	outpacket.pitch = attitudeXY(1);
+	outpacket.sync_byte = 0xbe;
+	outpacket.roll = attitudeXY(1);
+	outpacket.pitch = -attitudeXY(0);
+	outpacket.yaw_rate = yawrate;
+
+	/*
+	static int seq = 1;
+	if(!--seq){
+		seq = 32;
+		cout << "Setpointyaw: " << setpointYawAngle << "  currYawAngle: " << currYawAngle << endl << endl;
+		cout << "---------------------------------------------------------Control: " << outpacket.roll  << "  " << outpacket.pitch << "  " << outpacket.yaw_rate << endl << endl;
+	}
+	*/
+
+	SP.WriteData((char*)&outpacket, sizeof(outpacket));
 
 }
-
-/*
-[04:17:13] Ryan: struct bridge_sensor_packet_t
-{
-    char sync_byte;
-    int16_t imu_data[9];
-    float sonar_data;
-};
- 
-struct host_attitude_packet_t
-{
-    char sync_byte;
-    float yaw_rate;
-    float pitch;
-    float roll;
-};
-*/
 
 #endif
 
