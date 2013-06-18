@@ -168,8 +168,11 @@ struct paramStorage_struct paramStorage[] = {
     #define MAGCOR_M3       paramStorage[36].value
 
     // Ultrasound
-    {"ULTRA_Kp",        0.05f},
-    {"ULTRA_Kd",        5.0f},
+    //{"ULTRA_Kp",        0.05f},
+    //{"ULTRA_Kd",        5.0f},
+    //{"ULTRA_Ki",        0.00001f},
+    {"ULTRA_Kp",        0.03f},
+    {"ULTRA_Kd",        3.0f},
     {"ULTRA_Ki",        0.00001f},
     {"ULTRA_De",      	0.9999f},
     {"ULTRA_TKOFF",   	250.0f}, 
@@ -1167,14 +1170,16 @@ void Timer0Interrupt0() {
 					
                 ultraLoss = 0;
 				
-				if(ultra - ultraav > LIM_ULTRA/SLOW_DIVIDER) ultra = ultra + LIM_ULTRA/SLOW_DIVIDER;
-				if(ultraav - ultra > LIM_ULTRA/SLOW_DIVIDER) ultra = ultra - LIM_ULTRA/SLOW_DIVIDER;
+				if(ultra - ultraav > LIM_ULTRA/SLOW_DIVIDER) ultra = ultraav + LIM_ULTRA/SLOW_DIVIDER;
+				if(ultraav - ultra > LIM_ULTRA/SLOW_DIVIDER) ultra = ultraav - LIM_ULTRA/SLOW_DIVIDER;
                 
                 ultraav *= SPR_ULTRA;
                 ultraav += (1-SPR_ULTRA) * ultra;
                 
                 alt.valueOld = alt.value;
                 alt.value = ultraav;
+
+                ilink_altitude.relAlt = ultraav;
 				
 			}
             else {
@@ -1811,7 +1816,7 @@ void ReadGyroSensors(void) { // 400Hz -ish
         Gyro.X.raw = data[0];
         Gyro.Y.raw = data[1];
         Gyro.Z.raw = data[2];
-        ilink_rawimu.xGyro = Gyro.X.raw; temporarily requisitioned
+        ilink_rawimu.xGyro = Gyro.X.raw;
         ilink_rawimu.yGyro = Gyro.Y.raw;
         ilink_rawimu.zGyro = Gyro.Z.raw;
         Gyro.X.total -= Gyro.X.history[Gyro.count];
