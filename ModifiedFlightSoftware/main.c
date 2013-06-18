@@ -1811,9 +1811,9 @@ void ReadGyroSensors(void) { // 400Hz -ish
         Gyro.X.raw = data[0];
         Gyro.Y.raw = data[1];
         Gyro.Z.raw = data[2];
-        // ilink_rawimu.xGyro = Gyro.X.raw; temporarily requisitioned
-        // ilink_rawimu.yGyro = Gyro.Y.raw;
-        // ilink_rawimu.zGyro = Gyro.Z.raw;
+        ilink_rawimu.xGyro = Gyro.X.raw; temporarily requisitioned
+        ilink_rawimu.yGyro = Gyro.Y.raw;
+        ilink_rawimu.zGyro = Gyro.Z.raw;
         Gyro.X.total -= Gyro.X.history[Gyro.count];
         Gyro.Y.total -= Gyro.Y.history[Gyro.count];
         Gyro.Z.total -= Gyro.Z.history[Gyro.count];
@@ -1848,9 +1848,9 @@ void ReadAccelSensors(void) {
         Accel.X.raw = data[0];
         Accel.Y.raw = data[1];
         Accel.Z.raw = data[2];
-        //ilink_rawimu.xAcc = Accel.X.raw; //temporarily repurposed
-        // ilink_rawimu.yAcc = Accel.Y.raw; //temporarily repurposed
-        // ilink_rawimu.zAcc = Accel.Z.raw; //temporarily repurposed
+        ilink_rawimu.xAcc = Accel.X.raw; //temporarily repurposed
+        ilink_rawimu.yAcc = Accel.Y.raw; //temporarily repurposed
+        ilink_rawimu.zAcc = Accel.Z.raw; //temporarily repurposed
         Accel.X.total -= Accel.X.history[Accel.count];
         Accel.Y.total -= Accel.Y.history[Accel.count];
         Accel.Z.total -= Accel.Z.history[Accel.count];
@@ -1919,10 +1919,12 @@ void ReadMagSensors(void) { // 50Hz-ish
         temp2 = MAGCOR_N5 * temp2 + MAGCOR_N6 * temp3;
         temp3 = MAGCOR_N9 * temp3;
 		
-		
+        //wtf
+		/*
 		ilink_rawimu.xAcc = throttle; // temporarily requisitioned
 		ilink_rawimu.yAcc = airborne; // temporarily requisitioned
-		
+		*/
+
 		
 		
 		/////////////Current Field Distortion Compensation (CFDC)
