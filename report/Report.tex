@@ -1217,50 +1217,6 @@ where
 We use the statistic measurement called the mahalanobis distance to evaluate how closely a newly observed plane is related to the ones in the state map. In general the mahalanobis distance is a normalised measure that is used to identify and guage similarity of an unknown sample to a known data set. Using this measure, we leverage the stochastic properties of our system to reduce modelling inaccuracies as opposed to using Euler distance. We use a distance threshold/ validation date such that 99\% of true measurements are accepted.. For our 4 dimensional plane measurement, this evaluates to:
 $ d = chi2inv(0.99,4) = 13.2767$. In order to perform association,the procedure is we find the mahalanobis distance between our new observation and all the planes in the map, keeping the minimum. If this minimum is less than the threshold, then the data is associated, if not it is discarded as an outlier.
 
-\subsection{Testing and Results} % (fold)
-\label{sub:testing_kalman}
-In our test setup, we based our coordinate system in a vertex of the room as origin defining the x,y and z coordinates to be along the three wall edges connected to the origin vertex. Out test system consist of Thalamus chip containing the inertial sensors and Xtion Pro taped together. To ensure a functional kalman filter, full observability of system in the x,y and z axis is needed. Thus we decided to observe three orthogonal planes formed by the wall that meet at the origin. 
-
-In order to verify that our system works, we ran our system from our default initial position leaving it stationary. Below is the trajectory results. It shows that our kalman filter does indeed converge to a good estimate of our real position. The result is a point cloud of points showing the kalman filter's state estimate about the true position. This proves that the system does indeed converge due to full observability. 
-\begin{figure}[H]
-	\centering     %%% not \center
-	\subfloat[A]{
-		\label{fig:A}
-		\includegraphics[width=0.4\textwidth]{notmoving22a.PNG}
-	}
-	\;
-	\subfloat[B]{
-		\label{fig:B}
-		\includegraphics[width=0.4\textwidth]{notmoving22b.PNG}
-	}
-	\caption{AB}
-	\label{fig:AB}
-\end{figure}
-
-In the second test, we moved the setup by hand in a pseudo straight line whilst ensuring that three orthogonal planes are always observed. The trajectory suggests noisy inertial sensors.[insert graph] 
-Covariance
-\begin{align}
-	10^{-3}
-	\left[
-	\begin{matrix}
-		0.1037	& 0.0919	& -0.0024 \\
-		0.0919	& 0.1014	& -0.0129 \\
-		-0.0024	& -0.0129	& 0.0538
-	\end{matrix}
-	\right]
-\end{align}
-
-sqrt covariance
-\begin{align}
-	10^{-3}
-	\left[
-	\begin{matrix}
-		10.1809	& 9.5878	& 1.5370 \\
-		9.5878	& 10.0684	& 3.5982 \\
-		1.5370	& 3.5982	& 7.3351
-	\end{matrix}
-	\right]
-\end{align}
 \subsection{Optimisation} % (fold)
 \label{sub:optimisation}
 
@@ -1286,6 +1242,57 @@ This makes an enormous difference in the scalability of the kalman filter approa
 
 % section ekf (end)
 
+\section{Testing and Results} % (fold)
+\label{sub:testing_kalman}
+To properly running the kalman filter, we had to tune the measurement uncertainty parameter since the order of covariance obtained by using the RANSAC algorithm was too low. We multiplied the uncertainity of the Xtion by  a factor of 100000 which seems too big but through testing, we found this to be the ideal factor. A larger factor would result in the kalman relying too much on the inertial sensors  while a smaller one means we trust the xtion's output more. Since both sensors are noisy, an optimal value was selected.
+We then perform some analysis on our system to check that our filter works correctly. Firstly we checked for consistency in the kalman filter by verifying that errors in the observation measurements are bounded to $\pm\sqrt{2\sigma}$. We found this to be the case that at least 95\% of our errors are within this bound. The second test was to verify that there was no bias in our observation errors as the filter evolves. To do this, we performed the autocorrelation of the noise and found it to be bias free. [Graph given below].
+
+
+ 
+In our test setup, we based our coordinate system in a vertex of the room as origin defining the x,y and z coordinates to be along the three wall edges connected to the origin vertex. Out test system consist of Thalamus chip containing the inertial sensors and Xtion Pro taped together. To ensure a functional kalman filter, full observability of system in the x,y and z axis is needed. Thus we decided to observe three orthogonal planes formed by the wall that meet at the origin setting our initial state in the filter to be -2,2,2 in the x,y,z space. In practice however, the initial state will be close to but not exactly the same as in the filter.
+
+In order to verify that our system works, we ran our system from our default initial position leaving it stationary. Below is the trajectory results. It shows a point cloud indicating that our kalman filter does indeed converge to some estimate of our real position. This is the result is due to the full observability provided by the three orthogonal planes lying in the xy, yz, zx spaces.
+
+\begin{figure}[H]
+	\begin{center}
+		\includegraphics[width = \textwidth]{stationaryTraj.png}
+	\end{center}
+	\caption{Cloud point showing bounded kalman filter stationary trajectory estimation}
+	\label{fig:stationary_trajectory}
+\end{figure}
+In the second test, we moved the setup by hand in a pseudo straight line of length 1m along across on a table in the y axis whilst ensuring that three orthogonal planes are always observed. In the figure, we see that the variation in the z axis is small.
+
+\begin{figure}[H]
+	\begin{center}
+		\includegraphics[width = \textwidth]{movingTraj.png}
+	\end{center}
+	\caption{Cloud point showing bounded kalman filter moving trajectory estimation over a distance of 1m in the y axis}
+	\label{fig:stationary_trajectory}
+\end{figure}
+
+Covariance
+\begin{align}
+	10^{-3}
+	\left[
+	\begin{matrix}
+		0.1037	& 0.0919	& -0.0024 \\
+		0.0919	& 0.1014	& -0.0129 \\
+		-0.0024	& -0.0129	& 0.0538
+	\end{matrix}
+	\right]
+\end{align}
+
+sqrt covariance
+\begin{align}
+	10^{-3}
+	\left[
+	\begin{matrix}
+		10.1809	& 9.5878	& 1.5370 \\
+		9.5878	& 10.0684	& 3.5982 \\
+		1.5370	& 3.5982	& 7.3351
+	\end{matrix}
+	\right]
+\end{align}
 \clearpage
 \nocite{*}
 
