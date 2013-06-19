@@ -582,6 +582,10 @@ bool getNewMeasurementThalamus(){
 		
 		if(sync == 0xbe){
 
+			//consume byte align
+			unsigned char bytealign;
+			int bytesread = SP.ReadData((char*)&bytealign, 1);
+
 			bridge_sensor_packet_t inbuff;
 			SP.ReadData((char*)&inbuff, sizeof(inbuff));
 
