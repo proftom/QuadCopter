@@ -13,7 +13,9 @@ public:
 
 	float A, B, C, D;
 	vector<int> indicies;
-	vector<vector<float> > covariance;
+
+	vector< vector<float> > covariance;
+
 
 	Plane(float a, float b, float c, float d) : A(a), B(b), C(c), D(d){}
 	

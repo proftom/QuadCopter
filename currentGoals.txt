@@ -1,6 +1,4 @@
-Interface EKF with PCL
-Get registration working properly
-get engine onto arndale
 stream acc and gyro from thalamus to engine
-get acc and gyro from arndale to engine
 write commands from engine to thalamus
+do sonar sensor model
+do xtion displacement vector
