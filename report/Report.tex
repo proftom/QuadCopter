@@ -1264,7 +1264,7 @@ This makes an enormous difference in the scalability of the kalman filter approa
 \label{sub:testing_kalman}
 In our test setup, we based our coordinate system in a vertex of the room as origin defining the x,y and z coordinates to be along the three wall edges connected to the origin vertex. Out test system consist of Thalamus chip containing the inertial sensors and Xtion Pro taped together. To ensure a functional kalman filter, full observability of system in the x,y and z axis is needed. Thus we decided to observe three orthogonal planes formed by the wall that meet at the origin setting our initial state in the filter to be -2,2,2 in the x,y,z space. In practice however, the initial state will be close to but not exactly the same as in the filter.
 
-To properly running the kalman filter, we had to tune the observation measurement covariance parameter since the range of values obtained by using the RANSAC algorithm was too low. A larger value would result in the kalman relying too much on the inertial sensors while a smaller one means we trust the xtion's output more. The Xtion camera has considerable random noise due to the random initial point for the DBscan algorithm. Thus trusting the camera would result in high frequency noise or flunctuations in state estimate. On the otherhand, position estimate from the inertial sensors behave like low pass filtered values as it is obtained by double integrating the acceleration. Thus increasing the Xtion's uncertainty results in a lower frequency in estimate. We choose an appropriate value such that our filter behaves within an optimal region based on three test as discussed in \cite{KalmanTuning} . We focus our analysis on position estimate alone because since it depends on speed and attitude change, a good position estimate is sufficient to validate our algorithm implying the other estimates are correct. 
+To properly running the kalman filter, we had to tune the observation measurement covariance parameter since the range of values obtained by using the RANSAC algorithm was too low (in the order of $10^{-7}$). A larger value would result in the kalman relying too much on the inertial sensors while a smaller one means we trust the xtion's output more. The Xtion camera has considerable random noise due to the random initial point for the DBscan algorithm. Thus trusting the camera would result in high frequency noise or flunctuations in state estimate. On the otherhand, position estimate from the inertial sensors behave like low pass filtered values as it is obtained by double integrating the acceleration. Thus increasing the Xtion's uncertainty results in a lower frequency in estimate. We choose an appropriate value such that our filter behaves within an optimal region based on three test as discussed in \cite{KalmanTuning} . We focus our analysis on position estimate alone because since it depends on speed and attitude change, a good position estimate is sufficient to validate our algorithm implying the other estimates are correct. 
 
 Firstly we checked for consistency in the kalman filter by verifying that most(ideally > 95\%) of error magnitude in the observation measurements are bounded to $\pm\sqrt{2\sigma}$. [Show results].After increasing the Xtion's uncertainty by a factor of 100, the results suggest that 100 is indeed too small. A factor of 10000 gives better results.
 
@@ -1273,24 +1273,21 @@ Firstly we checked for consistency in the kalman filter by verifying that most(i
 \centering % used for centering table
 \begin{tabular}{c c c c} % centered columns (4 columns)
 \hline\hline %inserts double horizontal lines
-Variable & Case\#1 (factor = 100) & Case\#2 (factor = 10000) & Case\#1 (factor = TBC) \\ [0.5ex] % inserts table 
+Variable & Case\#1 (factor = 100) & Case\#2 (factor = 10000)  \\ [0.5ex] % inserts table 
 %heading
 \hline % inserts single horizontal line
-    Nx 	& 79.98\% 	& 99.54\%	& 0\\
-    Ny 	& 80.12 	& 86.74 	&0\\
-    Nz 	& 79.84 	& 77.27 	&0\\
-    d 	& 79.91 	&	92.41 	&0\\ [1ex] % [1ex] adds vertical space
+    Nx 	& 79.98\% 	& 99.54\%\\
+    Ny 	& 80.12 	& 86.74 \\
+    Nz 	& 79.84 	& 77.27 \\
+    d 	& 79.91 	&	92.41 \\ [1ex] % [1ex] adds vertical space
 \hline %inserts single line
 \end{tabular}
 \label{table:firstTest} % is used to refer this table in the text
 \end{table}
-
- In the second test, we check for unbiasness by computing the normalised innovation squared
-
+In the second test, we check for unbiasness by computing the normalised innovation squared
 \begin{equation}
 	q_{k} = z_{k}^{T} S_(k)^{-1} z_{k}
 \end{equation}
-
 for a sequence of i trials. If the filter's assumptions are met then q are each $\chi^{2}$ in 4 degrees of freedom. To test for unbiasness, we can use the mean of the sequence,
 \begin{equation}
 	\bar{q} = \frac{1}{N}\sum_{k=1}^N {q_k}
@@ -1340,39 +1337,20 @@ In order to verify that our system works with the kalman tuning, we ran our syst
 \end{figure}
 In the second test, we moved the setup by hand in a pseudo straight line of length 1m along across on a table in the y axis whilst ensuring that three orthogonal planes are always observed. In the figure, we see that the variation in the z axis is small. 
 
-\begin{figure}[H]
-	\begin{center}
-		\includegraphics[width = \textwidth]{movingTraj.png}
-	\end{center}
+\begin{figure}[tbh]
+	\subfloat[Using an Xtion factor of 10000] {
+		\includegraphics[width = \textwidth/2]{movingTraj.png}
+	}
+	\subfloat[Using an Xtion factor of 100] {
+		\includegraphics[width = \textwidth/2]{movingTraj100.png}
+	}
 	\caption{Cloud point showing bounded kalman filter moving trajectory estimation over a distance of 1m in the y axis}
 	\label{fig:moving_trajectory}
 \end{figure}
 
-Covariance
-\begin{align}
-	10^{-3}
-	\left[
-	\begin{matrix}
-		0.1037	& 0.0919	& -0.0024 \\
-		0.0919	& 0.1014	& -0.0129 \\
-		-0.0024	& -0.0129	& 0.0538
-	\end{matrix}
-	\right]
-\end{align}
-
-sqrt covariance
-\begin{align}
-	10^{-3}
-	\left[
-	\begin{matrix}
-		10.1809	& 9.5878	& 1.5370 \\
-		9.5878	& 10.0684	& 3.5982 \\
-		1.5370	& 3.5982	& 7.3351
-	\end{matrix}
-	\right]
-\end{align}
 \clearpage
 
+\section{Conclusion}
 
 
 \nocite{*}
