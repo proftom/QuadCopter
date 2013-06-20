@@ -47,7 +47,7 @@ Serial::Serial(char *portName)
         else
         {
             //Define serial connection parameters for the arduino board
-            dcbSerialParams.BaudRate=CBR_9600;
+            dcbSerialParams.BaudRate=CBR_115200;
             dcbSerialParams.ByteSize=8;
             dcbSerialParams.StopBits=ONESTOPBIT;
             dcbSerialParams.Parity=NOPARITY;
@@ -71,7 +71,7 @@ Serial::Serial(char *portName)
     struct termios options;                                             // Structure with the device's options
 
     // Open device
-    fd = open(portName, O_RDWR | O_NOCTTY | O_NDELAY);                    // Open port
+    fd = open(portName, O_RDWR | O_NOCTTY | O_NDELAY | O_NONBLOCK);                    // Open port
     //if (fd == -1) return -2;                                            // If the device is not open, return -1
     fcntl(fd, F_SETFL, FNDELAY);                                        // Open the device in nonblocking mode
 
@@ -79,7 +79,7 @@ Serial::Serial(char *portName)
     tcgetattr(fd, &options);                                            // Get the current options of the port
     bzero(&options, sizeof(options));                                   // Clear all the options
     speed_t         Speed;
-    Speed = B9600;
+    Speed = B115200;
     cfsetispeed(&options, Speed);                                       // Set the baud rate at 115200 bauds
     cfsetospeed(&options, Speed);
     options.c_cflag |= ( CLOCAL | CREAD |  CS8);                        // Configure the device : 8 bits, no parity, no control
@@ -182,15 +182,20 @@ bool Serial::WriteData(char *buffer, unsigned int nbChar)
 #endif
 #ifdef __linux__
     if (write (fd,buffer,nbChar)!=(ssize_t)nbChar)                              // Write data
-        return -1;                                                      // Error while writing
-    return 1;                                                           // Write operation successfull
+        return false;                                                      // Error while writing
+    return true;                                                           // Write operation successfull
 #endif
 }
 
 bool Serial::IsConnected()
 {
-    //Simply return the connection status
-    return true;//this->connected;
+	#if defined (_WIN32) || defined( _WIN64)
+		//Simply return the connection status
+		return this->connected;
+	#endif
+	#ifdef __linux__
+		return true;
+	#endif
 }
 
 int Serial::BytesAvailable()

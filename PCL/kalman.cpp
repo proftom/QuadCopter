@@ -1,13 +1,7 @@
-g//============================================================================
-// Name        : Test.cpp
-// Author      : Chinemelu Ezeh
-// Version     :
-// Copyright   : Your copyright notice
-// Description : Hello World in C++, Ansi-style
-//============================================================================
 
 #include <Eigen/Dense>
 #include <iostream>
+#include <fstream>
 #include <math.h>
 #include <vector>
 #include <time.h>
@@ -16,21 +10,28 @@ g//============================================================================
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include "Vision.h"
 #include "SerialClass.h"
+
+static const float     PI= 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348;
+static const float TWO_PI= 6.2831853071795864769252867665590057683943387987502116419498891846156328125724179972560696;
+
 //#include "serialib.h"
 
 using namespace std;
 using namespace Eigen;
+
+//#define PLANEGUN
+#define ON_QUAD
 
 typedef Matrix< float , 16 , 16> Matrix16f;
 typedef Matrix< float , 16 , 1> Vector16f;
 #define STATENUM 16
 #define Sampling_Time 0.01	// unit is seconds.
 //#define distThreshold 5000
-#define distThreshold 35
+int distThreshold = 35;
 #define startupConvergeTimesteps 1000
 //#define XtionCovarFudge 100
-#define XtionCovarFudge 40000
-
+int XtionCovarFudge = 10000;
+#define regmult 1
 
 struct imuRawS
 {
@@ -57,7 +58,6 @@ public:
 	//-1 means it is not matched.
 	int planeId;
 	float distance;
-	MatrixXf P_opt;
 	MatrixXf H_opt;
 	Matrix4f S;
 	// measurement error in plane observation.
@@ -82,14 +82,14 @@ void getNewObservation();
 void getNewObservationLive(QCVision& vision);
 void processObservation(bool regActive);
 void update(const association_struct& data);
-void registration (int newPlaneIndex, const association_struct& data);
 association_struct dataAssociation(const planeStruct& planeData);
-Matrix4f e_fn();
-MatrixXf E_r_fn(const Vector4f& plane);
-//For tests
-void writeXtionDataToFile(Vector4f plane, Matrix4f cov);
-void writeInovToFile(Vector4f diff, Matrix4f S);
+void updateSonar();
+void controlCraft();
 //void run();
+
+//for tests
+void writeStateToFile();
+void writeErrorToFile(const Vector4f& error, const Matrix4f& errCov);
 
 //Variables
 vector<Vector4f, Eigen::aligned_allocator<Vector4f> > landmarks;
@@ -98,8 +98,12 @@ vector<planeStruct, Eigen::aligned_allocator<planeStruct> > newPlanes;
 
 Vector3f acc;
 Vector3f gyro;
+float sonarAlt;
+float sonarVariance = 0.02*0.02;
+bool newsonar = false;
+
 Vector16f state;
-MatrixXf P(28,28);
+MatrixXf P(16,16);
 MatrixXf bigH;
 Matrix3f DCM;
 MatrixXf Xi(4,3);
@@ -129,12 +133,17 @@ int kalman(QCVision& vision) {
 		state_prediction();
 		covariance_prediction();
 
+		if (newsonar)
+		{
+			updateSonar();
+		}
+
 		vision.m_mutexLockPlanes.lock();
 		if (vision.bNewSetOfPlanes){
 			getNewObservationLive(vision);
 			vision.bNewSetOfPlanes = false;
 			vision.m_mutexLockPlanes.unlock();
-			processObservation(timeSteps > startupConvergeTimesteps);
+			processObservation(true); //timeSteps > startupConvergeTimesteps);
 			cout << "state at time t = " << timeSteps << endl<< state.segment(0,3) << endl<<endl;
 			cout << "numplanes: " << landmarks.size() << endl;
 
@@ -142,6 +151,8 @@ int kalman(QCVision& vision) {
 			vision.m_mutexLockPlanes.unlock();
 		}
 
+		controlCraft();
+		//writeStateToFile();
 		timeSteps++;
 	}
 
@@ -150,7 +161,11 @@ int kalman(QCVision& vision) {
 	printf("Time taken: %.2fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
 	return 0;
 }
-
+void writeStateToFile() {
+	ofstream file("statesamples.txt",ios::out|ios::app);
+	file << state.transpose()<<endl;
+	file.close();
+}
 void initialisation () { //Incomplete.
 
 	//Initialise landmarks.
@@ -167,12 +182,12 @@ void initialisation () { //Incomplete.
 	//initialise landmarks and P
 	Matrix3f block1 = Matrix3f::Identity();
 	Matrix4f block2 = Matrix4f::Identity();
-	P << 	block1*0.09, MatrixXf::Zero(3,13 + 12),
-		MatrixXf::Zero(3,16+12),
-		MatrixXf::Zero(4,6), block2*0.01, MatrixXf::Zero(4,6+12),
-		MatrixXf::Zero(3,10), block1*0.0025, MatrixXf::Zero(3,3+12),
-		MatrixXf::Zero(3,13), block1,  MatrixXf::Zero(3,12),
-		MatrixXf::Zero(12,28);
+	P << 	block1*0.09, MatrixXf::Zero(3,13),
+		MatrixXf::Zero(3,16),
+		MatrixXf::Zero(4,6), block2*0.01, MatrixXf::Zero(4,6),
+		MatrixXf::Zero(3,10), block1*0.0025, MatrixXf::Zero(3,3),
+		MatrixXf::Zero(3,13), block1;
+		//MatrixXf::Zero(12,28);
 	//	cout << "P initial" << endl << P << endl << endl;
 	Q = noiseMatrix();
 	//initialise state vector.
@@ -180,6 +195,8 @@ void initialisation () { //Incomplete.
 	//state << 1, 1, -1, 0, 0, 0, 0.353553, -0.353553, -0.146447, -0.853553, 
 		-0.0456 ,   0.0069,   -0.0048 ,  -0.0331  ,  0.1024 ,   0.1473;
 	//	cout << "state initial" << endl << state << endl << endl;
+
+	sonarAlt = state(2);
 }
 
 Matrix3f DCM_fn() { //There is a round off error in dcm(2,3). May cause an issue.
@@ -333,16 +350,17 @@ MatrixXf G_fn() {
 	return G;
 }
 void covariance_prediction() {
-	Matrix16f P_old(P.block<16,16>(0,0));
 	MatrixXf G(G_fn());
 	MatrixXf F(F_fn());
-	P.block<16,16>(0,0) << F*P.block<16,16>(0,0)*F.transpose() + G*Q*G.transpose();
+	P = F * P * F.transpose() + G * Q * G.transpose();
 	// Should we propagate any change to the other blocks of P?
+	/*
 	if (P.cols() > 16) {
 		MatrixXf P_temp(F*P.block(0,16, 16, P.cols() - 16));
 		P.block(0,16, 16, P.cols() - 16) = P_temp;
 		P.block(16,0, P.rows() - 16,16)  = P_temp.transpose();
 	}
+	*/
 //	cout << "P" << endl << P << endl << endl;
 
 }
@@ -359,7 +377,7 @@ MatrixXf Xip_fn() {
 }
 
 MatrixXf H_fn(int planeId) {
-	MatrixXf H(4, 20);
+	MatrixXf H(4, 16);
 	// Build H for each plane.
 
 
@@ -376,14 +394,12 @@ MatrixXf H_fn(int planeId) {
 	//	cout << "Hq" << endl << Hq << endl << endl;
 	MatrixXf block(4,3);
 	Matrix4f block2;
-	Matrix4f block3(4,4);
+	//Matrix4f block3(4,4);
 	block << MatrixXf::Zero(3,3), plane.segment(0,3).transpose();
 	block2 << Hq, Matrix<float, 1, 4>::Zero();
 
-	block3 << DCM,  Matrix<float, 3, 1>::Zero(), state.segment(0,3).transpose(), 1;
-
-	H << 	block,  	MatrixXf::Zero(4,3), 	block2,		MatrixXf::Zero(4,6),
-		block3;
+	H << 	block,  	MatrixXf::Zero(4,3), 	block2,		MatrixXf::Zero(4,6);
+	//block3;
 	//	cout << "H" << endl << H << endl << endl;
 	return H;
 }
@@ -396,7 +412,6 @@ association_struct dataAssociation(const planeStruct& planeData) {
 	Vector4f inP(planeData.plane);
 	Matrix4f inC(planeData.cov);
 	association_struct data;
-	MatrixXf P_opt(20,20);
 	MatrixXf S;
 	Vector4f diff;
 	float dist;
@@ -407,20 +422,17 @@ association_struct dataAssociation(const planeStruct& planeData) {
 		MatrixXf H(H_fn(index));
 
 		//	Build the optimised P.
-		P_opt << P.block(0,0, 16,16), P.block(0,16+4*index, 16,4),
-				P.block(16+4*index,0,4,16), P.block(16+4*index, 16+4*index, 4, 4);
-		S = H*P_opt*H.transpose() + inC;
+		S = H * P * H.transpose() + inC;
 		diff = inP - transPlane*landmarks[index];
-		dist = diff.transpose() *  S.inverse() *   diff;
-		dist = abs(dist);
+		dist = diff.transpose() *  S.inverse() * diff;
+		//cout << "dist " << endl << dist << endl << endl;
 
 		if ((first == true) || (dist < data.distance)) {
 			first = false;
 			data.distance = dist;
 			data.H_opt = H;
-			data.S  = S;
+			data.S = S;
 			data.m_error = diff;
-			data.P_opt = P_opt;
 			data.planeId = index;
 			//cout << "diff " << endl << diff << endl << endl;
 			//cout << "dist " << endl << dist << endl << endl;
@@ -443,129 +455,71 @@ void processObservation(bool regActive) {
 		//Either register plane or update kalman equations
 		if (data.distance <= distThreshold || !regActive) {	//Data was associated!
 			//cout << "updated lm: "<< data.planeId << endl<<endl;
-			if(data.planeId == 3)
-				cout << "--------------------------------------stuff will go to shit" << endl;
 			update(data);
 		} else {	// Data NOT associated so register new plane.
-			cout << "reghit-------------------------------------------------------" <<endl;
-			registration(i, data);
+			cout << "-------------------------------------------------------NOISE" <<endl;
 		}
 	}
 }
 
 void update(const association_struct& data) {
 	// Unpack data.
-	MatrixXf P_opt(data.P_opt);
 	MatrixXf H_opt(data.H_opt);
 	Matrix4f S(data.S);
 	Vector4f diff = data.m_error;
 	int index = data.planeId;
 
-	MatrixXf kalmanGain(P_opt  * H_opt.transpose() * S.inverse());
-	VectorXf change(kalmanGain * diff);
-	state += change.segment(0,16);
-	//Normalise Quaternions.
-	state.segment(6,4)/=state.segment(6,4).norm();
-	//	Update State Covariance.
-	P_opt -= kalmanGain*H_opt*P_opt;
-	//	Unpack P optimised into main P.
-	P.block(0,0, 16,16) = P_opt.block(0,0, 16,16);
-	P.block(0,16+4*index, 16,4) = P_opt.block(0,16, 16,4);
-	P.block(16+4*index, 0, 4, 16) = P_opt.block(16,0, 4,16);
-	P.block(16+4*index,16+4*index,4,4) = P_opt.block(16,16,4,4);
+	MatrixXf kalmanGain(P * H_opt.transpose() * S.inverse());
 
-	//	Update landmarks equations.
-	Vector4f delta(change.segment(16,4));
-	landmarks[index] += delta;
-    writeInovToFile(diff, S);
+	state += kalmanGain * diff;
+	//Normalise Quaternions.
+	state.segment(6,4) /= state.segment(6,4).norm();
+
+	//P -= kalmanGain * S * kalmanGain.transpose();
+	P = (Matrix<float, 16, 16>::Identity() - kalmanGain * H_opt) * P;
+	//writeErrorToFile(diff, S);
+//	cout << "change " << change << endl << endl;
+//	cout << "P: " << P << endl << endl;
 //	cout << "H_opt.transpose" << endl << H_opt.transpose() << endl << endl;
-//	cout << "P_opt" << endl << P_opt << endl << endl;
 //	cout << "S.inverse" << endl << S.inverse() << endl << endl;
 //	cout << "kalmanGain" << endl << kalmanGain << endl << endl;
 //	cout << "State Update to landmark " << index <<";" << endl << state << endl <<"Update Above to landmark: "<< index << endl <<endl;
 //	cout << "Distance" << endl << data.distance << endl << endl;
 }
-void writeInovToFile(Vector4f diff, Matrix4f S) {
-    ofstream file("errorsamples.txt"|ios::out | ios::app);
-    file << diff.transpose();
-    file << S;
-    file.close();
+
+void writeErrorToFile(const Vector4f& error, const Matrix4f& errCov) {
+	ofstream file("errorsamples.txt", ios::out|ios::app);
+	file << error.transpose() << endl;
+	file << errCov << endl;
+	file.close();
+}
+void updateSonar(){
+	float y = sonarAlt - state(2);
+	float s = P(2,2) + sonarVariance;
+	VectorXf K = P.col(2) / s;
+	state += K*y;
+	//P -= K*s*K.transpose();
+	P -= K*P.row(2);
+	newsonar = false;
 }
 
-void registration (int newPlaneIndex, const association_struct& data) {
-// Add new plane to landmark.
-	int i = newPlaneIndex;
-	// First transform to world coordinate using small g.
-	// Convert the plane eqn to world frame.
-	Vector4f plane = e_fn()*newPlanes[i].plane;
-	landmarks.push_back(plane);
-	MatrixXf E_r(E_r_fn(newPlanes[i].plane));
-	//inverse observation function and its jacobian w.r.t Plane are the same.
-	Matrix4f E_y(e_fn());
 
-	// Add new plane covariance to P. P is mostly sparse! NOT!
-	P.conservativeResize(P.rows()+ 4, P.cols()+4);
+#ifdef PLANEGUN
 
-	//P.block(0, P.cols()-4, P.rows()-4,4) = MatrixXf::Zero(P.rows()-4, 4);
-	//P.block(P.rows()-4, 0, 4, P.cols()) = MatrixXf::Zero(4, P.cols());
 
-	P.block(P.rows()-4, 0, 4, P.cols()-4) = E_r * P.block(0, 0, 16, P.cols()-4);
-	P.block(0, P.cols()-4, P.rows()-4,4) = P.block(P.rows()-4, 0, 4, P.cols()-4).transpose();
-	P.block(P.rows()-4, P.cols()-4, 4, 4) = E_r * P.block<16,16>(0, 0) * E_r.transpose() +
-	E_y * (newPlanes[i].cov * (1/100)) * E_y.transpose();
-//		P.block(P.rows()-4, 0, 4, 16) = MatrixXf::Zero(4,16);
-//		P.block(0, P.cols()-4, 16,4) = MatrixXf::Zero(16,4);
-//		P.block(P.rows()-4, P.cols()-4, 4, 4) = MatrixXf::Zero(4,4);
-
-	//cout << "Registered at time t= "<< timeSteps <<endl<<endl;
-	//cout << "at: "<< plane <<endl<<endl;
-	//cout << "E_r is: "<< E_r <<endl<<endl;
-	//cout << "E_y is: "<< E_y <<endl<<endl;
-	//cout << "EP is: "<< P.block(P.rows()-4, 0, 4, P.cols()-4) <<endl<<endl;
-	cout << "P4x4 is"<< P.block(P.rows()-4, P.cols()-4, 4, 4) <<endl<<endl;
-
-	//cout << "P is : "<< P << endl << endl;*/
+void controlCraft(){
+	//do nothing here
 }
 
-Matrix4f e_fn() {
-	Matrix4f InvTransPlane;
 
-	InvTransPlane << DCM.transpose(), MatrixXf::Zero(3,1),
-		        -state.segment(0,3).transpose() * DCM.transpose(), 1;
-	return InvTransPlane;
-}
-
-MatrixXf E_r_fn(const Vector4f& plane) { // D is h inverse
-	Vector3f Nglob(DCM.transpose() * plane.segment(0,3));
-
-	Vector4f GNqparts(Xi * plane.segment(0,3));
-
-	MatrixXf GNq(3,4);
-	GNq << 		GNqparts(1), -GNqparts(0), GNqparts(3), -GNqparts(2),
-	            GNqparts(2), -GNqparts(3), -GNqparts(0), GNqparts(1),
-	            GNqparts(3), GNqparts(2), -GNqparts(1), -GNqparts(0);
-	GNq *= 2;
-	MatrixXf E_r(4,16);
-	MatrixXf block(4,3);
-	block << Matrix3f::Zero(), -Nglob.transpose();
-	Matrix4f block2;
-	block2 << GNq, -state.segment(0,3).transpose()*GNq;
-
-	E_r << block, MatrixXf::Zero(4,3),block2, MatrixXf::Zero(4,6);
-	return E_r;
-}
-	
 bool getNewMeasurementThalamus(){
 	static Serial SP("\\\\.\\COM62");
 	int SPba = SP.BytesAvailable();
 	//int SPba = sp.Peek();
-	 if (SPba >= 10)
+	if (SPba >= 10*2)
 	{
-		//if(SPba > 100)
-			//cout << "bytebacklog is " << SPba << endl;
 		char sync[2];
 		
-		//SP.Read(sync,2,0);
 		SP.ReadData(sync,sizeof(sync));
 
 		if (sync[0] == 11)
@@ -603,36 +557,147 @@ bool getNewMeasurementThalamus(){
 	return false;
 }
 
-/*
-void getNewMeasurement() {
-	//Process Accelerometer reading.
-	Vector3f acc_t;
-	acc_t << accList[accPtr], accList[accPtr+1],accList[accPtr+2];
-	acc_t*=(9.816 /pow(2.00,14));
-	acc << acc_t(2), -acc_t(0), -acc_t(1);
-	Vector3f accBias(state.segment(13,3));
-	//	cout << "acc measured" << endl << acc << endl << endl;
-	acc-=accBias;
+#endif
 
-	// Process Gyro Reading.
-	Vector3f gyro_t;
-	gyro_t << gyroList[gyroPtr], gyroList[gyroPtr+1],gyroList[gyroPtr+2];
-	gyro_t /= 818.51113590117601252569;
-	gyro << gyro_t(2), -gyro_t(0), -gyro_t(1);
-	Vector3f gyroBias(state.segment(10,3));
-	//	cout << "gyro measured" << endl << gyro << endl << endl;
-	gyro  -= gyroBias;
+#ifdef ON_QUAD
 
-	accPtr+=3;
-	gyroPtr+=3;
-	if(accPtr >= Steps || gyroPtr >= Steps) {
-	accPtr  = 0;
-	gyroPtr = 0;
+Serial SP("\\\\.\\COM66");
+
+#pragma pack(1)
+struct bridge_sensor_packet_t
+{
+    //char sync_byte;
+	//consumed by syncer
+    int16_t imu_data[9];
+    float sonar_data;
+};
+
+
+struct host_attitude_packet_t
+{
+    char sync_byte;
+    float yaw_rate;
+    float pitch;
+    float roll;
+};
+
+bool getNewMeasurementThalamus(){
+	int SPba = SP.BytesAvailable();
+	if (SPba >= sizeof(bridge_sensor_packet_t)){
+
+		unsigned short sync;
+		int bytesread = SP.ReadData((char*)&sync, 2);
+		
+		if(sync == 0xbeef){
+
+			bridge_sensor_packet_t inbuff;
+			SP.ReadData((char*)&inbuff, sizeof(inbuff));
+
+			const float invSqrt2 = 1/(sqrt(2.0));
+			Matrix3f mountrot;
+			mountrot << invSqrt2, invSqrt2, 0,
+					   -invSqrt2, invSqrt2, 0,
+					   0,		0,			1;
+
+			Vector3f gyro_t;
+			gyro_t << inbuff.imu_data[0], inbuff.imu_data[1], inbuff.imu_data[2];
+			gyro_t /= 818.51113590117601252569;
+			gyro_t << mountrot * gyro_t;
+			gyro_t -= state.segment(10,3);
+			gyro = gyro_t;
+
+			Vector3f acc_t;
+			acc_t << inbuff.imu_data[3], inbuff.imu_data[4], inbuff.imu_data[5];
+			acc_t *= (9.816 / pow(2.00,13));;
+			acc_t << mountrot * acc_t;
+			acc_t -= state.segment(13,3);
+			acc = acc_t;
+			
+			sonarAlt = inbuff.sonar_data;
+			newsonar = true;
+
+			return true;
+		}
 	}
-	//	cout << "acc" << endl << acc << endl << endl;
-	//	cout << "gyro" << endl << gyro << endl << endl;
+
+	return false;
 }
-*/
+
+void controlCraft(){
+
+	//Pitch Roll section
+
+	const float P = 0.0072;
+	const float I = 6.26e-5;
+	const float D = 0.2;
+
+	Vector2f horizSetpoint(-1,3);
+	Vector2f currPos(state.segment<2>(0));
+	Vector2f posErr = horizSetpoint - currPos;
+
+	Vector2f setpointVel(0,0);
+	Vector2f currVel(state.segment<2>(3));
+	Vector2f velErr = setpointVel - currVel;
+
+	//rotate the error into the crafts frame, then project only the x and y axies onto the horizontal plane
+	Matrix3f DCM = DCM_fn();
+	float normFactor = 1/(DCM.row(0).segment<2>(0).norm());
+	float DCM11N = DCM(0,0)*normFactor;
+	float DCM12N = DCM(0,1)*normFactor;
+	Matrix2f DCM2D;
+	DCM2D << DCM11N, DCM12N,
+			-DCM12N, DCM11N;
+	//matrix needs renormalising. Figure out if normalising rows or columns is required
+	Vector2f posErrBody = DCM2D * posErr;
+	Vector2f velErrBody = DCM2D * velErr;
+
+	static Vector2f bias(0,0);
+	bias += I * posErrBody * Sampling_Time;
+
+	Vector2f attitudeXY = P*posErrBody + bias + D*velErrBody;
+
+
+	//yaw section
+
+	const float Pyaw = 3.5;
+	const float Iyaw = 0.2;
+
+	float setpointYawAngle = atan2(-currPos(1), -currPos(0));
+	float currYawAngle = atan2(DCM12N,DCM11N);
+	float YawAngleErr = setpointYawAngle - currYawAngle;
+
+	//angle wrap without fmod and division because revolutions will be small
+	while (YawAngleErr >= PI) YawAngleErr -= TWO_PI;
+	while (YawAngleErr < -PI) YawAngleErr += TWO_PI;
+
+	static float yawbias = 0;
+	yawbias += Iyaw * YawAngleErr * Sampling_Time;
+
+	float yawrate = Pyaw * YawAngleErr + yawbias;
+
+
+	//output section
+	
+	host_attitude_packet_t outpacket;
+	outpacket.sync_byte = 0xbe;
+	outpacket.roll = attitudeXY(1);
+	outpacket.pitch = -attitudeXY(0);
+	outpacket.yaw_rate = yawrate;
+
+	/*
+	static int seq = 1;
+	if(!--seq){
+		seq = 32;
+		cout << "Setpointyaw: " << setpointYawAngle << "  currYawAngle: " << currYawAngle << endl << endl;
+		cout << "---------------------------------------------------------Control: " << outpacket.roll  << "  " << outpacket.pitch << "  " << outpacket.yaw_rate << endl << endl;
+	}
+	*/
+
+	SP.WriteData((char*)&outpacket, sizeof(outpacket));
+
+}
+
+#endif
 
 
 void getNewObservationLive(QCVision& vision){
@@ -664,56 +729,6 @@ void getNewObservationLive(QCVision& vision){
 		temp.cov = hypermute*(cov_t*XtionCovarFudge)* hypermute.transpose();
 		temp.plane = hypermute*planeCloud_t;
 		newPlanes.push_back(temp);
-        writeXtionDataToFile(temp.plane, temp.cov);
 	}
 }
-//For Tests.
-void writeXtionDataToFile(Vector4f plane, Matrix4f cov) {
-    ofstream file("planesamples.txt"|ios::out | ios::app);
-    file << plane.transpose();
-    file << cov;
-    file.close();
-}
-
-/*
-void getNewObservation() {
-	newPlanes.clear();
-	Matrix4f hypermute;
-		hypermute << 	0, 0, 1,0,
-						1, 0,0,0,
-						0,1,0,0,
-						0,0,0,1;
-	int len = planeList[planePtr++];
-	for (int i = 0; i<len; i++) {
-		Vector4f plane_t, pl2;
-		Matrix4f cov_t, cov;
-		plane_t << planeList[planePtr], planeList[planePtr+1], planeList[planePtr+2],planeList[planePtr+3];
-		pl2 << hypermute*plane_t;
-
-		cov_t << planeList[planePtr+4], planeList[planePtr+5], planeList[planePtr+6],planeList[planePtr+7],
-				 planeList[planePtr+8], planeList[planePtr+9], planeList[planePtr+10],planeList[planePtr+11],
-				 planeList[planePtr+12], planeList[planePtr+13], planeList[planePtr+14],planeList[planePtr+15],
-				 planeList[planePtr+16], planeList[planePtr+17], planeList[planePtr+18],planeList[planePtr+19];
-		cov << hypermute*cov_t* hypermute.transpose();
-		cov*= XtionCovarFudge;
-		planeStruct temp = {
-				 pl2,
-				 cov
-		};
-
-		newPlanes.push_back(temp);
-		planePtr+=20;
-	}
-	planeSteps++;
-	if (planeSteps >= Steps) {
-		planePtr = 0;
-		planeSteps = 0;
-	}
-	//newPlanes
-	for (int i = 0; i < (int)newPlanes.size(); i++) {
-//		cout << "newPlane " << i<< endl << newPlanes[i].plane << endl << endl;
-//		cout << "new cov" << i << endl << newPlanes[i].cov << endl << endl;
-	}
-}
-*/
 
