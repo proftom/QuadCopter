@@ -9,7 +9,7 @@
 #include <boost/thread/thread.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include "Vision.h"
-//#include "SerialClass.h"
+#include "SerialClass.h"
 
 static const float     PI= 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348;
 static const float TWO_PI= 6.2831853071795864769252867665590057683943387987502116419498891846156328125724179972560696;
@@ -516,7 +516,7 @@ void controlCraft(){
 
 bool getNewMeasurementThalamus(){
 
-	static Serial SP("\\\\.\\COM62");
+	static Serial SP("\\\\.\\COM22");
 	int SPba = SP.BytesAvailable();
 	//int SPba = sp.Peek();
 	if (SPba >= 10*2)
@@ -530,7 +530,7 @@ bool getNewMeasurementThalamus(){
 		if (sync[0] == 11)
 		{
 			short GyroRaw[3];
-			//SP.ReadData((char*)GyroRaw,sizeof(GyroRaw));
+			SP.ReadData((char*)GyroRaw,sizeof(GyroRaw));
 
 			Vector3f gyro_t;
 			gyro_t << GyroRaw[0], GyroRaw[1], GyroRaw[2];
@@ -542,7 +542,7 @@ bool getNewMeasurementThalamus(){
 
 
 			short AccRaw[3];
-			//SP.ReadData((char*)AccRaw,sizeof(AccRaw));
+			SP.ReadData((char*)AccRaw,sizeof(AccRaw));
 
 			Vector3f acc_t;
 			acc_t << AccRaw[0], AccRaw[1], AccRaw[2];
@@ -553,7 +553,7 @@ bool getNewMeasurementThalamus(){
 			acc-=accBias;
 
 			short MagRaw[3];
-			//SP.ReadData((char*)MagRaw,sizeof(MagRaw));
+			SP.ReadData((char*)MagRaw,sizeof(MagRaw));
 
 			return true;
 		}
@@ -566,7 +566,7 @@ bool getNewMeasurementThalamus(){
 
 #ifdef ON_QUAD
 
-Serial SP("\\\\.\\COM66");
+Serial SP("\\\\.\\COM62");
 
 #pragma pack(1)
 struct bridge_sensor_packet_t

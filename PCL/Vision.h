@@ -82,12 +82,12 @@ class QCVision
 
 	Matrix3f* DCM; 
 
-	Matrix3f* DCM;
     // Data
     CloudConstPtr cloud_;						//Raw cloud
 	pcl::PointCloud<pcl::Normal>::Ptr normals_; //Normal cloud
 	pcl::IntegralImageNormalEstimation<PointType, pcl::Normal> ne_; //Normal estimation object
 	vector<Plane> planeCloud_;						//Found planes
+	vector<Plane> planes_;	
 	bool bNewSetOfPlanes;						//New planes computed
 	//PCL_Connector con;						//
 	
@@ -102,6 +102,7 @@ class QCVision
       new_cloud_ = false;
       //viewer.registerKeyboardCallback(&QCVision::keyboard_callback, *this);
 	  //Plane cloud
+	  planes_.assign(19200, Plane(0,0,0,0));
 	  planeCloud_.assign(19200, Plane(0,0,0,0));
 
     }
