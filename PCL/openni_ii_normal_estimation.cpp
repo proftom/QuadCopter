@@ -67,9 +67,6 @@ int main (int argc, char ** argv)
 		kalman(vision);	
 		thr->join();
 		//dthr.join();
-	;
-
-	
 
 
 		//con.readPlaneFromBuffer();
