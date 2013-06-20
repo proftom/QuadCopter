@@ -196,3 +196,4 @@ pip-log.txt
 *.toc
 *.vrb
 report/Report.pdf
+report/Report-blx.bib
