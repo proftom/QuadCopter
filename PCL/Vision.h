@@ -26,7 +26,8 @@ using namespace std;
 using namespace Eigen;
 typedef Matrix< float , 16 , 16> Matrix16f;
 typedef Matrix< float , 16 , 1> Vector16f;
-
+extern int distThreshold;
+extern int XtionCovarFudge;
 #include <queue>
 
 #define RESOLUTION_MODE pcl::OpenNIGrabber::OpenNI_QQVGA_30Hz
@@ -325,6 +326,13 @@ class QCVision
 			break;
 		case '8':
 			Perseventflag &= ~0x1;
+			break;
+		case '9':
+			ifstream myfile;
+			myfile.open("vars.txt");
+			myfile >> XtionCovarFudge;
+			myfile >> distThreshold;
+			myfile.close();
 			break;
       }
     }
