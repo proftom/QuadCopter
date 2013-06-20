@@ -90,7 +90,7 @@ columns=flexible
 
 
 \title{Third Year Group Project \\ State Estimation for Indoor Environments}
-\author{Oskar Weigl, Ryan Savatski, Thomas Morrison, Chinemelu Ezeh, Joshua Elsdon}
+\author{Oskar Weigl, Ryan Savitski, Thomas Morrison, Chinemelu Ezeh, Joshua Elsdon}
 \begin{document}
 \maketitle
 \center{\textbf{\large{\emph{"...a profound trust in the advances of science."}	}}}
@@ -123,9 +123,9 @@ A Lovely Abstract full of insight and long words that makes it apparent we did l
 \subsection{Introduction}
 In the present world of increasing machine usage and autonomy, it is important for robots to be able to correctly estimate their position, velocity and in general their current state at any given time in order to perform tasks with much better accuracy. For our project we focused on determining the indoor state also known as the indoor localisation problem of quadcopters. Quadcopters have become a famous hobbyist platform but more importantly, they can be used in autonomous rescue operations. Our project is in essence a first step towards implementing indoor simultaneous localisation and mapping (SLAM). With this in mind, we served as consultants to a startup company called MARVRX which specialises in developing unmanned aerial vehicles(UAVs), supporting electronics and software. Our mission is to enhance MAVRX's interest and research by developing an indoor state estimator that can be used for autonomous quadcopter. They inturn provide us with necessary tools including an R10 quadcopter, a wireless remote controller, and basic code for controlling the UAV.
 \subsection{Our Solution}
-While there has been lots of work done in the area of localisation, we propose a unique solution targetting indoor environments specifically that consisting of using on-board processing and RGB-D cameras as our primary sensor combined with accelerometer and gyroscope sensors. Our approach levarages the powerful yet cheap capabilities of the Xtion Pro camera. A typical solution to localisation involves modelling the motion of the agent as it moves in the environment, extracting features from the environment using sensors and using this information to approximate its location within the environment. We decided to track wall planes as our feature extracting plane equations from the Xtion Pro using DBScan algorithm because of its resistance to noise and bounded-time operation. For the actual state estimation, we employ the kalman filter algorithm as it produces optimal solutions in the presence of noise.  
+While there has been lots of work done in the area of localisation, we propose a unique solution targetting indoor environments specifically that consisting of using on-board processing and RGB-D cameras as our primary sensor combined with accelerometer and gyroscope sensors. Our approach leverages the powerful yet cheap capabilities of the Xtion Pro camera. A typical solution to localisation involves modelling the motion of the agent as it moves in the environment, extracting features from the environment using sensors and using this information to approximate its location within the environment. We decided to track wall planes as our feature extracting plane equations from the Xtion Pro using DBScan algorithm because of its resistance to noise and bounded-time operation. For the actual state estimation, we employ the kalman filter algorithm as it produces optimal solutions in the presence of noise.  
 \subsection{Results}
-Using Dscan algorithm, we were able to extract planes as features. Observing three orthogonal planes provide full observability in the x, y and z axis.Using the extended kalman filter, we were able to show that our system can estimate state in an indoor environment. We had to tune the filter providing empirical values for uncertainities in the Xtion's observation obtained through numerous testing. We confirmed the consistency of our filter by checking for bias in its measurement error and ensuring its boundedness is described by its covariance. Our filter performed well, giving us our accurate position verified using a measuring tape. 
+Using DBscan algorithm, we were able to extract planes as features. Observing three orthogonal planes provide full observability in the x, y and z axis.Using the extended kalman filter, we were able to show that our system can estimate state in an indoor environment. We had to tune the filter providing empirical values for uncertainities in the Xtion's observation obtained through numerous testing. We confirmed the consistency of our filter by checking for bias in its measurement error and ensuring its boundedness is described by its covariance. Our filter performed well, giving us our accurate position verified using a measuring tape. 
 
 \subsection{Conclusion}
 Localisation and state estimation is a first step towards full autonomous simultaneous localisation and mapping which combined with the high maneuverability of the quadcopter opens up new areas in robotics. We have thus pushed forward a bit the goal of our client company, UAir in developing unmanned aerial vehicles. Our project has shown and demonstrated the possibilities of indoor state estimation without GPS data which has commercial benefits in the aerial photography market as well as applications in search and rescue operations. 
@@ -244,9 +244,32 @@ The below image shows the basic concept of the EKF:
 
 If more than one plane is observed, the update step is run for each plane re-observed. If a new plane is observed, it is added as a new landmark into the kalman filter and its covariance is added onto the covariance matrix.
 
-\section{Preliminary Procedures}
+\section{Preliminaries}
 
-\subsection{Arndale Onboard System Configuration}
+\subsection{System platform} % (fold)
+\label{sub:system_platform}
+
+((The project aims to implement the estimation algorithm on on-board processing.))
+
+<<In choosing a platform to implement the algorithm, consideration needs to be given to the target processor's ISA and the operating system [[(or lack of thereof)]].>>
+
+In conventional processor applications, <main consideration> is given to optimising the computational performance against cost and power usage. For an embedded system that is mounted on a quadcopter however, power usage of the chip is not a concern as it is not significant compared to the usage of the MAV itself. Therefore, for implementing this project we desire the best processing power per pound for the target workload. In this metric, no distinct advantage can be given to either of the two main standard processor architectures (x86 and ARM, including their derivatives) and the evaluation needs to be done on a chip-by-chip basis. 
+
+In addition to the above, the choise of ISA is influenced by the support of the architecture by operating system support and the ability to interface with other system components that could be incorporated into the system (e.g. coprocessors). The target operating system for this project is a any lightweight distribution based on the linux kernel. This is due to the linux kernel being free, open source and being easily configurable, with the ability to compile in only the needed functionality and the ability to put options in loadable kernel modules. This results in an embedded operating system with minimal memory and processing footprint, as well as small disk usage which can be limited in embedded systems. For the specific libraries and frameworks used in implementing the estimation software (PCL and OpenNI), x86-Linux variants were found to have more mature support than ARM-Linux at the time of writing.
+
+For low volume production, it is not always worth investing the engineering time in designing a custom system, sourcing the components and manufacturing. Instead, small form factor boards can be readily purchased at acceptable prices. [[include odroid u2 vs the atom board here as examples? Saying that both can handle the algorithm with less than N planes at sufficient framerates to remain convergent and stable?]]
+
+Additionally, we evaluated the possibility of using consumer smartphones as the embedded processing platform for the estimation algorithm. Android mobile operating system is built on top of the linux kernel and is also open source, making it the OS of choice for this comparison. The reasons for considering consumer smartphones are as follows:
+
+- the smartphone market is extremely competitive, driving the prices down while improving the processing power to levels compatible with embedded systems usually seen in robotics applications.
+- small form factor, including not needing big heatsinks.
+- smartphones of all price ranges come with additional hardware and sensors that can be useful for the quadcopter platform. There are 9 DoF sensors in any device and USB functionality for interfacing to the RGB-D camera. Additonally, the estimation can be improved by using the phone's camera in a downwards looking configuration as an optical flow sensor. GPS can be used in semi-indoor environments and urban canyon situations. WiFi can be used to augment the system with wifi-slam [[http://www.tuaw.com/2013/03/23/wsj-apple-acquires-wifislam-indoor-location-tech-company/]] which gives additional localisation information for the system in indoor environments. Bluetooth can be used for [[???, short range wireless communication?]]. Furthermore, GPUs found in smartphones are starting to be OpenCL compatible (both Imagination Technologies' powerVR series and newer ARM Mali cores), which can provide easily accessible acceleration for certain parts of the algorithm.
+
+However, in practice it was found that porting third party libraries used in the project and drivers for the RGB-D camera sensor, while possible, often needs significant engineering time spent. Additionally, the android platform enforces restricted APIs to underlying hardware resources, so it is not always possible to get the direct hardware control (e.g. for IMU) usually found in embedded linux systems.
+
+[[price comparison of android phones with decent cpu vs embedded?]]
+
+[[throw in fpga as additional possibilities, zynq7? :P, fixed point scaling blablabla]]
 
 \subsection{Sensor Calibration} % (fold)
 After inspecting the output of the Xtion Pro from Asus it became apparent that the accuracy of the data was poor as the sensor uses a logarithmic scale and not a linear one. At short ranges things appeared normal, and planes were indeed flat. At distance more than 2m planes quickly became warped (see Figure~\ref{fig:uncal5m}). This issue will corrupt the accuracy of planes that we extract from the cloud data, rendering the extra sensor of little use. 
@@ -1245,8 +1268,9 @@ This makes an enormous difference in the scalability of the kalman filter approa
 
 \section{Testing and Results} % (fold)
 \label{sub:testing_kalman}
-To properly running the kalman filter, we had to tune the measurement uncertainty parameter since the order of covariance obtained by using the RANSAC algorithm was too low. We multiplied the uncertainity of the Xtion by  a factor of 100000 which seems too big but through testing, we found this to be the ideal factor. A larger factor would result in the kalman relying too much on the inertial sensors  while a smaller one means we trust the xtion's output more. Since both sensors are noisy, an optimal value was selected.
-We then perform some analysis on our system to check that our filter works correctly. Firstly we checked for consistency in the kalman filter by verifying that errors in the observation measurements are bounded to $\pm\sqrt{2\sigma}$. We found this to be the case that at least 95\% of our errors are within this bound. The second test was to verify that there was no bias in our observation errors as the filter evolves. To do this, we performed the autocorrelation of the noise and found it to be bias free. [Graph given below].
+To properly running the kalman filter, we had to tune the observation measurement covariance parameter since the range of values obtained by using the RANSAC algorithm was too low. A larger value would result in the kalman relying too much on the inertial sensors while a smaller one means we trust the xtion's output more. The Xtion camera has considerable random noise due to the random initial point for the DBscan algorithm. Thus trusting the camera would result in high frequency noise or flunctuations in state estimate. On the otherhand, position estimate from the inertial sensors behave like low pass filtered values as it is obtained by double integrating the acceleration. Thus increasing the Xtion's uncertainty results in a lower frequency in estimate. In our tests, we focus our analysis on position alone because since position depends on speed and attitude change, a good position estimate is sufficient to validate our algorithm.
+
+We then perform some analysis on our system to check that our filter works correctly. Firstly we checked for consistency in the kalman filter by verifying that errors in the observation measurements are bounded to $\pm\sqrt{2\sigma}$. We found this to be the case that at least 95\% of our errors are within this bound. [graph]. The second test was to verify that there was no bias in our observation errors as the filter evolves. To do this, we performed the autocorrelation of the noise and found it to be bias free. [Graph given below].
 
 
  
@@ -1295,6 +1319,9 @@ sqrt covariance
 	\right]
 \end{align}
 \clearpage
+
+
+
 \nocite{*}
 
 \printbibliography
