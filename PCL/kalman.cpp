@@ -15,7 +15,7 @@
 #include <boost/thread/thread.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include "Vision.h"
-#include "SerialClass.h"
+//#include "SerialClass.h"
 
 using namespace std;
 using namespace Eigen;
@@ -441,20 +441,21 @@ void update() {
 }
 
 bool getNewMeasurementThalamus(){
-	static Serial SP("\\\\.\\COM22"); 
-	int SPba = SP.BytesAvailable();
+	//static Serial SP("\\\\.\\COM22"); 
+	//int SPba = SP.BytesAvailable();
+int SPba = 2;
 	if (SPba >= 10)
 	{
 		//if(SPba > 100)
 			//cout << "bytebacklog is " << SPba << endl;
 
 		char sync[2];
-		SP.ReadData(sync,sizeof(sync));
+		//SP.ReadData(sync,sizeof(sync));
 
 		if (sync[0] == 11)
 		{
 			short GyroRaw[3];
-			SP.ReadData((char*)GyroRaw,sizeof(GyroRaw));
+			//SP.ReadData((char*)GyroRaw,sizeof(GyroRaw));
 
 			Vector3f gyro_t;
 			gyro_t << GyroRaw[0], GyroRaw[1], GyroRaw[2];
@@ -466,7 +467,7 @@ bool getNewMeasurementThalamus(){
 
 
 			short AccRaw[3];
-			SP.ReadData((char*)AccRaw,sizeof(AccRaw));
+			//SP.ReadData((char*)AccRaw,sizeof(AccRaw));
 
 			Vector3f acc_t;
 			acc_t << AccRaw[0], AccRaw[1], AccRaw[2];
@@ -477,7 +478,7 @@ bool getNewMeasurementThalamus(){
 			acc-=accBias;
 
 			short MagRaw[3];
-			SP.ReadData((char*)MagRaw,sizeof(MagRaw));
+			//SP.ReadData((char*)MagRaw,sizeof(MagRaw));
 
 			return true;
 		}
@@ -525,7 +526,7 @@ void getNewObservationLive(QCVision& vision){
 	for (int i = 0; i < pv.size(); ++i)
 	{
 		Plane& currplane = pv[i];
-		vector<vector<float>>& inC = currplane.covariance;
+		vector<vector<float> >& inC = currplane.covariance;
 		Vector4f planeCloud_t;
 		Matrix4f cov_t;
 
