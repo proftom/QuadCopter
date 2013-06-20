@@ -125,7 +125,7 @@ In the present world of increasing machine usage and autonomy, it is important f
 \subsection{Our Solution}
 While there has been lots of work done in the area of localisation, we propose a unique solution targetting indoor environments specifically that consisting of using on-board processing and RGB-D cameras as our primary sensor combined with accelerometer and gyroscope sensors. Our approach levarages the powerful yet cheap capabilities of the Xtion Pro camera. A typical solution to localisation involves modelling the motion of the agent as it moves in the environment, extracting features from the environment using sensors and using this information to approximate its location within the environment. We decided to track wall planes as our feature extracting plane equations from the Xtion Pro using DBScan algorithm because of its resistance to noise and bounded-time operation. For the actual state estimation, we employ the kalman filter algorithm as it produces optimal solutions in the presence of noise.  
 \subsection{Results}
-Using Dscan algorithm, we were able to extract planes as features. Observing three orthogonal planes provide full observability in the x, y and z axis.Using the extended kalman filter, we were able to show that our system can estimate state in an indoor environment. We had to tune the filter providing empirical values for uncertainities in the Xtion's observation obtained through numerous testing. We confirmed the consistency of our filter by checking for bias in its measurement error and ensuring its boundedness is described by its covariance. Our filter performed well, giving us our accurate position verified using a measuring tape. 
+Using the flood fill algorithm, we were able to extract planes as features. Observing three orthogonal planes provide full observability in the x, y and z axis.Using the extended kalman filter, we were able to show that our system can estimate state in an indoor environment. We had to tune the filter providing empirical values for uncertainities in the Xtion's observation obtained through numerous testing. We confirmed the consistency of our filter by checking for bias in its measurement error and ensuring its boundedness is described by its covariance. Our filter performed well, giving us our accurate position verified using a measuring tape. 
 
 \subsection{Conclusion}
 Localisation and state estimation is a first step towards full autonomous simultaneous localisation and mapping which combined with the high maneuverability of the quadcopter opens up new areas in robotics. We have thus pushed forward a bit the goal of our client company, UAir in developing unmanned aerial vehicles. Our project has shown and demonstrated the possibilities of indoor state estimation without GPS data which has commercial benefits in the aerial photography market as well as applications in search and rescue operations. 
@@ -418,16 +418,16 @@ To combat against the possibility of slow run-time operation, we decided to use 
 	\KwData{$N \times N$ matrix: $D$}
 	\KwResult{List of sets of connected points} 
 	\bigskip
-	FloodFill($P$, MinPts): \\
-	Push P $\rightarrow$ Q \\
+	FloodFill($P_{seed}$, MinPts): \\
+	Push P_{seed} $\rightarrow$ Q \\
 	\While {Q is not empty}
 	{
-	 	Pop $Q \rightarrow P'$ \\
-		\If{$P'$ properties within threshold ($\alpha$) of $P$}{
-		Add $P'$ to set $S$ \\
+	 	Pop $Q \rightarrow P$ \\
+		\If{$P$ plane components within $\epsilon$ tolerence of $P_{seed}$}{
+		Add $P$ to set $S$ \\
 
-		\If{$P'$ not in $Q$} {
-			Push $P' \rightarrow Q$ \\
+		\If{$P$ not in $Q$} {
+			Push $P \rightarrow Q$ \\
 			\ForEach{$H$ as direction (West, East, North, South)}{
 
 				\If{$H$ not in $Q$}{
@@ -447,11 +447,22 @@ To combat against the possibility of slow run-time operation, we decided to use 
 
 This design leads to increased throughput as the flood fill deals with the raw data from CCD space, converting 19200 points to only a few planes. The DBScan, having complexity towards a greedy $O(n^{2})$, only works on the plane set generate by the flood fill algorithm, meaning the near-quadratic complexity does not dominate run time as there are much less planes than there are points. 
 
-The flood fill algorithm is analogous to a paint bucket function in a graphical editing package. We randomly take a seed point in pixel space (that is we randomly select a point from the depth camera output) and take the normal and distance (plane space), and then proceed to fill out from this point in all directions until the planes parameters $(N_A, N_B, N_C, D)$ differs by value epsilon from the original seed point. We continue to attempt clustering planes until either we flood a certain threshold of the image (sigma, i.e. 90\%) or have attempted to flood fill from a random seed point after a specified number of tries (gamma, i.e. 50). The flood fill algorithm works iteratively using only a simple queue structure and list keep track if points have been explored yet in the context of the current fill or already added to a previous fill (plane) respectively, resulting in a constant complexity of O(n). 
+The flood fill algorithm is analogous to a paint bucket function in a graphical editing package. We randomly take a seed point in pixel space (that is we randomly select a point from the depth camera output) and take the normal and distance (plane space), and then proceed to fill out from this point in all directions until the planes parameters $(N_A, N_B, N_C, D)$ differ by value epsilon from the original seed point. We continue to attempt clustering planes until either we flood a certain threshold of the image (sigma, i.e. 90\%) or have attempted to flood fill from a random seed point after a specified number of tries (gamma, i.e. 50). The flood fill algorithm works iteratively using only a simple queue structure and list keep track if points have been explored yet in the context of the current fill or already added to a previous fill (plane) respectively, resulting in a constant complexity of O(n). 
 
-Complications arose when clustering in the distance space. Consider the scenario where a plane exists almost perpendicular in the field of view. 
+Complications arose when performing the flooding. As explained before, the projected grid from the Xtion opens in a conic fashion. This means that objects closer the Xtion will be showered in points, while those further away will contain far fewer points. This drop off happens at a quadratic rate, meaning the error in distance also occurs at a quadratic rate. To deal with this we modifidy the condition on the D parameter for a point to be considered within the region. As depth increases we open the parameter quadratically by projecting of the z component of the plane normal to the point z component squared. We do this for both the seed point and the point being queried. 
 
-Because of this, we introduced two different epsilon values. The first epsilon deals with the tolerance between normal components of the plane equations, while the second epsilon value relates the tolerance between the distance component (d) of the plane equations. 
+Therefore the conditions (which all must be satisfied) for accepting a point into the current fill region is:
+\begin{align}
+|P_{seed|A} - P_{A}| &< \epsilon
+\\|P_{seed|B} - P_{B}| &< \epsilon
+\\|P_{seed|C} - P_{C}| &< \epsilon
+\\|\abs{P_{seed|D} - P_{D}}| &< (|\abs{N_{seed|z} \times P^{2}_{seed|z}}| + |\abs{N_{z} \times P^{2}_{z}}|) \times \epsilon_{depth}
+\end{align}
+where as before the last equation was the same as the previous three, except changed to the D parameter.
+Note that P is the point which we are testing to investigate whether it should exist in the flood region, while $P_{seed}$ is the seed point at which was first chosen to characterise the flood fill region. 
+
+the 
+scenario where a plane exists almost perpendicular in the field of view.
 
 Unforeseen consequence arose from the flood fill algorithm. When the flood fill is selecting a random seed point, it can select a point near a vertex. The problem is that in order to get realistic normal components, the integral image normal estimation is an average of normals in a kernel space of 40x40 normals. This means that high frequency information is lost, as shown in Figures~\ref{fig:spurious_plane_normals} and \ref{fig:spurious_plane_normals_2}. Hence, when the flood fill algorithm is filling out, spurious long thin planes will be generated along edges, giving rise to a false positive. Initial attempts to resolve this problem by adjusting the flood fill algorithm parameters such as the minimum points to consider a plane failed.
 
