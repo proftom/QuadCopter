@@ -523,7 +523,7 @@ However, this method was never implemented as after thinking ahead towards plane
 	}
 
 	\caption{Cluster using DBSCan in normal space}
-	\label{fig:spurious_plane_normals}
+	\label{fig:spurious_plane_normal}
 \end{figure}
 
 
@@ -1262,12 +1262,14 @@ This makes an enormous difference in the scalability of the kalman filter approa
 
 \section{Testing and Results} % (fold)
 \label{sub:testing_kalman}
+In our test setup, we based our coordinate system in a vertex of the room as origin defining the x,y and z coordinates to be along the three wall edges connected to the origin vertex. Out test system consist of Thalamus chip containing the inertial sensors and Xtion Pro taped together. To ensure a functional kalman filter, full observability of system in the x,y and z axis is needed. Thus we decided to observe three orthogonal planes formed by the wall that meet at the origin setting our initial state in the filter to be -2,2,2 in the x,y,z space. In practice however, the initial state will be close to but not exactly the same as in the filter.
+
 To properly running the kalman filter, we had to tune the observation measurement covariance parameter since the range of values obtained by using the RANSAC algorithm was too low. A larger value would result in the kalman relying too much on the inertial sensors while a smaller one means we trust the xtion's output more. The Xtion camera has considerable random noise due to the random initial point for the DBscan algorithm. Thus trusting the camera would result in high frequency noise or flunctuations in state estimate. On the otherhand, position estimate from the inertial sensors behave like low pass filtered values as it is obtained by double integrating the acceleration. Thus increasing the Xtion's uncertainty results in a lower frequency in estimate. We choose an appropriate value such that our filter behaves within an optimal region based on three test as discussed in \cite{KalmanTuning} . We focus our analysis on position estimate alone because since it depends on speed and attitude change, a good position estimate is sufficient to validate our algorithm implying the other estimates are correct. 
 
 Firstly we checked for consistency in the kalman filter by verifying that most(ideally > 95\%) of error magnitude in the observation measurements are bounded to $\pm\sqrt{2\sigma}$. [Show results].After increasing the Xtion's uncertainty by a factor of 100, the results suggest that 100 is indeed too small. A factor of 10000 gives better results.
 
 \begin{table}[ht]
-\caption{Nonlinear Model Results} % title of Table
+\caption{Innovation Magnitude Bound Test($2500$ samples used)} % title of Table
 \centering % used for centering table
 \begin{tabular}{c c c c} % centered columns (4 columns)
 \hline\hline %inserts double horizontal lines
@@ -1285,27 +1287,49 @@ Variable & Case\#1 (factor = 100) & Case\#2 (factor = 10000) & Case\#1 (factor =
 
  In the second test, we check for unbiasness by computing the normalised innovation squared
 
-\begin{equation}\label{first}
-%q = z_(k+1)^T \times S_(k+1)^-1(i) \time z_(k+1) 
+\begin{equation}
+	q_{k} = z_{k}^{T} S_(k)^{-1} z_{k}
 \end{equation}
 
 for a sequence of i trials. If the filter's assumptions are met then q are each $\chi^{2}$ in 4 degrees of freedom. To test for unbiasness, we can use the mean of the sequence,
-\begin{equation}\label{first}
-%q = z_(k+1)^T \times S_(k+1)^-1(i) \time z_(k+1) 
+\begin{equation}
+	\bar{q} = \frac{1}{N}\sum_{k=1}^N {q_k}
 \end{equation}
-as a test statistic such that an ideal mean lies within a confidence interval [$r_{1}, r_{2}$] defined by our hypothesis $H_0$ that Nq is  $\chi_{4N}^{2}$ distributed with probability $1-\alpha$. Therepresenting our choosen uncertainty. First we need to find the interval such that
-\begin{equation}\label{first}
-%q = z_(k+1)^T \times S_(k+1)^-1(i) \time z_(k+1) 
+as a test statistic such that an ideal mean lies within a confidence interval [$r_{1}, r_{2}$] defined by our hypothesis $H_0$ that $\bar{q}$ is  $\chi_{4}^{2}$ distributed with probability $1-\alpha$. First we need to find the interval such that
+\begin{equation}
+P(N\bar{q}\in [r_{1}, r_{2}] | H_{0}) = 1 - \alpha 
 \end{equation}
 We choose $\alpha$ = 0.005 (i.e. defining a two sided 95\% confidence region). We get that
-r1,r2 = ...
+[$r_{1}, r_{2}$] = [$\chi_{4}(0.025), \chi_{4}(0.975)$] = 0.4844, 11.1433. For a factor of 10000 , we obtain $\bar{q}$ = 3.6561 which is within the confidence region.
+In the third test, we verify that error is white and to do this, we performed the autocorrelation of the noise using our obtained Xtion factor of 10000. Ideally for whiteness, autocorrelation peaks at a lag of 0 and is essentially zero for all others. For large enough N, we can assume that r($\tau$) is normally distributed with mean 0 and variance $\frac{1}{N}$. Practically, we can compute the 2$\sigma$ gate and check that aleast 95\% of values fall within this confidence region. In our test, we obtained that error in Nx,Ny and Nz produces 98.40$\%$, 97.81\%, 98.35\%, respectively satisfy our condition. Error in distance however gives 93.14\%. 
+\begin{figure}[H]
+	\centering     %%% not \center
+	\subfloat[Nx error]{
+		\label{fig:errorNx}
+		\includegraphics[width=0.45\textwidth]{noiseNx.PNG}
+	}
+	\;
+	\subfloat[Ny error]{
+		\label{fig:errorNy}
+		\includegraphics[width=0.45\textwidth]{noiseNy.PNG}
+	}
+	\;
+	\subfloat[Nz error]{
+		\label{fig:errorNz}
+		\includegraphics[width=0.45\textwidth]{noiseNz.PNG}
+	}
+	\;
+	\subfloat[D error]{
+		\label{fig:errorD}
+		\includegraphics[width=0.45\textwidth]{noised.PNG}
+	}
+	\;
+	\caption{Error in innovation showing whiteness expect for the distance variable}
+	\label{fig:errorfigures}
+\end{figure}
 
-Thus we selected a factor greaer than 10000 that is in the region r1, r2.
-In the third test, we verify that there was no bias in our observation errors as the filter evolves. To do this, we performed the autocorrelation of the noise using our obtained Xtion facctor and found it to be bias free. [Graph given below].
- 
-In our test setup, we based our coordinate system in a vertex of the room as origin defining the x,y and z coordinates to be along the three wall edges connected to the origin vertex. Out test system consist of Thalamus chip containing the inertial sensors and Xtion Pro taped together. To ensure a functional kalman filter, full observability of system in the x,y and z axis is needed. Thus we decided to observe three orthogonal planes formed by the wall that meet at the origin setting our initial state in the filter to be -2,2,2 in the x,y,z space. In practice however, the initial state will be close to but not exactly the same as in the filter.
 
-In order to verify that our system works, we ran our system from our default initial position leaving it stationary. Below is the trajectory results. It shows a point cloud indicating that our kalman filter does indeed converge to some estimate of our real position. This is the result is due to the full observability provided by the three orthogonal planes lying in the xy, yz, zx spaces.
+In order to verify that our system works with the kalman tuning, we ran our system from our default initial position leaving it stationary. Below is the trajectory results. It shows a point cloud indicating that our kalman filter does indeed converge to some estimate of our real position. This is the result is due to the full observability provided by the three orthogonal planes lying in the xy, yz, zx spaces.
 
 \begin{figure}[H]
 	\begin{center}
@@ -1321,7 +1345,7 @@ In the second test, we moved the setup by hand in a pseudo straight line of leng
 		\includegraphics[width = \textwidth]{movingTraj.png}
 	\end{center}
 	\caption{Cloud point showing bounded kalman filter moving trajectory estimation over a distance of 1m in the y axis}
-	\label{fig:stationary_trajectory}
+	\label{fig:moving_trajectory}
 \end{figure}
 
 Covariance
