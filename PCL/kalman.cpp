@@ -1,13 +1,7 @@
-//============================================================================
-// Name        : Test.cpp
-// Author      : Chinemelu Ezeh
-// Version     :
-// Copyright   : Your copyright notice
-// Description : Hello World in C++, Ansi-style
-//============================================================================
 
 #include <Eigen/Dense>
 #include <iostream>
+#include <fstream>
 #include <math.h>
 #include <vector>
 #include <time.h>
@@ -93,6 +87,10 @@ void updateSonar();
 void controlCraft();
 //void run();
 
+//for tests
+void writeStateToFile();
+void writeErrorToFile(const Vector4f& error, const Matrix4f& errCov);
+
 //Variables
 vector<Vector4f, Eigen::aligned_allocator<Vector4f> > landmarks;
 //vector<Vector16f, Eigen::aligned_allocator<Vector16f> > statehistory;
@@ -154,7 +152,7 @@ int kalman(QCVision& vision) {
 		}
 
 		controlCraft();
-
+		//writeStateToFile();
 		timeSteps++;
 	}
 
@@ -163,7 +161,11 @@ int kalman(QCVision& vision) {
 	printf("Time taken: %.2fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
 	return 0;
 }
-
+void writeStateToFile() {
+	ofstream file("statesamples.txt",ios::out|ios::app);
+	file << state.transpose()<<endl;
+	file.close();
+}
 void initialisation () { //Incomplete.
 
 	//Initialise landmarks.
@@ -475,7 +477,7 @@ void update(const association_struct& data) {
 
 	//P -= kalmanGain * S * kalmanGain.transpose();
 	P = (Matrix<float, 16, 16>::Identity() - kalmanGain * H_opt) * P;
-
+	//writeErrorToFile(diff, S);
 //	cout << "change " << change << endl << endl;
 //	cout << "P: " << P << endl << endl;
 //	cout << "H_opt.transpose" << endl << H_opt.transpose() << endl << endl;
@@ -485,7 +487,12 @@ void update(const association_struct& data) {
 //	cout << "Distance" << endl << data.distance << endl << endl;
 }
 
-
+void writeErrorToFile(const Vector4f& error, const Matrix4f& errCov) {
+	ofstream file("errorsamples.txt", ios::out|ios::app);
+	file << error.transpose() << endl;
+	file << errCov << endl;
+	file.close();
+}
 void updateSonar(){
 	float y = sonarAlt - state(2);
 	float s = P(2,2) + sonarVariance;
@@ -556,6 +563,7 @@ bool getNewMeasurementThalamus(){
 
 Serial SP("\\\\.\\COM66");
 
+#pragma pack(1)
 struct bridge_sensor_packet_t
 {
     //char sync_byte;
@@ -577,14 +585,10 @@ bool getNewMeasurementThalamus(){
 	int SPba = SP.BytesAvailable();
 	if (SPba >= sizeof(bridge_sensor_packet_t)){
 
-		unsigned char sync;
-		int bytesread = SP.ReadData((char*)&sync, 1);
+		unsigned short sync;
+		int bytesread = SP.ReadData((char*)&sync, 2);
 		
-		if(sync == 0xbe){
-
-			//consume byte align
-			unsigned char bytealign;
-			int bytesread = SP.ReadData((char*)&bytealign, 1);
+		if(sync == 0xbeef){
 
 			bridge_sensor_packet_t inbuff;
 			SP.ReadData((char*)&inbuff, sizeof(inbuff));
@@ -604,7 +608,7 @@ bool getNewMeasurementThalamus(){
 
 			Vector3f acc_t;
 			acc_t << inbuff.imu_data[3], inbuff.imu_data[4], inbuff.imu_data[5];
-			acc_t *= (9.816 / pow(2.00,14));;
+			acc_t *= (9.816 / pow(2.00,13));;
 			acc_t << mountrot * acc_t;
 			acc_t -= state.segment(13,3);
 			acc = acc_t;
