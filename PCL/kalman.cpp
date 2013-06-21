@@ -115,23 +115,27 @@ int timeSteps = 0;
 int kalman(QCVision& vision) {
 	clock_t tStart = clock();
 
+
+
 	vision.DCM = &DCM;
 	vision.stateVector = &state;
 	
 	initialisation ();
-
+	bool firstplane = false;
 	while(true) {
 
 		while(!getNewMeasurementThalamus()){
 			//cout <<"wait"<<endl;
 			boost::this_thread::sleep(boost::posix_time::millisec(2));
 		}
+		if(firstplane){
+			DCM = DCM_fn();
+			Xi = Xi_fn();
 
-		DCM = DCM_fn();
-		Xi = Xi_fn();
-
-		state_prediction();
-		covariance_prediction();
+			state_prediction();
+			covariance_prediction();
+		}
+		
 
 		if (newsonar)
 		{
@@ -142,6 +146,7 @@ int kalman(QCVision& vision) {
 		if (vision.bNewSetOfPlanes){
 			getNewObservationLive(vision);
 			vision.bNewSetOfPlanes = false;
+			firstplane  =true;
 			vision.m_mutexLockPlanes.unlock();
 			processObservation(true); //timeSteps > startupConvergeTimesteps);
 			cout << "state at time t = " << timeSteps << endl<< state.segment(0,3) << endl<<endl;
@@ -175,9 +180,9 @@ void initialisation () { //Incomplete.
 	landmarks.push_back(planeCloud_t);
 	planeCloud_t << 0,1,0,0;
 	landmarks.push_back(planeCloud_t);
-	planeCloud_t << 0,0,1,0;
+	//planeCloud_t << 0,0,1,0;
 	//planeCloud_t << 0,0,-1,0;
-	landmarks.push_back(planeCloud_t);
+	//landmarks.push_back(planeCloud_t);
 
 	//initialise landmarks and P
 	Matrix3f block1 = Matrix3f::Identity();
@@ -191,10 +196,15 @@ void initialisation () { //Incomplete.
 	//	cout << "P initial" << endl << P << endl << endl;
 	Q = noiseMatrix();
 	//initialise state vector.
-	state <<-2.2, 2.2, 2.2, 0, 0, 0, 0.853553, 0.146447, 0.353553, -0.353553,
+	//state << -1.5, 1.5, -0.12, 0, 0, 0, 0.924, 0, 0, -0.38,
 	//state << 1, 1, -1, 0, 0, 0, 0.353553, -0.353553, -0.146447, -0.853553, 
-		-0.0456 ,   0.0069,   -0.0048 ,  -0.0331  ,  0.1024 ,   0.1473;
+	//	-0.0456 ,   0.0069,   -0.0048 ,  -0.0331  ,  0.1024 ,   0.1473;
+	//	0, 0, 0, 0, 0, 0;
 	//	cout << "state initial" << endl << state << endl << endl;
+
+
+	//Eurobot corner
+	state << -1.2950182, 1.2415010, 0.11603630, 0.049802072, -0.0088094035, -0.00028000007, 0.91991675, -0.013785197, -0.046496253, -0.38910306, -0.0059274049, -0.013975479, 0.00090154941, 0.73073703, -0.30317658, 0.079613924;
 
 	sonarAlt = state(2);
 }
@@ -513,14 +523,24 @@ void controlCraft(){
 
 
 bool getNewMeasurementThalamus(){
-	static Serial SP("\\\\.\\COM1");
+
+	#if defined (_WIN32) || defined( _WIN64)
+	static Serial SP("\\\\.\\COM25");
+	#endif
+
+	#ifdef __linux__
+	static Serial SP("/dev/ttyACM0");
+	#endif
+
 	int SPba = SP.BytesAvailable();
 	//int SPba = sp.Peek();
 	if (SPba >= 10*2)
 	{
 		char sync[2];
+
 		
 		SP.ReadData(sync,sizeof(sync));
+
 
 		if (sync[0] == 11)
 		{
@@ -561,7 +581,13 @@ bool getNewMeasurementThalamus(){
 
 #ifdef ON_QUAD
 
-Serial SP("\\\\.\\COM1");
+#if defined (_WIN32) || defined( _WIN64)
+static Serial SP("\\\\.\\COM66");
+#endif
+
+#ifdef __linux__
+static Serial SP("/dev/ttyACM0");
+#endif
 
 #pragma pack(1)
 struct bridge_sensor_packet_t
@@ -593,6 +619,13 @@ bool getNewMeasurementThalamus(){
 			bridge_sensor_packet_t inbuff;
 			SP.ReadData((char*)&inbuff, sizeof(inbuff));
 
+			/*
+			if(SPba <= 2*sizeof(bridge_sensor_packet_t)){
+				cout << "accraw: " << inbuff.imu_data[3] << "  " <<  inbuff.imu_data[4] << "  " << inbuff.imu_data[5];
+			}
+			*/
+			
+
 			const float invSqrt2 = 1/(sqrt(2.0));
 			Matrix3f mountrot;
 			mountrot << invSqrt2, invSqrt2, 0,
@@ -612,8 +645,15 @@ bool getNewMeasurementThalamus(){
 			acc_t << mountrot * acc_t;
 			acc_t -= state.segment(13,3);
 			acc = acc_t;
+
 			
-			sonarAlt = inbuff.sonar_data;
+			if(SPba <= 2*sizeof(bridge_sensor_packet_t)){
+				printf("\r");
+				cout << "acc: " << acc(0) << "  " << acc(1) << "  " << acc(2);
+			}
+			
+			
+			sonarAlt = inbuff.sonar_data / 1000.0f;
 			newsonar = true;
 
 			return true;
