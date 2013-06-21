@@ -7,6 +7,8 @@
 \documentclass[]{article}
 
 \usepackage[utf8]{inputenc} % set input encoding (not needed with XeLaTeX)
+\usepackage[T1]{fontenc}
+
 \DeclareUnicodeCharacter{00A0}{ }
 
 %%% PAGE DIMENSIONS
@@ -90,7 +92,7 @@ columns=flexible
 
 
 \title{Third Year Group Project \\ State Estimation for Indoor Environments}
-\author{Oskar Weigl, Ryan Savatski, Thomas Morrison, Chinemelu Ezeh, Joshua Elsdon}
+\author{Oskar Weigl, Ryan Savitski, Thomas Morrison, Chinemelu Ezeh, Joshua Elsdon}
 \begin{document}
 \maketitle
 \center{\textbf{\large{\emph{"...a profound trust in the advances of science."}	}}}
@@ -121,14 +123,14 @@ A Lovely Abstract full of insight and long words that makes it apparent we did l
 \section{Executive Summary} % (fold)
 \label{sec:executive_summary}
 \subsection{Introduction}
-In the present world of increasing machine usage and autonomy, it is important for robots to be able to correctly estimate their position, velocity and in general their current state at any given time in order to perform tasks with much better accuracy. For our project we focused on determining the indoor state also known as the indoor localisation problem of quadcopters. Quadcopters have become a famous hobbyist platform but more importantly, they can be used in autonomous rescue operations. Our project is in essence a first step towards implementing indoor simultaneous localisation and mapping (SLAM). With this in mind, we served as consultants to a startup company called MARVRX which specialises in developing unmanned aerial vehicles(UAVs), supporting electronics and software. Our mission is to enhance MAVRX's interest and research by developing an indoor state estimator that can be used for autonomous quadcopter. They inturn provide us with necessary tools including an R10 quadcopter, a wireless remote controller, and basic code for controlling the UAV.
+In the present world of increasing machine usage and autonomy, it is important for robots to be able to correctly estimate their position, velocity and in general their current state at any given time in order to perform tasks with much better accuracy. For our project we focused on determining the indoor state also known as the indoor localisation problem of quadcopters. Quadcopters have become a famous hobbyist platform but more importantly, they can be used in autonomous rescue operations and aerial photography. Our project is in essence a first step towards implementing indoor simultaneous localisation and mapping (SLAM). With this in mind, we served as consultants to a startup company called MAVRX who specialises in developing unmanned aerial vehicles(UAVs), supporting electronics and software. Our mission is to enhance MAVRX's interest and research by developing an indoor state estimator that can be used for autonomous quadcopters. They inturn provide us with necessary tools including an R10 quadcopter, a wireless remote controller, and basic code for stabilising and controlling the UAV.
 \subsection{Our Solution}
-While there has been lots of work done in the area of localisation, we propose a unique solution targetting indoor environments specifically that consisting of using on-board processing and RGB-D cameras as our primary sensor combined with accelerometer and gyroscope sensors. Our approach levarages the powerful yet cheap capabilities of the Xtion Pro camera. A typical solution to localisation involves modelling the motion of the agent as it moves in the environment, extracting features from the environment using sensors and using this information to approximate its location within the environment. We decided to track wall planes as our feature extracting plane equations from the Xtion Pro using DBScan algorithm because of its resistance to noise and bounded-time operation. For the actual state estimation, we employ the kalman filter algorithm as it produces optimal solutions in the presence of noise.  
+While there has been lots of work done in the area of localisation, we propose a unique solution targeting indoor environments which consists using on-board processing and RGB-D cameras as our primary sensor combined with accelerometer and gyroscope sensors capable of working in GPS deficient areas. Our approach leverages the powerful yet cheap capabilities of the Xtion Pro camera. A typical solution to localisation involves modelling the motion of the agent as it moves in the environment, extracting features from the environment using sensors and using this information to approximate its location within the environment. We decided to track wall planes as our feature extracting plane equations from the Xtion Pro using DBSCAN algorithm because of the algorithm's resistance to noise and bounded-time operation. Moreover, Using an RGB-D camera provides lots of information and is resistant to interference compared to sonar sensors. For the actual state estimation, we employ the kalman filter algorithm as it produces optimal solutions in the presence of noise.  
 \subsection{Results}
-Using Dscan algorithm, we were able to extract planes as features. Observing three orthogonal planes provide full observability in the x, y and z axis.Using the extended kalman filter, we were able to show that our system can estimate state in an indoor environment. We had to tune the filter providing empirical values for uncertainities in the Xtion's observation obtained through numerous testing. We confirmed the consistency of our filter by checking for bias in its measurement error and ensuring its boundedness is described by its covariance. Our filter performed well, giving us our accurate position verified using a measuring tape. 
+Using DBSCAN algorithm, we were able to extract planes as features. Observing three orthogonal planes provide full observability in the x, y and z axis. Using the extended kalman filter, we were able to show that our system can estimate its position, velocity and attitude in an indoor environment. We had to tune the filter providing empirical values for uncertainities in the Xtion's observation obtained through numerous testing. We confirmed the consistency of our filter by checking for bias in its measurement error and ensuring its boundedness is described by its covariance. Our system gave us accurate positioning(with 10mm precision) verified using a measuring tape. 
 
 \subsection{Conclusion}
-Localisation and state estimation is a first step towards full autonomous simultaneous localisation and mapping which combined with the high maneuverability of the quadcopter opens up new areas in robotics. We have thus pushed forward a bit the goal of our client company, UAir in developing unmanned aerial vehicles. Our project has shown and demonstrated the possibilities of indoor state estimation without GPS data which has commercial benefits in the aerial photography market as well as applications in search and rescue operations. 
+Localisation and state estimation is a first step towards full autonomous simultaneous localisation and mapping which combined with the high maneuverability of the quadcopter opens up new areas in robotics. We have thus pushed forward a bit the goal of our client company, Mavrx in developing unmanned aerial vehicles. Our project has shown and demonstrated the possibilities of indoor state estimation without GPS data which has commercial benefits in the aerial photography market as well as applications in search and rescue operations. Our system can be applied in the industry where aerial monitoring is essential such as pipeline inspection and area mapping.  
 
 \clearpage
 
@@ -244,9 +246,32 @@ The below image shows the basic concept of the EKF:
 
 If more than one plane is observed, the update step is run for each plane re-observed. If a new plane is observed, it is added as a new landmark into the kalman filter and its covariance is added onto the covariance matrix.
 
-\section{Preliminary Procedures}
+\section{Preliminaries}
+In this section, we discuss important procedures outside the main project implementation that has to be setup for the project implementation to work. This includes board selection, board configuration and Xtion sensor calibration. 
+\subsection{System platform} % (fold)
+\label{sub:system_platform}
 
-\subsection{Arndale Onboard System Configuration}
+((The project aims to implement the estimation algorithm on on-board processing.))
+
+<<In choosing a platform to implement the algorithm, consideration needs to be given to the target processor's ISA and the operating system [[(or lack of thereof)]].>>
+
+In conventional processor applications, <main consideration> is given to optimising the computational performance against cost and power usage. For an embedded system that is mounted on a quadcopter however, power usage of the chip is not a concern as it is not significant compared to the usage of the MAV itself. Therefore, for implementing this project we desire the best processing power per pound for the target workload. In this metric, no distinct advantage can be given to either of the two main standard processor architectures (x86 and ARM, including their derivatives) and the evaluation needs to be done on a chip-by-chip basis. 
+
+In addition to the above, the choise of ISA is influenced by the support of the architecture by operating system support and the ability to interface with other system components that could be incorporated into the system (e.g. coprocessors). The target operating system for this project is a any lightweight distribution based on the linux kernel. This is due to the linux kernel being free, open source and being easily configurable, with the ability to compile in only the needed functionality and the ability to put options in loadable kernel modules. This results in an embedded operating system with minimal memory and processing footprint, as well as small disk usage which can be limited in embedded systems. For the specific libraries and frameworks used in implementing the estimation software (PCL and OpenNI), x86-Linux variants were found to have more mature support than ARM-Linux at the time of writing.
+
+For low volume production, it is not always worth investing the engineering time in designing a custom system, sourcing the components and manufacturing. Instead, small form factor boards can be readily purchased at acceptable prices. [[include odroid u2 vs the atom board here as examples? Saying that both can handle the algorithm with less than N planes at sufficient framerates to remain convergent and stable?]]
+
+Additionally, we evaluated the possibility of using consumer smartphones as the embedded processing platform for the estimation algorithm. Android mobile operating system is built on top of the linux kernel and is also open source, making it the OS of choice for this comparison. The reasons for considering consumer smartphones are as follows:
+
+- the smartphone market is extremely competitive, driving the prices down while improving the processing power to levels compatible with embedded systems usually seen in robotics applications.
+- small form factor, including not needing big heatsinks.
+- smartphones of all price ranges come with additional hardware and sensors that can be useful for the quadcopter platform. There are 9 DoF sensors in any device and USB functionality for interfacing to the RGB-D camera. Additonally, the estimation can be improved by using the phone's camera in a downwards looking configuration as an optical flow sensor. GPS can be used in semi-indoor environments and urban canyon situations. WiFi can be used to augment the system with wifi-slam [[http://www.tuaw.com/2013/03/23/wsj-apple-acquires-wifislam-indoor-location-tech-company/]] which gives additional localisation information for the system in indoor environments. Bluetooth can be used for [[???, short range wireless communication?]]. Furthermore, GPUs found in smartphones are starting to be OpenCL compatible (both Imagination Technologies' powerVR series and newer ARM Mali cores), which can provide easily accessible acceleration for certain parts of the algorithm.
+
+However, in practice it was found that porting third party libraries used in the project and drivers for the RGB-D camera sensor, while possible, often needs significant engineering time spent. Additionally, the android platform enforces restricted APIs to underlying hardware resources, so it is not always possible to get the direct hardware control (e.g. for IMU) usually found in embedded linux systems.
+
+[[price comparison of android phones with decent cpu vs embedded?]]
+
+[[throw in fpga as additional possibilities, zynq7? :P, fixed point scaling blablabla]]
 
 \subsection{Sensor Calibration} % (fold)
 Apon inspecting the output of the Xtion Pro from Asus it became apparent that the accuracy of the data was poor as the sensor uses a logarithmic scale and not a linear one. At short ranges things appeared normal, and planes were indeed flat. At distance more than 2m planes quickly became warped (see Figure~\ref{fig:uncal5m}). This issue will corrupt the accuracy of planes that we extract from the cloud data, rendering the extra sensor of little use. 
@@ -337,14 +362,15 @@ In order to avoid large computation times on the embedded device it is important
  % subsection results_of_calibration (end) 
 \clearpage
 
+
 \section{Feature Extraction} % (fold)
 \label{sec:feature_extraction}
 
-To obtain robust and consistent computer vision the open source \ac{PCL} was used as a foundation on which our vision algorithms were implemented. By leveragin the both well featured and documented  \ac{PCL} allowed us to rapidly develop and test our algorithms in real time. 
+To obtain robust and consistent computer vision the open source \ac{PCL} was used as a foundation on which our vision algorithms were implemented. By levering the both well featured and documented \ac{PCL} allowed us to rapidly develop and test our algorithms in real time. 
 
 The first feature employed from the \ac{PCL} was normal estimation. Once the Xtion passes the raw point cloud data to the \ac{PCL}, we run a kernel operator over the image which integrates over many points to obtain an estimate of the normal. By using this integral normal estimation we smooth out noisy and sporadic normal estimations which occur if normal estimates are taken for just a single point. However, by using a kernel we require an initial amount of information, and hence, for the edges of the image there are no available normal estimations as there are no neighbouring points available in each direction. Further another caveat of using this technique is the loss of high frequency normal information, such as sharp corners or edges, due to averaging (loss of high frequency information). This latter property is discovered and discussed later in the flood fill algorithm. 
 
-A much referenced and popular algorithm for density based clustering is \ac{DBScan}, having excellent noise immunity. The basic idea is to take a point, finding all other neighbouring points within a certain neighbourhood or radius (of distance epsilon). If enough are found (decided by a threshold value $\gamma$), then we are able iteratively expand these neighbouring points, again checking if the minimum number of neighbouring points ($\gamma$) is sufficient to be considered within the same cluster. Figure~\ref{fig:dbscan} demonstrates a pass of the algorithm starting from a point within region A and clustering outward until the density of connected points becomes to small. Algorithm~\ref{alg:dbscan} details the full algorithm to find all densly connected regions within an image space.
+A much referenced and popular algorithm for density based clustering is \ac{DBScan}, having excellent noise immunity. The basic idea is to take a point, finding all other neighbouring points within a certain neighbourhood or radius (of distance epsilon). If enough are found (decided by a threshold value $\gamma$), then we are able iteratively expand these neighbouring points, again checking if the minimum number of neighbouring points ($\gamma$) is sufficient to be considered within the same cluster. Figure~\ref{fig:dbscan} demonstrates a pass of the algorithm starting from a point within region A and clustering outward until the density of connected points becomes to small. Listing~\ref{alg:dbscan} details the full algorithm to find all densely connected regions within an image space.
 
 \begin{figure}[bt]
 	\begin{center}
@@ -352,7 +378,7 @@ A much referenced and popular algorithm for density based clustering is \ac{DBSc
 	\end{center}
 	\caption{\ac{DBScan} clustering, starting from point within cluster A, and terminating at B and C, which do not contain enough points within their radius to be considered densely connected. N is never touched by this iteration of the algorithm as regions A, B and C are outside distance $\epsilon$.}
 	\label{fig:dbscan}
-	
+
 \end{figure}
 
 \begin{algorithm}[tb]
@@ -389,75 +415,44 @@ A much referenced and popular algorithm for density based clustering is \ac{DBSc
 	\bigskip
 	regionQuery($P$, $\epsilon$):  \\
 	{
- 		return all points within $P'$ $epsilon$-neighbourhood (including $P$)
+ 		return all points within $P'$ $\epsilon$-neighbourhood (including $P$)
 	}
 	\bigskip
-	\caption{\ac{DBScan} pseudocode}
+	\caption{\ac{DBScan} pseudo code}
 	\label{alg:dbscan}
 \end{algorithm}
 
-We began with a basic naïve implementation which iteratively looped through each point in the cloud, performing a region query in just x, y, z space. This meant that for each point in the image, we then inspect all other points in the image, checking whether they are within the epsilon $(\epsilon)$ distance. 
-
-\begin{figure}[tbp]
-	\begin{center}
-		\includegraphics[width=0.8\textwidth]{6table_dbscan.png}
-	\end{center}
-	\caption{\ac{DBScan} of a laboratory in xyz space. Each whiteboard is considered a seperate cluster. The green cluster Distant objects coloured in blue. A total of four clusters were found}
-	\label{fig:table_dbscan}
-\end{figure}
-
-We then moved onto performing the region query in normal space, meaning planes of the normal equation would appear in the same cluster, shown in Figure~\ref{fig:dbscan_planes}
-
-\begin{figure}[tbp]
-	\begin{center}
-		\includegraphics[width=0.8\textwidth]{6normal_boards.png}
-	\end{center}
-	\caption{\ac{DBScan} is normal space. A total of 4 planes were fonud in this image, the floor, the white boards and two backwalls.}
-	\label{fig:dbscan_planes}
-\end{figure}
-
-\begin{figure}[tbp]
-	\centering     %%% not \center
-	\subfloat[C]{
-		\label{fig:6box_before}
-		\includegraphics[width=0.45\textwidth]{6box_before.PNG}
-	}
-	\subfloat[D]{
-		\label{fig:6box_after}
-		\includegraphics[width=0.45\textwidth]{6box_after.PNG}
-	}
-
-	\caption{CAPTION}
-	\label{fig:spurious_plane_normals}
-\end{figure}
+We began with a basic naïve implementation which iteratively looped through each point in the cloud, discovering all further points in x, y, z space that are within a certain distance  $(\epsilon)$. This procedure is listed as region query in algorithm~{alg:dbscan}.
 
 
 
-
-Four parameters are required to uniquely characterise planes $(N_A, N_B, N_C, D)$ so finally we combined both the normal space with distance space (z) for the region query criteria.
-
-We made modifications to the DBScan algorithm to decrease the running time. Using a tag fields to set whether a points had already been visited or were already part of a cluster (a point can belong to one cluster only). These tag fields allowed the insertion into a list-like data structure without duplication, decreasing the complexity of insertion from $O(m \cdot log(n))$ (such as with the STL set class) to $O(m)$.
-
-The DBScan algorithm completes in $O(n^2)$ if the region query completes in $O(n)$, and $O(n \cdot log(n))$ if the region query completes within $O(log(n))$. Our implementation lay somewhere between the two, having a complexity dependent on run time. This is because for large planar images, the 
+We then moved onto performing the region query in normal space, meaning planes with a similar normal equation would appear in the same cluster, shown in Figure~\ref{fig:dbscan_planes}
 
 
-To combat against the possibility of very slow density based algorithm, we decided to use a 2 step algorithm. A simple flood fill algorithm will fill the initial field of view from the depth camera flooding connected areas which have the same normal and are joined in depth. Due to the shadowing effect and obstruction by objects in the image space, the flood fill will be terminated prematurely when regions should in fact be connected (figure below). Thus a second pass is performed with the DBScan algorithm to merge regions that should be connected, into a single plane. 
+
+Four parameters are required to uniquely characterize planes $(N_A, N_B, N_C, D)$ so finally we combined both the normal space with distance space (z) for the region query criteria. To make things easier, as soon as an Xtion capture becomes available, we convert the data cloud to a plane cloud (a large list containing the 4 plane parameters).
+
+We made modifications to the DBScan algorithm to decrease the running time. By using tag fields to set whether points had already been visited or were already part of a cluster (a point can belong to one cluster only), we prevented the region query being performed superfluously. Further we built a custom conditional insertion procedure to insert into a list-like data structure without duplication, decreasing the complexity of insertion from $O(m \cdot log(n))$ (if using the \"set\" STL template class) to $O(m)$.
+
+The DBScan algorithm completes in $O(n^2)$ if the region query completes in $O(n)$, and $O(n \cdot log(n))$ if the region query completes within $O(log(n))$. Our implementation lay somewhere between the two, having a complexity dependent on run time, where a field of view containing more planar features took longer to process. This is because captures with large or many planar features cause the region query procedure to be invoked more often, shifting the runtime complexity towards $O(n^2)$.
+
+To combat against the possibility of slow run-time operation, we decided to use a 2 step algorithm. A simple flood fill algorithm fills the initial field of view captured from the depth camera by flooding  (clustering) connected points which have the same plane equation (remember the point cloud is now converted to a plane cloud before the flood fill step). The flood fill will generate a new set of planes, typically of a count less than 10. This will then be passed to the DBScan algorithm for the second step of the two step algorithm. The DBScan is required planes generated from flood fill may be split up my objects in the field of view. Figure X demonstrates this. Thus the second step ultilises the DBScan algorithm to merge plane regions that should be connected. 
 
 \begin{algorithm}[tbp]
 	\SetAlgoLined
 	\KwData{$N \times N$ matrix: $D$}
 	\KwResult{List of sets of connected points} 
 	\bigskip
-	FloodFill($P$, MinPts): \\
-	Push P $\rightarrow$ Q \\
+	FloodFill($P_{seed}$, MinPts): \\
+	Push $P_{seed} \rightarrow$ Q \\
 	\While {Q is not empty}
 	{
-	 	Pop $Q \rightarrow P'$ \\
-		\If{$P'$ properties within threshold ($\alpha$) of $P$}{
-		Add $P'$ to set $S$ \\
+	 	Pop $Q \rightarrow P$ \\
+		\If{$P$ plane components within $\epsilon$ tolerence of $P_{seed}$}{
+		Add $P$ to set $S$ \\
 
-		\If{$P'$ not in $Q$} {
-			Push $P' \rightarrow Q$ \\
+		\If{$P$ not in $Q$} {
+			Push $P \rightarrow Q$ \\
 			\ForEach{$H$ as direction (West, East, North, South)}{
 
 				\If{$H$ not in $Q$}{
@@ -467,66 +462,96 @@ To combat against the possibility of very slow density based algorithm, we decid
 			}
 		}
 
-		
+
 		}
 	}
 	\bigskip
-	\caption{Flood fill algorithm pseudocode for a single fill area}
+	\caption{Flood fill algorithm pseudo code for a single fill area}
 	\label{alg:Flood fill algorithm pseudocode for a single fill area}
 \end{algorithm}
 
-IMAGE – shadowing effect (chair)
+This design leads to increased throughput as the flood fill deals with the raw data from CCD space, converting 19200 points to only a few planes. The DBScan, having complexity towards a greedy $O(n^{2})$, only works on the plane set generate by the flood fill algorithm, meaning the near-quadratic complexity does not dominate run time as there are much less planes than there are points. 
 
-This design leads to increased throughput as the flood fill deals with the raw data from CCD space, converting 19200 points to only a few planes.  The DBScan, having complexity towards a greedy $O(n^{2})$, only works in planar space, meaning the near-quadratic complexity does not dominate run time as there are much less planes than there are points. 
+The flood fill algorithm is analogous to a paint bucket function in a graphical editing package. We randomly take a seed point in pixel space (that is we randomly select a point from the depth camera output) and take the normal and distance (plane space), and then proceed to fill out from this point in all directions until the planes parameters $(N_A, N_B, N_C, D)$ differ by value epsilon from the original seed point. We continue to attempt clustering planes until either we flood a certain threshold of the image (sigma, i.e. 90\%) or have attempted to flood fill from a random seed point after a specified number of tries (gamma, i.e. 50). The flood fill algorithm works iteratively using only a simple queue structure and list keep track if points have been explored yet in the context of the current fill or already added to a previous fill (plane) respectively, resulting in a constant complexity of O(n). 
 
-The flood fill algorithm is very similar to that used for a paint bucket function in a graphical editing package. We randomly take a seed point in pixel space (that is we randomly select a point from the from camera output, taking into account no sense of depth or position in the real world), taking the normal and distance (planar space), and then proceeding to “fill” out from this point in all directions until the planes parameters $(N_A, N_B, N_C, D)$ differs by value epsilon from the original seed point. We continue to attempt clustering planes until either we flood a certain threshold of the image (sigma, i.e. 90\%) or have attempted to flood fill from a random seed point after a specified number of tries (gamma, i.e. 50). The flood fill algorithm works iteratively using only a simple queue structure and list keep track if points have been explored yet in the context of the current fill or already added to a previous fill (plane) respectively, resulting in a complexity of O(n). 
+Complications arose when performing the flooding. As explained before, the projected grid from the Xtion opens in a conic fashion. This means that objects closer the Xtion will be showered in points, while those further away will contain far fewer points. This drop off happens at a quadratic rate, meaning the error in distance also occurs at a quadratic rate. To deal with this we modifidy the condition on the D parameter for a point to be considered within the region. As depth increases we open the parameter quadratically by projecting of the z component of the plane normal to the point z component squared. We do this for both the seed point and the point being queried. 
 
-Complications arose in the distance space. Because of this, we introduced two different epsilon values. The first epsilon deals with the tolerance between normal components of the plane equations, while the second epsilon value relates the tolerance between the distance component of the plane equations. 
+Therefore the conditions (which all must be satisfied) for accepting a point into the current fill region is:
+\begin{align}
+|P_{seed|A} - P_{A}| &< \epsilon \\
+|P_{seed|B} - P_{B}| &< \epsilon\\
+|P_{seed|C} - P_{C}| &< \epsilon\\
+|P_{seed|D}-P_{D}| &< (|N_{seed|z} \times P^{2}_{seed|z}| + |N_{z} \times P^{2}_{z}|) \times \epsilon_{depth}
+\end{align}
+where as before the last equation was the same as the previous three, except changed to the D parameter.
+Note that P is the point which we are testing to investigate whether it should exist in the flood region, while $P_{seed}$ is the seed point at which was first chosen to characterise the flood fill region. 
 
-%TODO do some funky math
+Unforeseen consequence arose from the flood fill algorithm where when the flood fill is selecting a random seed point, it can select a point near a vertex. The problem is that in order to get realistic normal components, the integral image normal estimation is an average of normals in a kernel space of 40x40 normals. This means that high frequency information is lost, as shown in Figures~\ref{fig:spurious_plane_normals} and \ref{fig:spurious_plane_normals_2}. Hence, when the flood fill algorithm is filling out, spurious long thin planes will be generated along edges, giving rise to a false positive. Initial attempts to resolve this problem by adjusting the flood fill algorithm parameters such as the minimum points to consider a plane failed.
 
-Another immed	. Figures~\ref{fig:spurious_plane_normals} and \ref{fig:spurious_plane_normals_2} show this effect.
+In an effort to deal with this caveat, introducing an additional step between the Flood Fill and the DBScan which detects for false positives was undertaken. By computing the covariance matrix in XYZ space for each point in a cluster, then finding the eigenvalues of this matrix calculates the \ac{PCA} of each plane allowing us the investigate the dimensionality of each plane by checking the ratio of Eigen values generated. If there is much disparity, we can assumed that a plane has been encountered fitting to the caveat described above and hence the plane is removed from the set of planes generated by the flood fill algorithm. 
+
+This method was never implemented as after thinking ahead towards plane association in the state update of the EKF (below), we realised that we no longer needed the DBScan algorithm or \ac{PCA}.  In fact, it was found that DBScan was no longer the algorithm suitable, but rather a similar algorithm called Iterative Nearest Neighbor (INN) should be used. This is discussed in detail in the registration section of the EKF.
+
+
+
+
+
+
+
+
 
 
 
 
 \begin{figure}[tbp]
-	\centering     %%% not \center
-	\subfloat[A]{
-		\label{fig:spurious_plane_normals1}
-		\includegraphics[width=0.45\textwidth]{6spuriousplanes_normals.PNG}
-	}
-	\;
-	\subfloat[B]{
-		\label{fig:spurious_plane_normals_2}
-		\includegraphics[width=0.45\textwidth]{6spuriousplanes_normals_2.PNG}
+	\centering
+	\subfloat[\ac{DBScan} in normal space. A total of 4 planes were found:, the floor, the white boards and two back walls] 
+	{
+		\label{fig:dbscan_planes}
+		\includegraphics[width=0.8\textwidth]{6normal_boards.png}
 	}
 
-	\caption{Normal estimation kernal causing loss of high frequency information of normals}
+	\subfloat[\ac{DBScan} of a laboratory in xyz space. Each white board is considered a separate cluster. Distant objects coloured in blue.] {
+		\label{fig:table_dbscan}
+		\includegraphics[width=0.8\textwidth]{6table_dbscan.png}
+	}
+	\caption{}
+	\label{fig:DBSCAN_LAB}
+
+\end{figure}
+
+\begin{figure}[tbp]
+	\centering     %%% not \center
+	\subfloat[]{
+		\label{fig:6box_before}
+		\includegraphics[width=0.45\textwidth]{6box_before.PNG}
+	}
+	\subfloat[]{
+		\label{fig:6box_after}
+		\includegraphics[width=0.45\textwidth]{6box_after.PNG}
+	}
+
+	\caption{Cluster using \ac{DBScan} in normal space}
 	\label{fig:spurious_plane_normals}
 \end{figure}
 
 
-When the flood fill is selecting a random seed point, it can select a point along the gradual vertex and then proceed to flood along the vertex for other points with similar planar properties, causing a new region to be considered a plane, giving rise to a false positive. Initial attempts to resolve this problem by adjusting the algorithm parameters such as the minimum points to consider a plane failed, as in certain orientations the false positives still existed:
 
+\begin{figure}[tbp]
+	\centering     %%% not \center
+	\subfloat[]{
+		\label{fig:spurious_plane_normals1}
+		\includegraphics[width=0.45\textwidth]{6spuriousplanes_normals.PNG}
+	}
+	\;
+	\subfloat[]{
+		\label{fig:spurious_plane_normals_2}
+		\includegraphics[width=0.45\textwidth]{6spuriousplanes_normals_2.PNG}
+	}
 
-In an effort to deal with this caveat, introducing an additional step between the Flood Fill and the DBScan which detects for false positives was undertaken. By computing the covariance matrix in XYZ space for each point in a cluster, then finding the eigenvalues of this matrix calculates the \ac{PCA} of each plane allowing us the investigate the dimensionality of each plane by checking the ratio of Eigen values generated. If there is much disparity, we can assumed that a plane has been encountered fitting to the caveat described above and hence the region is removed from the set of planes. 
-
-The principle component axis calculation is made 
-
-IMAGE?
-
-However, this method was never implemented as after thinking ahead towards plane association in the state update, we realised that performing the DBScan algorithm (as well as \ac{PCA}) was no longer necessary at this stage. 
-In fact, it was found that DBScan was no longer the algorithm suitable, but rather a similar or adaptation of it – Iterative Nearest Neighbour (INN). The algorithm works by iteratively looping through pairs of planes, calculating there statistical similarity and then making a decision on whether to combine the pair. 
-If a pair is combined, we replace the pair with just one new plane, created from the properties of the two combined and repeat until all permutations are complete). Hence, the worst case time-complexity of this algorithm is O(n\^{2}).
-The reason we choose to move the merge part of the algorithm to the plane association part was that we are not only duplicating the work, but also that we can lead to unoptimal and/or incorrect plane association. Consider:
-
-IMAGE – 4 PLANES with all possible merge combinations 
-
-The statistical difference is known as the malokonvis distance
-MATH
-
-
+	\caption{Normal estimation kernel causing loss of high frequency information of normals}
+	\label{fig:spurious_plane_normals}
+\end{figure}
 
 % \subsection{Sensor Calibration} % (fold)
 % \label{sub:sensor_calibration}
@@ -1246,14 +1271,71 @@ This makes an enormous difference in the scalability of the kalman filter approa
 
 \section{Testing and Results} % (fold)
 \label{sub:testing_kalman}
-To properly running the kalman filter, we had to tune the measurement uncertainty parameter since the order of covariance obtained by using the RANSAC algorithm was too low. We multiplied the uncertainity of the Xtion by  a factor of 100000 which seems too big but through testing, we found this to be the ideal factor. A larger factor would result in the kalman relying too much on the inertial sensors  while a smaller one means we trust the xtion's output more. Since both sensors are noisy, an optimal value was selected.
-We then perform some analysis on our system to check that our filter works correctly. Firstly we checked for consistency in the kalman filter by verifying that errors in the observation measurements are bounded to $\pm\sqrt{2\sigma}$. We found this to be the case that at least 95\% of our errors are within this bound. The second test was to verify that there was no bias in our observation errors as the filter evolves. To do this, we performed the autocorrelation of the noise and found it to be bias free. [Graph given below].
+In our test setup, we based our coordinate system in a vertex of the room as origin defining the x,y and z coordinates to be along the three wall edges connected to the origin vertex. Our test system consist of Thalamus chip containing the inertial sensors and Xtion Pro taped together. To ensure a functional kalman filter, full observability of system in the x,y and z axis is needed. Thus we decided to observe three orthogonal planes formed by the wall that meet at the origin. We then initialise our state in the filter to be -2,2,2 in the x,y,z space. In practice however, the initial state will be close to but not exactly the same as in the filter. It is left to the kalman filter to converge to the real state estimate.
+
+To properly running the kalman filter, we had to tune the observation covariance parameter since the range of values obtained by using the RANSAC algorithm was too low (in the order of $10^{-7}$). A larger value would result in the kalman relying too much on the inertial sensors while a smaller one means we trust the xtion's output more [Fig:~\ref{fig:trustXtion}]. Feature extraction has considerable random noise due to the random initial point for the DBscan algorithm. Thus trusting the camera would result in high frequency noise or flunctuations in state estimate. On the otherhand, position estimate from the inertial sensors behave like low pass filtered values as it is obtained by double integrating the acceleration. Thus increasing the Xtion's uncertainty results in a lower frequency in estimate which means the filter is slow to respond. We choose an appropriate value such that our filter behaves within an optimal region based on three test as discussed in \cite{KalmanTuning} . We focus our analysis on position estimate alone because since it depends on speed and attitude change, a good position estimate is sufficient to validate our algorithm implying the other estimates are correct. 
+
+First we checked for consistency in the kalman filter by verifying that most(ideally \textgreater 95\%) of error magnitude in the observation measurements are bounded to $\pm\sqrt{2\sigma}$. [Show results].After increasing the Xtion's uncertainty by a factor of 100, the results suggest that 100 is indeed too small. A factor of 10000 gives better results.
+
+\begin{table}[ht]
+\caption{Innovation Magnitude Bound Test(\textgreater 2500 samples used)} % title of Table
+\centering % used for centering table
+\begin{tabular}{c c c c} % centered columns (4 columns)
+\hline\hline %inserts double horizontal lines
+Variable & Case\#1 (factor = 100) & Case\#2 (factor = 10000)  \\ [0.5ex] % inserts table 
+%heading
+\hline % inserts single horizontal line
+    Nx 	& 79.98\% 	& 99.54\%\\
+    Ny 	& 80.12 	& 86.74 \\
+    Nz 	& 79.84 	& 77.27 \\
+    d 	& 79.91 	&	92.41 \\ [1ex] % [1ex] adds vertical space
+\hline %inserts single line
+\end{tabular}
+\label{table:firstTest} % is used to refer this table in the text
+\end{table}
+In the second test, we check for unbiasness by computing the normalised innovation squared
+\begin{equation}
+	q_{k} = z_{k}^{T} S_(k)^{-1} z_{k}
+\end{equation}
+for a sequence of i trials. If the filter's assumptions are met then $q_{k}$ are each $\chi^{2}$ in 4 degrees of freedom. To test for unbiasness, we can use the mean of the sequence,
+\begin{equation}
+	\bar{q} = \frac{1}{N}\sum_{k=1}^N {q_k}
+\end{equation}
+as a test statistic such that an ideal mean lies within a confidence interval [$r_{1}, r_{2}$] defined by our hypothesis $H_0$ that $\bar{q}$ is  $\chi_{4}^{2}$ distributed with probability $1-\alpha$. First we need to find the interval such that
+\begin{equation}
+P(N\bar{q}\in [r_{1}, r_{2}] | H_{0}) = 1 - \alpha 
+\end{equation}
+We choose $\alpha$ = 0.005 (i.e. defining a two sided 95\% confidence region). We get that
+[$r_{1}, r_{2}$] = [$\chi_{4}(0.025), \chi_{4}(0.975)$] = 0.4844, 11.1433. For a factor of 10000 , we obtain $\bar{q}$ = 3.6561 which is within the confidence region.
+In the third test, we verify that error is white and to do this, we performed the autocorrelation of the noise using our obtained Xtion factor of 10000. Ideally for whiteness, autocorrelation peaks at a lag of 0 and is essentially zero for all others. For large enough N, we can assume that r($\tau$) is normally distributed with mean 0 and variance $\frac{1}{N}$. Practically, we can compute the $\pm$ 2$\sigma$ gate and check that aleast 95\% of values fall within this confidence region. In our test, we obtained that percentage of innovation in Nx,Ny and Nz that satisfy are the condition are 98.40$\%$, 97.81\%, 98.35\%, respectively. Error in distance however gives 93.14\%. 
+\begin{figure}[H]
+	\centering     %%% not \center
+	\subfloat[Nx error]{
+		\label{fig:errorNx}
+		\includegraphics[width=0.45\textwidth]{noiseNx.PNG}
+	}
+	\;
+	\subfloat[Ny error]{
+		\label{fig:errorNy}
+		\includegraphics[width=0.45\textwidth]{noiseNy.PNG}
+	}
+	\;
+	\subfloat[Nz error]{
+		\label{fig:errorNz}
+		\includegraphics[width=0.45\textwidth]{noiseNz.PNG}
+	}
+	\;
+	\subfloat[D error]{
+		\label{fig:errorD}
+		\includegraphics[width=0.45\textwidth]{noised.PNG}
+	}
+	\;
+	\caption{Error in innovation showing whiteness expect for the distance variable}
+	\label{fig:errorfigures}
+\end{figure}
 
 
- 
-In our test setup, we based our coordinate system in a vertex of the room as origin defining the x,y and z coordinates to be along the three wall edges connected to the origin vertex. Out test system consist of Thalamus chip containing the inertial sensors and Xtion Pro taped together. To ensure a functional kalman filter, full observability of system in the x,y and z axis is needed. Thus we decided to observe three orthogonal planes formed by the wall that meet at the origin setting our initial state in the filter to be -2,2,2 in the x,y,z space. In practice however, the initial state will be close to but not exactly the same as in the filter.
-
-In order to verify that our system works, we ran our system from our default initial position leaving it stationary. Below is the trajectory results. It shows a point cloud indicating that our kalman filter does indeed converge to some estimate of our real position. This is the result is due to the full observability provided by the three orthogonal planes lying in the xy, yz, zx spaces.
+In order to verify that our system works with the kalman tuning, we ran it from our default initial position leaving it stationary. Below is the trajectory results. It shows a point cloud indicating that our kalman filter does indeed converge to some estimate of our real position flunctuating by only millimeters. This  somewhat accurate result is due to the full observability provided by the three orthogonal planes lying in the xy, yz, zx spaces.
 
 \begin{figure}[H]
 	\begin{center}
@@ -1262,40 +1344,25 @@ In order to verify that our system works, we ran our system from our default ini
 	\caption{Cloud point showing bounded kalman filter stationary trajectory estimation}
 	\label{fig:stationary_trajectory}
 \end{figure}
-In the second test, we moved the setup by hand in a pseudo straight line of length 1m along across on a table in the y axis whilst ensuring that three orthogonal planes are always observed. In the figure, we see that the variation in the z axis is small.
+In the second test, we moved the setup by hand in a pseudo straight line of length 1m along across on a table in the y axis whilst ensuring that three orthogonal planes are always observed. In the figure, we see that the variation in the z axis is small as the table provided low variation in the z axis. Also, flunctuations in state estimate are in the order of millimeters.
 
-\begin{figure}[H]
-	\begin{center}
-		\includegraphics[width = \textwidth]{movingTraj.png}
-	\end{center}
+\begin{figure}[tbh]
+	\subfloat[Using an Xtion factor of 10000] {
+		\includegraphics[width = \textwidth/2]{movingTraj.png}
+	}
+	\subfloat[Using an Xtion factor of 100(Higher frequency in estimation)] {
+		\includegraphics[width = \textwidth/2]{movingTraj100.png}
+		\label{fig:trustXtion}
+	}
 	\caption{Cloud point showing bounded kalman filter moving trajectory estimation over a distance of 1m in the y axis}
-	\label{fig:stationary_trajectory}
+	\label{fig:moving_trajectory}
 \end{figure}
 
-Covariance
-\begin{align}
-	10^{-3}
-	\left[
-	\begin{matrix}
-		0.1037	& 0.0919	& -0.0024 \\
-		0.0919	& 0.1014	& -0.0129 \\
-		-0.0024	& -0.0129	& 0.0538
-	\end{matrix}
-	\right]
-\end{align}
-
-sqrt covariance
-\begin{align}
-	10^{-3}
-	\left[
-	\begin{matrix}
-		10.1809	& 9.5878	& 1.5370 \\
-		9.5878	& 10.0684	& 3.5982 \\
-		1.5370	& 3.5982	& 7.3351
-	\end{matrix}
-	\right]
-\end{align}
 \clearpage
+
+\section{Conclusion}
+
+
 \nocite{*}
 
 \printbibliography
