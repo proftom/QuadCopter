@@ -37,7 +37,7 @@ public:
 		indicies = ind;
 	}
 
-	const Plane Plane::operator-(const Plane &plane) const {
+	const Plane operator-(const Plane &plane) const {
 
 		return Plane(this->A - plane.A, this->B - plane.B, this->C - plane.C, this->D - plane.D);
 
