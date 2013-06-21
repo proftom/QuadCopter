@@ -506,17 +506,20 @@ This method was never implemented as after thinking ahead towards plane associat
 
 \begin{figure}[tbp]
 	\centering
-	\subfloat[\ac{DBScan} in normal space. A total of 4 planes were found:, the floor, the white boards and two back walls] 
+	%\subfloat[\ac{DBScan} in normal space. A total of 4 planes were found:, the floor, the white boards and two back walls] 
+	\subfloat[z]
 	{
 		\label{fig:dbscan_planes}
-		\includegraphics[width=0.8\textwidth]{6normal_boards.png}
+		\includegraphics[width=0.1\textwidth]{6normal_boards.png}
 	}
 
-	\subfloat[\ac{DBScan} of a laboratory in xyz space. Each white board is considered a separate cluster. Distant objects coloured in blue.] {
+	\subfloat[b]
+	{
+	%\subfloat[\ac{DBScan} of the laboratory in xyz space. Each white board is considered a separate cluster. Distant objects coloured in blue.] {
 		\label{fig:table_dbscan}
-		\includegraphics[width=0.8\textwidth]{6table_dbscan.png}
+		\includegraphics[width=0.1\textwidth]{6table_dbscan.png}
 	}
-	\caption{}
+	\caption{Images}
 	\label{fig:DBSCAN_LAB}
 
 \end{figure}
