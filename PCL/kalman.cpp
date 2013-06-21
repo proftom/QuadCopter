@@ -19,8 +19,8 @@ static const float TWO_PI= 6.283185307179586476925286766559005768394338798750211
 using namespace std;
 using namespace Eigen;
 
-#define PLANEGUN
-//#define ON_QUAD
+//#define PLANEGUN
+#define ON_QUAD
 
 typedef Matrix< float , 16 , 16> Matrix16f;
 typedef Matrix< float , 16 , 1> Vector16f;
@@ -513,7 +513,7 @@ void controlCraft(){
 
 
 bool getNewMeasurementThalamus(){
-	static Serial SP("\\\\.\\COM62");
+	static Serial SP("\\\\.\\COM66");
 	int SPba = SP.BytesAvailable();
 	//int SPba = sp.Peek();
 	if (SPba >= 10*2)
