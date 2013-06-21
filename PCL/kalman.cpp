@@ -191,7 +191,7 @@ void initialisation () { //Incomplete.
 	//	cout << "P initial" << endl << P << endl << endl;
 	Q = noiseMatrix();
 	//initialise state vector.
-	state <<-3, 4, -0.12, 0, 0, 0, 0.853553, 0.146447, 0.353553, -0.353553,
+	state << -1.5, 1.5, -0.12, 0, 0, 0, 0.924, 0, 0, -0.38,
 	//state << 1, 1, -1, 0, 0, 0, 0.353553, -0.353553, -0.146447, -0.853553, 
 		-0.0456 ,   0.0069,   -0.0048 ,  -0.0331  ,  0.1024 ,   0.1473;
 	//	cout << "state initial" << endl << state << endl << endl;
@@ -595,10 +595,10 @@ bool getNewMeasurementThalamus(){
 
 			/*
 			if(SPba <= 2*sizeof(bridge_sensor_packet_t)){
-				
 				cout << "accraw: " << inbuff.imu_data[3] << "  " <<  inbuff.imu_data[4] << "  " << inbuff.imu_data[5];
 			}
 			*/
+			
 
 			const float invSqrt2 = 1/(sqrt(2.0));
 			Matrix3f mountrot;
@@ -620,10 +620,12 @@ bool getNewMeasurementThalamus(){
 			acc_t -= state.segment(13,3);
 			acc = acc_t;
 
+			/*
 			if(SPba <= 2*sizeof(bridge_sensor_packet_t)){
 				printf("\r");
 				cout << "acc: " << acc(0) << "  " << acc(1) << "  " << acc(2);
 			}
+			*/
 			
 			sonarAlt = inbuff.sonar_data / 1000.0f;
 			newsonar = true;
