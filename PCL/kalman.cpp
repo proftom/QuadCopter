@@ -27,7 +27,7 @@ typedef Matrix< float , 16 , 1> Vector16f;
 #define STATENUM 16
 #define Sampling_Time 0.01	// unit is seconds.
 //#define distThreshold 5000
-int distThreshold = 35000;
+int distThreshold = 35;
 #define startupConvergeTimesteps 1000
 //#define XtionCovarFudge 100
 int XtionCovarFudge = 10000;
@@ -575,7 +575,7 @@ bool getNewMeasurementThalamus(){
 #ifdef ON_QUAD
 
 	#if defined (_WIN32) || defined( _WIN64)
-	static Serial SP("\\\\.\\COM25");
+	static Serial SP("\\\\.\\COM66");
 	#endif
 
 	#ifdef __linux__
