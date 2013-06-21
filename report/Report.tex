@@ -7,6 +7,8 @@
 \documentclass[]{article}
 
 \usepackage[utf8]{inputenc} % set input encoding (not needed with XeLaTeX)
+\usepackage[T1]{fontenc}
+
 \DeclareUnicodeCharacter{00A0}{ }
 
 %%% PAGE DIMENSIONS
@@ -107,7 +109,6 @@ A Lovely Abstract full of insight and long words that makes it apparent we did l
 	\acro{MAV}{Micro Aerial Vehicle}
 	\acro{EKF}{Extended Kalman Filter}
 	\acro{DoF}{Degrees of Freedom}
-	\acro{IMU}{Inertial Measurement Unit}
 	\acro{MMSE}{minimum mean square error}
 	\acro{PCL}{point cloud library}
 	\acro{DBScan}{density based scan}
@@ -115,7 +116,6 @@ A Lovely Abstract full of insight and long words that makes it apparent we did l
 	\acro{GPS}{Global Positioning System}
 	\acro{RGB}{Red Green Blue}
 	\acro{RGB-D}{Red Green Blue - Depth}
-	\acro{ISA}{Instruction Set Architecture}
 \end{acronym}
 \clearpage
 % section acronyms (end)
@@ -123,15 +123,14 @@ A Lovely Abstract full of insight and long words that makes it apparent we did l
 \section{Executive Summary} % (fold)
 \label{sec:executive_summary}
 \subsection{Introduction}
-In the present world of increasing machine usage and autonomy, it is important for robots to be able to correctly estimate their position, velocity and in general their current state at any given time in order to perform tasks with much better accuracy. For our project we focused on determining the indoor state also known as the indoor localisation problem of quadcopters. Quadcopters have become a famous hobbyist platform but more importantly, they can be used in autonomous rescue operations. Our project is in essence a first step towards implementing indoor simultaneous localisation and mapping (SLAM). With this in mind, we served as consultants to a startup company called MARVRX which specialises in developing unmanned aerial vehicles (UAVs), supporting electronics and software. Our mission is to enhance MAVRX's interest and research by developing an indoor state estimator that can be used for autonomous quadcopter. They inturn provide us with necessary tools including an R10 quadcopter, a wireless remote controller, and basic code for controlling the UAV.
+In the present world of increasing machine usage and autonomy, it is important for robots to be able to correctly estimate their position, velocity and in general their current state at any given time in order to perform tasks with much better accuracy. For our project we focused on determining the indoor state also known as the indoor localisation problem of quadcopters. Quadcopters have become a famous hobbyist platform but more importantly, they can be used in autonomous rescue operations and aerial photography. Our project is in essence a first step towards implementing indoor simultaneous localisation and mapping (SLAM). With this in mind, we served as consultants to a startup company called MAVRX who specialises in developing unmanned aerial vehicles(UAVs), supporting electronics and software. Our mission is to enhance MAVRX's interest and research by developing an indoor state estimator that can be used for autonomous quadcopters. They inturn provide us with necessary tools including an R10 quadcopter, a wireless remote controller, and basic code for stabilising and controlling the UAV.
 \subsection{Our Solution}
-While there has been lots of work done in the area of localisation, we propose a unique solution targetting indoor environments specifically that consisting of using on-board processing and \ac{RGB-D} cameras as our primary sensor combined with accelerometer and gyroscope sensors. Our approach leverages the powerful yet cheap capabilities of the Xtion Pro camera. A typical solution to localisation involves modelling the motion of the agent as it moves in the environment, extracting features from the environment using sensors and using this information to approximate its location within the environment. We decided to track wall planes as our feature extracting plane equations from the Xtion Pro using DBScan algorithm because of its resistance to noise and bounded-time operation. For the actual state estimation, we employ the kalman filter algorithm as it produces optimal solutions in the presence of noise.  
+While there has been lots of work done in the area of localisation, we propose a unique solution targeting indoor environments which consists using on-board processing and RGB-D cameras as our primary sensor combined with accelerometer and gyroscope sensors capable of working in GPS deficient areas. Our approach leverages the powerful yet cheap capabilities of the Xtion Pro camera. A typical solution to localisation involves modelling the motion of the agent as it moves in the environment, extracting features from the environment using sensors and using this information to approximate its location within the environment. We decided to track wall planes as our feature extracting plane equations from the Xtion Pro using DBSCAN algorithm because of the algorithm's resistance to noise and bounded-time operation. Moreover, Using an RGB-D camera provides lots of information and is resistant to interference compared to sonar sensors. For the actual state estimation, we employ the kalman filter algorithm as it produces optimal solutions in the presence of noise.  
 \subsection{Results}
-
-Using the flood fill algorithm, we were able to extract planes as features. Observing three orthogonal planes provide full observability in the x, y and z axis. Using the extended kalman filter, we were able to show that our system can estimate state in an indoor environment. We had to tune the filter providing empirical values for uncertainities in the Xtion's observation obtained through numerous testing. We confirmed the consistency of our filter by checking for bias in its measurement error and ensuring its boundedness is described by its covariance. Our filter performed well, giving us our accurate position verified using a measuring tape. 
+Using DBSCAN algorithm, we were able to extract planes as features. Observing three orthogonal planes provide full observability in the x, y and z axis. Using the extended kalman filter, we were able to show that our system can estimate its position, velocity and attitude in an indoor environment. We had to tune the filter providing empirical values for uncertainities in the Xtion's observation obtained through numerous testing. We confirmed the consistency of our filter by checking for bias in its measurement error and ensuring its boundedness is described by its covariance. Our system gave us accurate positioning(with 10mm precision) verified using a measuring tape. 
 
 \subsection{Conclusion}
-Localisation and state estimation is a first step towards full autonomous simultaneous localisation and mapping which combined with the high maneuverability of the quadcopter opens up new areas in robotics. We have thus pushed forward a bit the goal of our client company, UAir in developing unmanned aerial vehicles. Our project has shown and demonstrated the possibilities of indoor state estimation without GPS data which has commercial benefits in the aerial photography market as well as applications in search and rescue operations. 
+Localisation and state estimation is a first step towards full autonomous simultaneous localisation and mapping which combined with the high maneuverability of the quadcopter opens up new areas in robotics. We have thus pushed forward a bit the goal of our client company, Mavrx in developing unmanned aerial vehicles. Our project has shown and demonstrated the possibilities of indoor state estimation without GPS data which has commercial benefits in the aerial photography market as well as applications in search and rescue operations. Our system can be applied in the industry where aerial monitoring is essential such as pipeline inspection and area mapping.  
 
 \clearpage
 
@@ -229,7 +228,7 @@ The tasks can be group into two main categories feature extraction and extended 
 \subsection{Feature Extraction}
 The agent needs to properly observe its environment in order to be able to have some information of its relationship within the environment. First, we must chose a suitable sensor for our implementation taking into account the type of feature we want to extract. We chose to use a visual sensor/camera with depth information called the Xtion Pro as it is more more accurate and less prone to interference than using sound to observe the agent's environment. The camera essentially collects raw depth map data of 640 by 480 pixels at 30 frames per second. This is a huge amount of data to process especially in an embedded environment with limited resources. Moreover, the data in its raw form doesn't give much information in and off itself as it is only pixels with their depth information.
 
-We use the \ac{PCL} which is open source and is dedicated to processing such information from our xtion pro depth camera in order to perform a robust feature extraction process. With the \ac{PCL}, we can extract feature of the indoor environment from the raw data of our camera. In selecting suitable features, we need them to be easily re-observable. With the assumption that our indoor environment is mostly cubic in nature, we decided to track walls, floors and cellings as these are easily re-observable. Also, we can essentially represent a large wall as a plane and this requires minimal storage space as opposed to the millions of pixel data. This abstraction reduces considerably both computation and space complexity needed. The trade-off is .....
+We use the Point Cloud Library (PCL) which is open source and is dedicated to processing such information from our xtion pro depth camera in order to perform a robust feature extraction process. With the PCL, we can extract feature of the indoor environment from the raw data of our camera. In selecting suitable features, we need them to be easily re-observable. With the assumption that our indoor environment is mostly cubic in nature, we decided to track walls, floors and cellings as these are easily re-observable. Also, we can essentially represent a large wall as a plane and this requires minimal storage space as opposed to the millions of pixel data. This abstraction reduces considerably both computation and space complexity needed. The trade-off is .....
 To extract planes, we employed the popular and much referenced density-based scan (DBScan) to cluster points in 3D in order to obtain the regression plane normal and distance information of the points. An alternative is to use the random sample consensus algorithm (RANSAC). There isn't however an upperbound time limit on the RANSAC algorithm while DBScan completes in $O(n^{2})$ time. In an embedded real-time environment with time contrainsts, an unbounded-time operation is not optimal. The planes produced are then sent to the extended kalman filter for state evaluation.
 
 \subsection{Extended Kalman Filter}
@@ -248,36 +247,34 @@ The below image shows the basic concept of the EKF:
 If more than one plane is observed, the update step is run for each plane re-observed. If a new plane is observed, it is added as a new landmark into the kalman filter and its covariance is added onto the covariance matrix.
 
 \section{Preliminaries}
-
+In this section, we discuss important procedures outside the main project implementation that has to be setup for the project implementation to work. This includes board selection, board configuration and Xtion sensor calibration. 
 \subsection{System platform} % (fold)
 \label{sub:system_platform}
 
-The project aims to implement the estimation algorithm on on-board processing, this section discusses the hardware platform for the implementation.
+((The project aims to implement the estimation algorithm on on-board processing.))
 
-In conventional processor applications, of importance is optimising the computational performance against cost and power usage. For an embedded system that is mounted on a quadcopter however, power usage of the chip is not a concern as it is insignificant compared to the usage of the \ac{MAV} itself. Therefore, for implementing this project we desire the best processing power per pound for the target workload. In this metric, no distinct advantage can be given to either of the two main standard processor architecture families (x86 and ARM) and the evaluation needs to be done on a chip-by-chip basis. 
+<<In choosing a platform to implement the algorithm, consideration needs to be given to the target processor's ISA and the operating system [[(or lack of thereof)]].>>
 
-In addition to the above, the choise of \ac{ISA} is influenced by the architecture's operating system support and the ability to interface with other system components that could be incorporated into the system (e.g. coprocessors). The target operating system for this project is a lightweight distribution based on the Linux kernel. This is due to the Linux kernel being free, open source and being easily configurable, with the ability to compile in only the needed functionality and put options in loadable kernel modules. This results in an embedded operating system with minimal memory and processing footprint, as well as small disk usage which can be limited in embedded systems. For the specific libraries and frameworks used in implementing the estimation software (\ac{PCL} and OpenNI), x86-Linux variants were found to have more mature support than ARM-Linux at the time of writing.
+In conventional processor applications, <main consideration> is given to optimising the computational performance against cost and power usage. For an embedded system that is mounted on a quadcopter however, power usage of the chip is not a concern as it is not significant compared to the usage of the MAV itself. Therefore, for implementing this project we desire the best processing power per pound for the target workload. In this metric, no distinct advantage can be given to either of the two main standard processor architectures (x86 and ARM, including their derivatives) and the evaluation needs to be done on a chip-by-chip basis. 
 
-For low volume production, it is not always worth investing the engineering time in designing a custom hardware platform, sourcing the components and manufacturing. Instead, small form factor boards can be readily purchased at acceptable prices. For example: \$90 Odroid-U2 development board with a quad core ARM Cortex-A9 @1.7 GHz processor with a Mali-400 quad core GPU in a 60x60x60 mm package.
+In addition to the above, the choise of ISA is influenced by the support of the architecture by operating system support and the ability to interface with other system components that could be incorporated into the system (e.g. coprocessors). The target operating system for this project is a any lightweight distribution based on the linux kernel. This is due to the linux kernel being free, open source and being easily configurable, with the ability to compile in only the needed functionality and the ability to put options in loadable kernel modules. This results in an embedded operating system with minimal memory and processing footprint, as well as small disk usage which can be limited in embedded systems. For the specific libraries and frameworks used in implementing the estimation software (PCL and OpenNI), x86-Linux variants were found to have more mature support than ARM-Linux at the time of writing.
 
-Additionally, we evaluated the possibility of using consumer grade smartphones as the embedded processing platform for the estimation algorithm. Android mobile operating system is built on top of the Linux kernel and is also open source, making it the OS of choice for this evaluation. The reasons for considering consumer grade smartphones are as follows:
+For low volume production, it is not always worth investing the engineering time in designing a custom system, sourcing the components and manufacturing. Instead, small form factor boards can be readily purchased at acceptable prices. [[include odroid u2 vs the atom board here as examples? Saying that both can handle the algorithm with less than N planes at sufficient framerates to remain convergent and stable?]]
 
-\begin{itemize}
-	\item the smartphone market is extremely competitive, driving the prices down while improving the processing power to levels compatible with embedded systems usually seen in robotics applications.
-	\item small form factor, lack of need for additional heatsinks.
-	\item smartphones of all price ranges come with additional hardware and sensors that can be useful for the quadcopter platform. Most devices have 9 \ac{DoF} sensors and USB functionality, making it possible to interface with the \ac{RGB-D} camera. Additonally, the estimation can be improved by using the phone's camera in a downwards looking configuration as an optical flow sensor. GPS can be used in semi-indoor environments and urban canyon situations. Wifi can be used to augment the system with wifi-slam \cite{todo} <<ref: http://www.aaai.org/Papers/IJCAI/2007/IJCAI07-399.pdf>> for additional localisation information in indoor environments. Furthermore, GPUs found in smartphones are starting to be OpenCL compatible (e.g. Imagination Technologies' powerVR series and newer ARM Mali cores), which can provide easily accessible acceleration for certain parts of the algorithm.
-\end{itemize}
+Additionally, we evaluated the possibility of using consumer smartphones as the embedded processing platform for the estimation algorithm. Android mobile operating system is built on top of the linux kernel and is also open source, making it the OS of choice for this comparison. The reasons for considering consumer smartphones are as follows:
 
-However, in practice it was found that porting third party libraries used in the project and drivers for the \ac{RGB-D} camera sensor, while possible, needed significant investment of engineering time. Additionally, the android platform enforces restricted APIs to underlying hardware resources, so it is not always possible to get the direct hardware control (e.g. for \ac{IMU}) usually found in embedded Linux systems.
+- the smartphone market is extremely competitive, driving the prices down while improving the processing power to levels compatible with embedded systems usually seen in robotics applications.
+- small form factor, including not needing big heatsinks.
+- smartphones of all price ranges come with additional hardware and sensors that can be useful for the quadcopter platform. There are 9 DoF sensors in any device and USB functionality for interfacing to the RGB-D camera. Additonally, the estimation can be improved by using the phone's camera in a downwards looking configuration as an optical flow sensor. GPS can be used in semi-indoor environments and urban canyon situations. WiFi can be used to augment the system with wifi-slam [[http://www.tuaw.com/2013/03/23/wsj-apple-acquires-wifislam-indoor-location-tech-company/]] which gives additional localisation information for the system in indoor environments. Bluetooth can be used for [[???, short range wireless communication?]]. Furthermore, GPUs found in smartphones are starting to be OpenCL compatible (both Imagination Technologies' powerVR series and newer ARM Mali cores), which can provide easily accessible acceleration for certain parts of the algorithm.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%include the final config? atom board specs
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%throw in fpga as additional possibilities, zynq7? :P, fixed point scaling etc
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+However, in practice it was found that porting third party libraries used in the project and drivers for the RGB-D camera sensor, while possible, often needs significant engineering time spent. Additionally, the android platform enforces restricted APIs to underlying hardware resources, so it is not always possible to get the direct hardware control (e.g. for IMU) usually found in embedded linux systems.
+
+[[price comparison of android phones with decent cpu vs embedded?]]
+
+[[throw in fpga as additional possibilities, zynq7? :P, fixed point scaling blablabla]]
 
 \subsection{Sensor Calibration} % (fold)
-After inspecting the output of the Xtion Pro from Asus it became apparent that the accuracy of the data was poor as the sensor uses a logarithmic scale and not a linear one. At short ranges things appeared normal, and planes were indeed flat. At distance more than 2m planes quickly became warped (see Figure~\ref{fig:uncal5m}). This issue will corrupt the accuracy of planes that we extract from the cloud data, rendering the extra sensor of little use. 
+Apon inspecting the output of the Xtion Pro from Asus it became apparent that the accuracy of the data was poor as the sensor uses a logarithmic scale and not a linear one. At short ranges things appeared normal, and planes were indeed flat. At distance more than 2m planes quickly became warped (see Figure~\ref{fig:uncal5m}). This issue will corrupt the accuracy of planes that we extract from the cloud data, rendering the extra sensor of little use. 
 
 \begin{figure}[H]
 \centering     %%% not \center
@@ -288,11 +285,9 @@ After inspecting the output of the Xtion Pro from Asus it became apparent that t
 \end{figure}
 
 
-To attempt to counteract this issue we collected cloud data from when the sensor is facing a large plane, in this case a wall, at a number of distances (from 0.8m to 4m). This cloud data included objects that could corrupt the calibration, such as power sockets and skirting boards
-%\textbf{(What do you mean by object and of no use?)}
-, these data points were written to \verb"NaN" in the analysis to avoid corruption of the plane. This was achieved by using the data written to an image file, with the z distance (down range from the camera) encoding the grey-scale. Then, by hand, we masked with black all the unwanted areas. This is then easy to correlate against the original data in MATLAB.% \textbf{Section is needs clarity. Description is vague.} I think this might be a little better now. 
+To attempt to counteract this issue we collected cloud data from when the sensor is facing a large plane, in this case a wall, at a number of distances (from 0.8m to 4m). This cloud data included lots of objects that are of no use to the calibration\textbf{(What do you mean by object and of no use?)}, so these data points were written to \verb"NaN" in the analysis to avoid corruption of our results. This was achieved by using the data written to an image file, with the z distance (down range from the camera) encoding the grey-scale. Then, by hand, we masked with black all the unwanted areas. This is then easy to correlate against the original data in MATLAB. \textbf{Section is needs clarity. Description is vague.}
 
-Figure~\ref{fig:avDist} shows the average measurement across all of the frame for a range of distances. This represents another mode of inaccuracy; not only is the image distorted, the distance measurement is very poor. At 4m the average distance measured was 3.32m, which represents a 17\% error. Though the maximum error is 0.941m at 4m, which represents a huge 23.5\% error. 
+Figure~\ref{fig:avDist} shows the average measurement across all of the frame for a range of distances. This represents another mode of inaccuracy not only is the image distorted, the distance measurement is very poor. At 4m the average distance measured was 3.32m, which represents a 17\% error. Though the maximum error is 0.941m at 4m, which represents a huge 23.5\% error. 
 
 \begin{figure}[htb]
 	\begin{center}
@@ -306,15 +301,11 @@ Now with the clean data we know that all the data points must belong to a plane 
 
 In order to have the 3D correction field be continuous we must smooth and interpolate the data in all 3 dimensions. One significant issue is that all of our correction vectors fall into quite thin regions in the 3D space along the z axis, and within those areas the data is very dense in the x and y dimensions. Therefore our task is to preform smoothing in the x and y directions to remove the signal noise and to find a good interpolation scheme looking in the z direction. The interpolation should be smooth to avoid damaging the flatness of planes. 
 
-In order to avoid large computation times on the embedded device it is important that we must invert the correction function. As it stands for each data point at the input we would have to search for the two closest calibration measurements for that pixel doing this for every pixel will be very time consuming. With the function inverted using the measures z distance and having the x and y index, the correction can be looked up directly, taking the complexity of correction from $n^2$ to $n$.
-
-The completed correction look up table is organised into 19200 smaller lookup tables (one for each pixel in the array), with 56 entries each representing the corrected distances for an input range of 0.5m to 6m (in 0.1m increments). Therefore to correct a pixel one would take the pixel indices to find the correct lookup table. Then use the measured z distance to choose the two closest lookup values, interpolate between the two values stored within these locations to find the corrected pixel value. 
-
-Further to this algorithm we decided that there was less distortion of strait lines if the ratio of $\frac{corrected Z}{uncorrected Z}$ was applied to the x and y values for each pixel. This has the effect of projecting the corrections radially from the cameras origin, rather than purely in the z direction. 
+In order to avoid large computation times on the embedded device it is important that we must invert the correction function. As it stands for each data point at the input we would have to search for the two closest calibration measurements for that pixel doing this for every pixel will be very time consuming. With an inverted correction lookup table it is possible to go directly to the correct entries in the table. Assuming we would have done the search on each pixel using binary search, this is a saving of at least 3 times for this section of the algorithm. 
 
 \subsection{Results of calibration} % (fold)
  \label{sub:results_of_calibration}
- The results are very good, Figure~\ref{fig:beforeAfter} shows the point cloud data before and after correction, where both images are produced by subtracting the images average distance from all pixels and setting the dynamic range to be from -10\% of the average to +10\%. Therefore an ideal image of a plane should be a pure grey. As you can see the image before has a large area of distortion in the upper right hand corner, this is almost completely removed after correction. Table~\ref{tab:averages} shows the average distance measured over the whole plane for a range of measurements and their respective corrections, this shows that we have also corrected effectively for the absolute inaccuracy found with the Xtion sensor. 
+ After performing the calculations described above we are left with 19200 look up tables (one for each pixel), each of these contain the real depth value for a given depth measurement. This correction lookup was applied to the point cloud data of uninterrupted planes. The results are very good, Figure~\ref{fig:beforeAfter} shows the point cloud data before and after correction, where both images are produced by subtracting the images average distance from all pixels and setting the dynamic range to be from -10\% of the average to +10\%. Therefore an ideal image of a plane should be a pure grey. As you can see the image before has a large area of distortion in the upper right hand corner, this is almost completely removed after correction. Table~\ref{tab:averages} shows the average distance measured over the whole plane for a range of measurements and their respective corrections, this shows that we have also corrected effectively for the absolute inaccuracy found with the Xtion sensor. 
 
  Figure~\ref{fig:outputTest} shows very clearly how important the calibration of the sensor was. The camera took the data points while pointing at a flat wall, a small section of orthogonal flat wall is also visible. Pre-calibration the walls are curved and the data points describing them are dispersed, this would make finding planes very difficult. After processing the image shows the walls being properly orthogonal and flat. Also the grouping of the data points to the surface is much better.
 
@@ -387,7 +378,7 @@ A much referenced and popular algorithm for density based clustering is \ac{DBSc
 	\end{center}
 	\caption{\ac{DBScan} clustering, starting from point within cluster A, and terminating at B and C, which do not contain enough points within their radius to be considered densely connected. N is never touched by this iteration of the algorithm as regions A, B and C are outside distance $\epsilon$.}
 	\label{fig:dbscan}
-	
+
 \end{figure}
 
 \begin{algorithm}[tb]
@@ -453,7 +444,7 @@ To combat against the possibility of slow run-time operation, we decided to use 
 	\KwResult{List of sets of connected points} 
 	\bigskip
 	FloodFill($P_{seed}$, MinPts): \\
-	Push P_{seed} $\rightarrow$ Q \\
+	Push $P_{seed} \rightarrow$ Q \\
 	\While {Q is not empty}
 	{
 	 	Pop $Q \rightarrow P$ \\
@@ -471,7 +462,7 @@ To combat against the possibility of slow run-time operation, we decided to use 
 			}
 		}
 
-		
+
 		}
 	}
 	\bigskip
@@ -487,10 +478,10 @@ Complications arose when performing the flooding. As explained before, the proje
 
 Therefore the conditions (which all must be satisfied) for accepting a point into the current fill region is:
 \begin{align}
-|P_{seed|A} - P_{A}| &< \epsilon
-\\|P_{seed|B} - P_{B}| &< \epsilon
-\\|P_{seed|C} - P_{C}| &< \epsilon
-\\|\abs{P_{seed|D} - P_{D}}| &< (|\abs{N_{seed|z} \times P^{2}_{seed|z}}| + |\abs{N_{z} \times P^{2}_{z}}|) \times \epsilon_{depth}
+|P_{seed|A} - P_{A}| &< \epsilon \\
+|P_{seed|B} - P_{B}| &< \epsilon\\
+|P_{seed|C} - P_{C}| &< \epsilon\\
+|P_{seed|D}-P_{D}| &< (|N_{seed|z} \times P^{2}_{seed|z}| + |N_{z} \times P^{2}_{z}|) \times \epsilon_{depth}
 \end{align}
 where as before the last equation was the same as the previous three, except changed to the D parameter.
 Note that P is the point which we are testing to investigate whether it should exist in the flood region, while $P_{seed}$ is the seed point at which was first chosen to characterise the flood fill region. 
@@ -519,14 +510,14 @@ This method was never implemented as after thinking ahead towards plane associat
 		\label{fig:dbscan_planes}
 		\includegraphics[width=0.8\textwidth]{6normal_boards.png}
 	}
-	
+
 	\subfloat[\ac{DBScan} of a laboratory in xyz space. Each white board is considered a separate cluster. Distant objects coloured in blue.] {
 		\label{fig:table_dbscan}
 		\includegraphics[width=0.8\textwidth]{6table_dbscan.png}
 	}
 	\caption{}
 	\label{fig:DBSCAN_LAB}
-	
+
 \end{figure}
 
 \begin{figure}[tbp]
@@ -1280,15 +1271,71 @@ This makes an enormous difference in the scalability of the kalman filter approa
 
 \section{Testing and Results} % (fold)
 \label{sub:testing_kalman}
-To properly running the kalman filter, we had to tune the observation measurement covariance parameter since the range of values obtained by using the RANSAC algorithm was too low. A larger value would result in the kalman relying too much on the inertial sensors while a smaller one means we trust the xtion's output more. The Xtion camera has considerable random noise due to the random initial point for the DBscan algorithm. Thus trusting the camera would result in high frequency noise or flunctuations in state estimate. On the otherhand, position estimate from the inertial sensors behave like low pass filtered values as it is obtained by double integrating the acceleration. Thus increasing the Xtion's uncertainty results in a lower frequency in estimate. In our tests, we focus our analysis on position alone because since position depends on speed and attitude change, a good position estimate is sufficient to validate our algorithm.
+In our test setup, we based our coordinate system in a vertex of the room as origin defining the x,y and z coordinates to be along the three wall edges connected to the origin vertex. Our test system consist of Thalamus chip containing the inertial sensors and Xtion Pro taped together. To ensure a functional kalman filter, full observability of system in the x,y and z axis is needed. Thus we decided to observe three orthogonal planes formed by the wall that meet at the origin. We then initialise our state in the filter to be -2,2,2 in the x,y,z space. In practice however, the initial state will be close to but not exactly the same as in the filter. It is left to the kalman filter to converge to the real state estimate.
 
-We then perform some analysis on our system to check that our filter works correctly. Firstly we checked for consistency in the kalman filter by verifying that errors in the observation measurements are bounded to $\pm\sqrt{2\sigma}$. We found this to be the case that at least 95\% of our errors are within this bound. [graph]. The second test was to verify that there was no bias in our observation errors as the filter evolves. To do this, we performed the autocorrelation of the noise and found it to be bias free. [Graph given below].
+To properly running the kalman filter, we had to tune the observation covariance parameter since the range of values obtained by using the RANSAC algorithm was too low (in the order of $10^{-7}$). A larger value would result in the kalman relying too much on the inertial sensors while a smaller one means we trust the xtion's output more [Fig:~\ref{fig:trustXtion}]. Feature extraction has considerable random noise due to the random initial point for the DBscan algorithm. Thus trusting the camera would result in high frequency noise or flunctuations in state estimate. On the otherhand, position estimate from the inertial sensors behave like low pass filtered values as it is obtained by double integrating the acceleration. Thus increasing the Xtion's uncertainty results in a lower frequency in estimate which means the filter is slow to respond. We choose an appropriate value such that our filter behaves within an optimal region based on three test as discussed in \cite{KalmanTuning} . We focus our analysis on position estimate alone because since it depends on speed and attitude change, a good position estimate is sufficient to validate our algorithm implying the other estimates are correct. 
+
+First we checked for consistency in the kalman filter by verifying that most(ideally \textgreater 95\%) of error magnitude in the observation measurements are bounded to $\pm\sqrt{2\sigma}$. [Show results].After increasing the Xtion's uncertainty by a factor of 100, the results suggest that 100 is indeed too small. A factor of 10000 gives better results.
+
+\begin{table}[ht]
+\caption{Innovation Magnitude Bound Test(\textgreater 2500 samples used)} % title of Table
+\centering % used for centering table
+\begin{tabular}{c c c c} % centered columns (4 columns)
+\hline\hline %inserts double horizontal lines
+Variable & Case\#1 (factor = 100) & Case\#2 (factor = 10000)  \\ [0.5ex] % inserts table 
+%heading
+\hline % inserts single horizontal line
+    Nx 	& 79.98\% 	& 99.54\%\\
+    Ny 	& 80.12 	& 86.74 \\
+    Nz 	& 79.84 	& 77.27 \\
+    d 	& 79.91 	&	92.41 \\ [1ex] % [1ex] adds vertical space
+\hline %inserts single line
+\end{tabular}
+\label{table:firstTest} % is used to refer this table in the text
+\end{table}
+In the second test, we check for unbiasness by computing the normalised innovation squared
+\begin{equation}
+	q_{k} = z_{k}^{T} S_(k)^{-1} z_{k}
+\end{equation}
+for a sequence of i trials. If the filter's assumptions are met then $q_{k}$ are each $\chi^{2}$ in 4 degrees of freedom. To test for unbiasness, we can use the mean of the sequence,
+\begin{equation}
+	\bar{q} = \frac{1}{N}\sum_{k=1}^N {q_k}
+\end{equation}
+as a test statistic such that an ideal mean lies within a confidence interval [$r_{1}, r_{2}$] defined by our hypothesis $H_0$ that $\bar{q}$ is  $\chi_{4}^{2}$ distributed with probability $1-\alpha$. First we need to find the interval such that
+\begin{equation}
+P(N\bar{q}\in [r_{1}, r_{2}] | H_{0}) = 1 - \alpha 
+\end{equation}
+We choose $\alpha$ = 0.005 (i.e. defining a two sided 95\% confidence region). We get that
+[$r_{1}, r_{2}$] = [$\chi_{4}(0.025), \chi_{4}(0.975)$] = 0.4844, 11.1433. For a factor of 10000 , we obtain $\bar{q}$ = 3.6561 which is within the confidence region.
+In the third test, we verify that error is white and to do this, we performed the autocorrelation of the noise using our obtained Xtion factor of 10000. Ideally for whiteness, autocorrelation peaks at a lag of 0 and is essentially zero for all others. For large enough N, we can assume that r($\tau$) is normally distributed with mean 0 and variance $\frac{1}{N}$. Practically, we can compute the $\pm$ 2$\sigma$ gate and check that aleast 95\% of values fall within this confidence region. In our test, we obtained that percentage of innovation in Nx,Ny and Nz that satisfy are the condition are 98.40$\%$, 97.81\%, 98.35\%, respectively. Error in distance however gives 93.14\%. 
+\begin{figure}[H]
+	\centering     %%% not \center
+	\subfloat[Nx error]{
+		\label{fig:errorNx}
+		\includegraphics[width=0.45\textwidth]{noiseNx.PNG}
+	}
+	\;
+	\subfloat[Ny error]{
+		\label{fig:errorNy}
+		\includegraphics[width=0.45\textwidth]{noiseNy.PNG}
+	}
+	\;
+	\subfloat[Nz error]{
+		\label{fig:errorNz}
+		\includegraphics[width=0.45\textwidth]{noiseNz.PNG}
+	}
+	\;
+	\subfloat[D error]{
+		\label{fig:errorD}
+		\includegraphics[width=0.45\textwidth]{noised.PNG}
+	}
+	\;
+	\caption{Error in innovation showing whiteness expect for the distance variable}
+	\label{fig:errorfigures}
+\end{figure}
 
 
- 
-In our test setup, we based our coordinate system in a vertex of the room as origin defining the x,y and z coordinates to be along the three wall edges connected to the origin vertex. Out test system consist of Thalamus chip containing the inertial sensors and Xtion Pro taped together. To ensure a functional kalman filter, full observability of system in the x,y and z axis is needed. Thus we decided to observe three orthogonal planes formed by the wall that meet at the origin setting our initial state in the filter to be -2,2,2 in the x,y,z space. In practice however, the initial state will be close to but not exactly the same as in the filter.
-
-In order to verify that our system works, we ran our system from our default initial position leaving it stationary. Below is the trajectory results. It shows a point cloud indicating that our kalman filter does indeed converge to some estimate of our real position. This is the result is due to the full observability provided by the three orthogonal planes lying in the xy, yz, zx spaces.
+In order to verify that our system works with the kalman tuning, we ran it from our default initial position leaving it stationary. Below is the trajectory results. It shows a point cloud indicating that our kalman filter does indeed converge to some estimate of our real position flunctuating by only millimeters. This  somewhat accurate result is due to the full observability provided by the three orthogonal planes lying in the xy, yz, zx spaces.
 
 \begin{figure}[H]
 	\begin{center}
@@ -1297,41 +1344,23 @@ In order to verify that our system works, we ran our system from our default ini
 	\caption{Cloud point showing bounded kalman filter stationary trajectory estimation}
 	\label{fig:stationary_trajectory}
 \end{figure}
-In the second test, we moved the setup by hand in a pseudo straight line of length 1m along across on a table in the y axis whilst ensuring that three orthogonal planes are always observed. In the figure, we see that the variation in the z axis is small.
+In the second test, we moved the setup by hand in a pseudo straight line of length 1m along across on a table in the y axis whilst ensuring that three orthogonal planes are always observed. In the figure, we see that the variation in the z axis is small as the table provided low variation in the z axis. Also, flunctuations in state estimate are in the order of millimeters.
 
-\begin{figure}[H]
-	\begin{center}
-		\includegraphics[width = \textwidth]{movingTraj.png}
-	\end{center}
+\begin{figure}[tbh]
+	\subfloat[Using an Xtion factor of 10000] {
+		\includegraphics[width = \textwidth/2]{movingTraj.png}
+	}
+	\subfloat[Using an Xtion factor of 100(Higher frequency in estimation)] {
+		\includegraphics[width = \textwidth/2]{movingTraj100.png}
+		\label{fig:trustXtion}
+	}
 	\caption{Cloud point showing bounded kalman filter moving trajectory estimation over a distance of 1m in the y axis}
-	\label{fig:stationary_trajectory}
+	\label{fig:moving_trajectory}
 \end{figure}
 
-Covariance
-\begin{align}
-	10^{-3}
-	\left[
-	\begin{matrix}
-		0.1037	& 0.0919	& -0.0024 \\
-		0.0919	& 0.1014	& -0.0129 \\
-		-0.0024	& -0.0129	& 0.0538
-	\end{matrix}
-	\right]
-\end{align}
-
-sqrt covariance
-\begin{align}
-	10^{-3}
-	\left[
-	\begin{matrix}
-		10.1809	& 9.5878	& 1.5370 \\
-		9.5878	& 10.0684	& 3.5982 \\
-		1.5370	& 3.5982	& 7.3351
-	\end{matrix}
-	\right]
-\end{align}
 \clearpage
 
+\section{Conclusion}
 
 
 \nocite{*}
