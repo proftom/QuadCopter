@@ -196,11 +196,15 @@ void initialisation () { //Incomplete.
 	//	cout << "P initial" << endl << P << endl << endl;
 	Q = noiseMatrix();
 	//initialise state vector.
-	state << -1.5, 1.5, -0.12, 0, 0, 0, 0.924, 0, 0, -0.38,
+	//state << -1.5, 1.5, -0.12, 0, 0, 0, 0.924, 0, 0, -0.38,
 	//state << 1, 1, -1, 0, 0, 0, 0.353553, -0.353553, -0.146447, -0.853553, 
 	//	-0.0456 ,   0.0069,   -0.0048 ,  -0.0331  ,  0.1024 ,   0.1473;
-		0, 0, 0, 0, 0, 0;
+	//	0, 0, 0, 0, 0, 0;
 	//	cout << "state initial" << endl << state << endl << endl;
+
+
+	//Eurobot corner
+	state << -1.2950182, 1.2415010, 0.11603630, 0.049802072, -0.0088094035, -0.00028000007, 0.91991675, -0.013785197, -0.046496253, -0.38910306, -0.0059274049, -0.013975479, 0.00090154941, 0.73073703, -0.30317658, 0.079613924;
 
 	sonarAlt = state(2);
 }
@@ -640,12 +644,12 @@ bool getNewMeasurementThalamus(){
 			acc_t -= state.segment(13,3);
 			acc = acc_t;
 
-			/*
+			
 			if(SPba <= 2*sizeof(bridge_sensor_packet_t)){
 				printf("\r");
 				cout << "acc: " << acc(0) << "  " << acc(1) << "  " << acc(2);
 			}
-			*/
+			
 			
 			sonarAlt = inbuff.sonar_data / 1000.0f;
 			newsonar = true;
