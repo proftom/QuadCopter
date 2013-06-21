@@ -126,7 +126,7 @@ In the present world of increasing machine usage and autonomy, it is important f
 \subsection{Our Solution}
 While there has been lots of work done in the area of localisation, we propose a unique solution targeting indoor environments which consists using on-board processing and RGB-D cameras as our primary sensor combined with accelerometer and gyroscope sensors capable of working in GPS deficient areas. Our approach leverages the powerful yet cheap capabilities of the Xtion Pro camera. A typical solution to localisation involves modelling the motion of the agent as it moves in the environment, extracting features from the environment using sensors and using this information to approximate its location within the environment. We decided to track wall planes as our feature extracting plane equations from the Xtion Pro using DBSCAN algorithm because of the algorithm's resistance to noise and bounded-time operation. Moreover, Using an RGB-D camera provides lots of information and is resistant to interference compared to sonar sensors. For the actual state estimation, we employ the kalman filter algorithm as it produces optimal solutions in the presence of noise.  
 \subsection{Results}
-Using DBSCAN algorithm, we were able to extract planes as features. Observing three orthogonal planes provide full observability in the x, y and z axis. Using the extended kalman filter, we were able to show that our system can estimate its position, velocity and attitude in an indoor environment. We had to tune the filter providing empirical values for uncertainties in the Xtion's observation obtained through numerous testing. We confirmed the consistency of our filter by checking for bias in its measurement error and ensuring its boundedness is described by its covariance. Our system gave us accurate positioning(with 10mm precision) verified using a measuring tape. 
+Using vision algorithms, we were able to extract planes as features. Observing three orthogonal planes provide full observability in the x, y and z axis. Using the extended kalman filter, we were able to show that our system can estimate its position, velocity and attitude in an indoor environment. We had to tune the filter providing empirical values for uncertainties in the Xtion's observation obtained through numerous testing. We confirmed the consistency of our filter by checking for bias in its measurement error and ensuring its boundedness is described by its covariance. Our system gave us accurate positioning (within 10mm precision) verified using a measuring tape. 
 
 \subsection{Conclusion}
 Localisation and state estimation is a first step towards full autonomous simultaneous localisation and mapping which combined with the high maneuverability of the quadcopter opens up new areas in robotics. We have thus pushed forward a bit the goal of our client company, Mavrx in developing unmanned aerial vehicles. Our project has shown and demonstrated the possibilities of indoor state estimation without GPS data which has commercial benefits in the aerial photography market as well as applications in search and rescue operations. Our system can be applied in the industry where aerial monitoring is essential such as pipeline inspection and area mapping.  
@@ -475,9 +475,9 @@ As mentioned, the flood fill algorithm is analogous to a paint bucket function i
 
 Once a single fill has terminated and more than a certain threshold of the image has either been filled (call it $\sigma$, i.e. 90\%) then the algorithm terminates. If this threshold has not been satisfied then begin a new fill, selecting a new random seed point from a point that has not been already included in a previous fill region. The algorithm will repeat until $\sigma$ is satisfied or it has attempted to flood fill the plane cloud for more than a certain number of times (call it $\gamma$, i.e. 50). The flood fill algorithm works iteratively using only a simple queue structure and list keep track if points have been explored yet in the context of the current fill or already added to a previous fill (plane) respectively, resulting in a linear complexity of O(n). 
 
-Complications arose when performing the flooding. As explained before, the projected grid from the Xtion opens in a conic fashion. This means that objects closer the Xtion will be showered in points, while those further away will contain far fewer points. This drop off happens at a quadratic rate, meaning the error in distance also occurs at a quadratic rate. To deal with this we modified the condition on the D parameter for a point to be considered within the region. As depth increases we open the parameter quadratically by projecting of the z component of the plane normal to the point z component squared. We do this for both the seed point and the point being queried. 
+Complications arose when performing the flooding. As explained before, the projected grid from the Xtion opens in a conic fashion. This means that objects closer the Xtion will be showered in points, while those further away will contain far fewer points. This drop off happens at a quadratic rate, meaning the error in distance also occurs at a quadratic rate. To deal with this we modified the condition on the D parameter for a point to be considered within the region. As depth increases we open the parameter quadratically by projecting the z component of the plane normal onto the quadratic point z component. We do this for both the seed point and the point being queried, taking their absolute values and sum. We then multiply this value by an adjusted epsilon value ($\epsilon_{depth}$). 
 
-Therefore the conditions (which all must be satisfied) for accepting a point into the current fill region is:
+The conditions (which all must be satisfied) for accepting a point into the current fill region becomes:
 \begin{align}
 |P_{seed|A} - P_{A}| &< \epsilon \\
 |P_{seed|B} - P_{B}| &< \epsilon\\
@@ -506,18 +506,14 @@ This method was never implemented as after thinking ahead towards plane associat
 
 \begin{figure}[tbp]
 	\centering
-	%\subfloat[\ac{DBScan} in normal space. A total of 4 planes were found:, the floor, the white boards and two back walls] 
-	\subfloat[z]
+	\subfloat[\ac{DBScan} in normal space. A total of 4 planes were found: The floor, the white boards and two back walls] 
 	{
 		\label{fig:dbscan_planes}
-		\includegraphics[width=0.1\textwidth]{6normal_boards.png}
+		\includegraphics[width=0.5\textwidth]{6normal_boards.png}
 	}
-
-	\subfloat[b]
-	{
-	%\subfloat[\ac{DBScan} of the laboratory in xyz space. Each white board is considered a separate cluster. Distant objects coloured in blue.] {
+	\subfloat[\ac{DBScan} of the laboratory in xyz space. Each white board is considered a separate cluster. Distant objects coloured in blue.] {
 		\label{fig:table_dbscan}
-		\includegraphics[width=0.1\textwidth]{6table_dbscan.png}
+		\includegraphics[width=0.5\textwidth]{6table_dbscan.png}
 	}
 	\caption{Images}
 	\label{fig:DBSCAN_LAB}
