@@ -523,6 +523,7 @@ void controlCraft(){
 
 
 bool getNewMeasurementThalamus(){
+
 	#if defined (_WIN32) || defined( _WIN64)
 	static Serial SP("\\\\.\\COM25");
 	#endif
@@ -530,6 +531,7 @@ bool getNewMeasurementThalamus(){
 	#ifdef __linux__
 	static Serial SP("/dev/ttyACM0");
 	#endif
+
 	int SPba = SP.BytesAvailable();
 	//int SPba = sp.Peek();
 	if (SPba >= 10*2)
@@ -579,13 +581,13 @@ bool getNewMeasurementThalamus(){
 
 #ifdef ON_QUAD
 
-	#if defined (_WIN32) || defined( _WIN64)
-	static Serial SP("\\\\.\\COM66");
-	#endif
+#if defined (_WIN32) || defined( _WIN64)
+static Serial SP("\\\\.\\COM66");
+#endif
 
-	#ifdef __linux__
-	static Serial SP("/dev/ttyACM0");
-	#endif
+#ifdef __linux__
+static Serial SP("/dev/ttyACM0");
+#endif
 
 #pragma pack(1)
 struct bridge_sensor_packet_t
