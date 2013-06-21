@@ -123,11 +123,11 @@ A Lovely Abstract full of insight and long words that makes it apparent we did l
 \section{Executive Summary} % (fold)
 \label{sec:executive_summary}
 \subsection{Introduction}
-In the present world of increasing machine usage and autonomy, it is important for robots to be able to correctly estimate their position, velocity and in general their current state at any given time in order to perform tasks with much better accuracy. For our project we focused on determining the indoor state also known as the indoor localisation problem of quadcopters. Quadcopters have become a famous hobbyist platform but more importantly, they can be used in autonomous rescue operations and aerial photography. Our project is in essence a first step towards implementing indoor simultaneous localisation and mapping (SLAM). With this in mind, we served as consultants to a startup company called MAVRX who specialises in developing unmanned aerial vehicles(UAVs), supporting electronics and software. Our mission is to enhance MAVRX's interest and research by developing an indoor state estimator that can be used for autonomous quadcopters. They inturn provide us with necessary tools including an R10 quadcopter, a wireless remote controller, and basic code for stabilising and controlling the UAV.
+In the present world of increasing machine usage and autonomy, it is important for robots to be able to correctly estimate their position, velocity and in general their current state at any given time in order to perform tasks with much better accuracy. For our project we focused on determining the indoor state also known as the indoor localisation problem of quadcopters. Quadcopters have become a famous hobbyist platform but more importantly, they can be used in autonomous rescue operations and aerial photography. Our project is in essence a first step towards implementing indoor simultaneous localisation and mapping (SLAM). With this in mind, we served as consultants to a start up company called MAVRX who specialises in developing unmanned aerial vehicles(UAVs), supporting electronics and software. Our mission is to enhance MAVRX's interest and research by developing an indoor state estimator that can be used for autonomous quadcopters. They in turn provide us with necessary tools including an R10 quadcopter, a wireless remote controller, and basic code for stabilising and controlling the UAV.
 \subsection{Our Solution}
 While there has been lots of work done in the area of localisation, we propose a unique solution targeting indoor environments which consists using on-board processing and RGB-D cameras as our primary sensor combined with accelerometer and gyroscope sensors capable of working in GPS deficient areas. Our approach leverages the powerful yet cheap capabilities of the Xtion Pro camera. A typical solution to localisation involves modelling the motion of the agent as it moves in the environment, extracting features from the environment using sensors and using this information to approximate its location within the environment. We decided to track wall planes as our feature extracting plane equations from the Xtion Pro using DBSCAN algorithm because of the algorithm's resistance to noise and bounded-time operation. Moreover, Using an RGB-D camera provides lots of information and is resistant to interference compared to sonar sensors. For the actual state estimation, we employ the kalman filter algorithm as it produces optimal solutions in the presence of noise.  
 \subsection{Results}
-Using DBSCAN algorithm, we were able to extract planes as features. Observing three orthogonal planes provide full observability in the x, y and z axis. Using the extended kalman filter, we were able to show that our system can estimate its position, velocity and attitude in an indoor environment. We had to tune the filter providing empirical values for uncertainities in the Xtion's observation obtained through numerous testing. We confirmed the consistency of our filter by checking for bias in its measurement error and ensuring its boundedness is described by its covariance. Our system gave us accurate positioning(with 10mm precision) verified using a measuring tape. 
+Using DBSCAN algorithm, we were able to extract planes as features. Observing three orthogonal planes provide full observability in the x, y and z axis. Using the extended kalman filter, we were able to show that our system can estimate its position, velocity and attitude in an indoor environment. We had to tune the filter providing empirical values for uncertainties in the Xtion's observation obtained through numerous testing. We confirmed the consistency of our filter by checking for bias in its measurement error and ensuring its boundedness is described by its covariance. Our system gave us accurate positioning(with 10mm precision) verified using a measuring tape. 
 
 \subsection{Conclusion}
 Localisation and state estimation is a first step towards full autonomous simultaneous localisation and mapping which combined with the high maneuverability of the quadcopter opens up new areas in robotics. We have thus pushed forward a bit the goal of our client company, Mavrx in developing unmanned aerial vehicles. Our project has shown and demonstrated the possibilities of indoor state estimation without GPS data which has commercial benefits in the aerial photography market as well as applications in search and rescue operations. Our system can be applied in the industry where aerial monitoring is essential such as pipeline inspection and area mapping.  
@@ -213,27 +213,27 @@ We have decided to go with a quadcopter airframe for closed loop experimentation
 % % section problem_specification (end)
 \section{Implementation Overview}
 \label{sub:implementation_overview}
-Our state estimator involves a moving agent like a quadcopter which embarks one sensor to gather information about its surroundings. This is called an exteroceptive sensor and in our case, we use a depth camera. We also incorporate extra sensors to measure the agent's own movement. These are called preprioceptive sensors and we used an accelerometer and a gyroscope. The state evaluation process involves the following steps:
+Our state estimator involves a moving agent such as a quadcopter which deploys one sensor to gather information about its surroundings. This is called an exteroceptive sensor and in our case, we use a depth camera. We also incorporate extra sensors to measure the agent's own movement. These are called preprioceptive sensors and we used an accelerometer and a gyroscope. The state evaluation process involves the following steps:
 
-\textbf{The agent moves, reaching a new point of view in the room} As a reuslt of unavoidable noise
+\textbf{The agent moves, reaching a new point of view in the room} As a result of unavoidable noise
 and errors, this movement increases the uncertainty on the robot's localization.
 There is a need to model this motion to in implementing our state evaluation. This, we will call the motion model.
 
-\textbf{The robot observes features in the room which need to be added to its interior map.} These features we call called landmarks. However, dues to errors in the depth camera, the location of the landmark will be uncertain. Moreover the robot's already uncertain position means that these two uncertainities have to be properly combined. We thus require a mathematical model to determin the position of the landmark from data obtained by the exteroceptive sensor. This we will call the inverse observation model.
+\textbf{The robot observes features in the room which need to be added to its interior map.} These features we call called landmarks. However, dues to errors in the depth camera, the location of the landmark will be uncertain. Moreover the robot's already uncertain position means that these two uncertainties have to be properly combined. We thus require a mathematical model to determine the position of the landmark from data obtained by the exteroceptive sensor. This we will call the inverse observation model.
 
-\textbf{The robot re-observes landmarks and it uses them to  make corrections to its self-localisation and landmark position.} Thus reducing uncertainities on both. We also need a mathematical model to predict the values of the measurement from the predicted landmark location and the robot localisatio. This will be the direct observation model.
+\textbf{The robot re-observes landmarks and it uses them to  make corrections to its self-localisation and landmark position.} Thus reducing uncertainties on both. We also need a mathematical model to predict the values of the measurement from the predicted landmark location and the robot localisation. This will be the direct observation model.
 
 The tasks can be group into two main categories feature extraction and extended kalman filter implementation.
 
 \subsection{Feature Extraction}
 The agent needs to properly observe its environment in order to be able to have some information of its relationship within the environment. First, we must chose a suitable sensor for our implementation taking into account the type of feature we want to extract. We chose to use a visual sensor/camera with depth information called the Xtion Pro as it is more more accurate and less prone to interference than using sound to observe the agent's environment. The camera essentially collects raw depth map data of 640 by 480 pixels at 30 frames per second. This is a huge amount of data to process especially in an embedded environment with limited resources. Moreover, the data in its raw form doesn't give much information in and off itself as it is only pixels with their depth information.
 
-We use the Point Cloud Library (PCL) which is open source and is dedicated to processing such information from our xtion pro depth camera in order to perform a robust feature extraction process. With the PCL, we can extract feature of the indoor environment from the raw data of our camera. In selecting suitable features, we need them to be easily re-observable. With the assumption that our indoor environment is mostly cubic in nature, we decided to track walls, floors and cellings as these are easily re-observable. Also, we can essentially represent a large wall as a plane and this requires minimal storage space as opposed to the millions of pixel data. This abstraction reduces considerably both computation and space complexity needed. The trade-off is .....
-To extract planes, we employed the popular and much referenced density-based scan (DBScan) to cluster points in 3D in order to obtain the regression plane normal and distance information of the points. An alternative is to use the random sample consensus algorithm (RANSAC). There isn't however an upperbound time limit on the RANSAC algorithm while DBScan completes in $O(n^{2})$ time. In an embedded real-time environment with time contrainsts, an unbounded-time operation is not optimal. The planes produced are then sent to the extended kalman filter for state evaluation.
+We use the Point Cloud Library (PCL) which is open source and is dedicated to processing such information from our xtion pro depth camera in order to perform a robust feature extraction process. With the PCL, we can extract feature of the indoor environment from the raw data of our camera. In selecting suitable features, we need them to be easily re-observable. With the assumption that our indoor environment is mostly cubic in nature, we decided to track walls, floors and ceilings as these are easily re-observable. Also, we can essentially represent a large wall as a plane and this requires minimal storage space as opposed to the millions of pixel data. This abstraction reduces considerably both computation and space complexity needed. The trade-off is .....
+To extract planes, we employed the popular and much referenced density-based scan (DBScan) to cluster points in 3D in order to obtain the regression plane normal and distance information of the points. An alternative is to use the random sample consensus algorithm (RANSAC). There isn't however an upper bound time limit on the RANSAC algorithm while DBScan completes in $O(n^{2})$ time. In an embedded real-time environment with time constraints, an unbounded-time operation is not optimal. The planes produced are then sent to the extended kalman filter for state evaluation.
 
 \subsection{Extended Kalman Filter}
-The job of the extended kalman filter(EKF) is to perform an optimal evaluation of the robot's state given the presence of uncertainities in measurements. The EKF is a non-linear extension of the kalman filter which is itself a linear quadratic estimatator capable of giving optimal values of a measurement in the presence of noise. Its results are more accurate than those obtained from single measurements. The EKF operates iteratively producing optimal values around the current mean and covariance. The other alternative to the EKF is the particle filter. The main difference is that the EKF produces optimal results using an approximate mathematical model while the particle filter produces optimal results based on physical models.
-\cite{CompareFilters}Based on a comparative study on the diference between the two approached, for guassian noise model the kalman filter will always produce a better result in less computation time.
+The job of the extended kalman filter(EKF) is to perform an optimal evaluation of the robot's state given the presence of uncertainties in measurements. The EKF is a non-linear extension of the kalman filter which is itself a linear quadratic estimator capable of giving optimal values of a measurement in the presence of noise. Its results are more accurate than those obtained from single measurements. The EKF operates iteratively producing optimal values around the current mean and covariance. The other alternative to the EKF is the particle filter. The main difference is that the EKF produces optimal results using an approximate mathematical model while the particle filter produces optimal results based on physical models.
+\cite{CompareFilters}Based on a comparative study on the difference between the two approached, for guassian noise model the kalman filter will always produce a better result in less computation time.
 
 The state of the robot consists of its position, velocity, attitude, accelerometer bias, gyroscope biases  and landmark positions.The non-trivial state components, the biases due to heat variation and manufacture process errors are stored because they exhibit a random walk and thus depend on their previous values. \textbf{Insert reference for bias behaviour here}. The kalman filter iteratively update the robot's state along with its uncertainties called its covariance matrix.
 
@@ -259,13 +259,13 @@ In conventional processor applications, <main consideration> is given to optimis
 
 In addition to the above, the choise of ISA is influenced by the support of the architecture by operating system support and the ability to interface with other system components that could be incorporated into the system (e.g. coprocessors). The target operating system for this project is a any lightweight distribution based on the linux kernel. This is due to the linux kernel being free, open source and being easily configurable, with the ability to compile in only the needed functionality and the ability to put options in loadable kernel modules. This results in an embedded operating system with minimal memory and processing footprint, as well as small disk usage which can be limited in embedded systems. For the specific libraries and frameworks used in implementing the estimation software (PCL and OpenNI), x86-Linux variants were found to have more mature support than ARM-Linux at the time of writing.
 
-For low volume production, it is not always worth investing the engineering time in designing a custom system, sourcing the components and manufacturing. Instead, small form factor boards can be readily purchased at acceptable prices. [[include odroid u2 vs the atom board here as examples? Saying that both can handle the algorithm with less than N planes at sufficient framerates to remain convergent and stable?]]
+For low volume production, it is not always worth investing the engineering time in designing a custom system, sourcing the components and manufacturing. Instead, small form factor boards can be readily purchased at acceptable prices. [[include odroid u2 vs the atom board here as examples? Saying that both can handle the algorithm with less than N planes at sufficient frame rates to remain convergent and stable?]]
 
 Additionally, we evaluated the possibility of using consumer smartphones as the embedded processing platform for the estimation algorithm. Android mobile operating system is built on top of the linux kernel and is also open source, making it the OS of choice for this comparison. The reasons for considering consumer smartphones are as follows:
 
 - the smartphone market is extremely competitive, driving the prices down while improving the processing power to levels compatible with embedded systems usually seen in robotics applications.
 - small form factor, including not needing big heatsinks.
-- smartphones of all price ranges come with additional hardware and sensors that can be useful for the quadcopter platform. There are 9 DoF sensors in any device and USB functionality for interfacing to the RGB-D camera. Additonally, the estimation can be improved by using the phone's camera in a downwards looking configuration as an optical flow sensor. GPS can be used in semi-indoor environments and urban canyon situations. WiFi can be used to augment the system with wifi-slam [[http://www.tuaw.com/2013/03/23/wsj-apple-acquires-wifislam-indoor-location-tech-company/]] which gives additional localisation information for the system in indoor environments. Bluetooth can be used for [[???, short range wireless communication?]]. Furthermore, GPUs found in smartphones are starting to be OpenCL compatible (both Imagination Technologies' powerVR series and newer ARM Mali cores), which can provide easily accessible acceleration for certain parts of the algorithm.
+- smartphones of all price ranges come with additional hardware and sensors that can be useful for the quadcopter platform. There are 9 DoF sensors in any device and USB functionality for interfacing to the RGB-D camera. Additionally, the estimation can be improved by using the phone's camera in a downwards looking configuration as an optical flow sensor. GPS can be used in semi-indoor environments and urban canyon situations. WiFi can be used to augment the system with wifi-slam [[http://www.tuaw.com/2013/03/23/wsj-apple-acquires-wifislam-indoor-location-tech-company/]] which gives additional localisation information for the system in indoor environments. Bluetooth can be used for [[???, short range wireless communication?]]. Furthermore, GPUs found in smartphones are starting to be OpenCL compatible (both Imagination Technologies' powerVR series and newer ARM Mali cores), which can provide easily accessible acceleration for certain parts of the algorithm.
 
 However, in practice it was found that porting third party libraries used in the project and drivers for the RGB-D camera sensor, while possible, often needs significant engineering time spent. Additionally, the android platform enforces restricted APIs to underlying hardware resources, so it is not always possible to get the direct hardware control (e.g. for IMU) usually found in embedded linux systems.
 
@@ -474,7 +474,7 @@ This design leads to increased throughput as the flood fill deals with the raw d
 
 The flood fill algorithm is analogous to a paint bucket function in a graphical editing package. We randomly take a seed point in pixel space (that is we randomly select a point from the depth camera output) and take the normal and distance (plane space), and then proceed to fill out from this point in all directions until the planes parameters $(N_A, N_B, N_C, D)$ differ by value epsilon from the original seed point. We continue to attempt clustering planes until either we flood a certain threshold of the image (sigma, i.e. 90\%) or have attempted to flood fill from a random seed point after a specified number of tries (gamma, i.e. 50). The flood fill algorithm works iteratively using only a simple queue structure and list keep track if points have been explored yet in the context of the current fill or already added to a previous fill (plane) respectively, resulting in a constant complexity of O(n). 
 
-Complications arose when performing the flooding. As explained before, the projected grid from the Xtion opens in a conic fashion. This means that objects closer the Xtion will be showered in points, while those further away will contain far fewer points. This drop off happens at a quadratic rate, meaning the error in distance also occurs at a quadratic rate. To deal with this we modifidy the condition on the D parameter for a point to be considered within the region. As depth increases we open the parameter quadratically by projecting of the z component of the plane normal to the point z component squared. We do this for both the seed point and the point being queried. 
+Complications arose when performing the flooding. As explained before, the projected grid from the Xtion opens in a conic fashion. This means that objects closer the Xtion will be showered in points, while those further away will contain far fewer points. This drop off happens at a quadratic rate, meaning the error in distance also occurs at a quadratic rate. To deal with this we modified the condition on the D parameter for a point to be considered within the region. As depth increases we open the parameter quadratically by projecting of the z component of the plane normal to the point z component squared. We do this for both the seed point and the point being queried. 
 
 Therefore the conditions (which all must be satisfied) for accepting a point into the current fill region is:
 \begin{align}
@@ -490,7 +490,7 @@ Unforeseen consequence arose from the flood fill algorithm where when the flood 
 
 In an effort to deal with this caveat, introducing an additional step between the Flood Fill and the DBScan which detects for false positives was undertaken. By computing the covariance matrix in XYZ space for each point in a cluster, then finding the eigenvalues of this matrix calculates the \ac{PCA} of each plane allowing us the investigate the dimensionality of each plane by checking the ratio of Eigen values generated. If there is much disparity, we can assumed that a plane has been encountered fitting to the caveat described above and hence the plane is removed from the set of planes generated by the flood fill algorithm. 
 
-This method was never implemented as after thinking ahead towards plane association in the state update of the EKF (below), we realised that we no longer needed the DBScan algorithm or \ac{PCA}.  In fact, it was found that DBScan was no longer the algorithm suitable, but rather a similar algorithm called Iterative Nearest Neighbor (INN) should be used. This is discussed in detail in the registration section of the EKF.
+This method was never implemented as after thinking ahead towards plane association in the state update of the EKF (below), we realised that we no longer needed the DBScan algorithm or \ac{PCA}.  In fact, it was found that DBScan was no longer the algorithm suitable, but rather a similar algorithm called Iterative Nearest Neighbour (INN) should be used. This is discussed in detail in the registration section of the EKF.
 
 
 
@@ -565,11 +565,11 @@ This method was never implemented as after thinking ahead towards plane associat
 % section feature_extraction (end)
 
 \clearpage %temp!
-\section{Extended Kalman Filter\ac{(EKF)}} % (fold)
+\section{Extended Kalman Filter} % (fold)
 \label{sec:ekf}
 
-To estimate the state of the system we employ the \ac{EKF} which is the nonlinear version of the regular Kalman Filter: the optimal state estimation filter \cite{todo}. When supplied with an accurate sytem model, and its statistical properties, the EKF provides the state estimate with the minimum mean-squared error.
-The \ac{EKF} provides a near-optimal estimate of the system's state by linearising it around the current state estimate. The reason why we need the nonlinear version of the filter is due to the fact that the model includes rotations, which are nonlinear in nature.
+To estimate the state of the system we employ the \ac{EKF} which is the non-linear version of the regular Kalman Filter: the optimal state estimation filter \cite{todo}. When supplied with an accurate system model, and its statistical properties, the EKF provides the state estimate with the minimum mean-squared error.
+The \ac{EKF} provides a near-optimal estimate of the system's state by linearising it around the current state estimate. The reason why we need the non-linear version of the filter is due to the fact that the model includes rotations, which are non-linear in nature.
 
 % We use a kalman filter... the optimal state estimator
 % non linear due to rotations -- ekf
@@ -592,7 +592,7 @@ The filter is based on the following discrete time update model
 	y_k &= h(x_k, v_k)
 	\label{eqn:system}
 \end{align}
-where $x_k$ is the state vector at time $k$, $f$ is the state transition function, $u$ is the control input vector at time $k$, $w_k$ is the process noise vector at time $k$, $y_k$ is the measurment vector at time $k$, $h$ is the function that maps the state space to the observed space, and $v_k$ is the measurment noise vector.
+where $x_k$ is the state vector at time $k$, $f$ is the state transition function, $u$ is the control input vector at time $k$, $w_k$ is the process noise vector at time $k$, $y_k$ is the measurement vector at time $k$, $h$ is the function that maps the state space to the observed space, and $v_k$ is the measurement noise vector.
 
 For compartibility with the kalman filter, we assumed the noise in the system to be gaussian white noise as follows
 \begin{align}
@@ -601,7 +601,7 @@ For compartibility with the kalman filter, we assumed the noise in the system to
 	x_0 &\sim N(\hat{x}_0,P_0)
 	\label{eqn:noisedef}
 \end{align}
-where $Q_k$ and $R_k$ are the process noise and measurement noise covariance matricies, at time $k$, respectivly. The initial state estimate error is assumed to be drawn from a normal distrubution with covariance $P_0$.
+where $Q_k$ and $R_k$ are the process noise and measurement noise covariance matrices, at time $k$, respectively. The initial state estimate error is assumed to be drawn from a normal distribution with covariance $P_0$.
 
 We define
 \begin{align}
@@ -611,7 +611,7 @@ We define
 \end{align}
 where $\hat{x}_{k|i}$ is the state estimate at time $k$ given observations of the system output up to and including time $i$, and $P_{k|i}$ is the covariance matrix associated with the error of the state estimate at time $k$ given given observations of the system output up to and including time $i$.
 
-Given the above defenitions and assumptions, we can predict the evolution of the system as follows
+Given the above definitions and assumptions, we can predict the evolution of the system as follows
 \begin{align}
 	\hat{x}_{k|k-1} &= f(\hat{x}_{k-1|k-1}, u_{k-1}, \mathbb{E}[w_{k-1}])
 	\label{eqn:predictx}
@@ -634,16 +634,16 @@ where
 
 --------------------------------------------------------------------------------
 
-In order to correct for errors accumulated by the state transition function we incorporate corrections based on measurments made from the output of the system. To do this, we use the \ac{EKF} update equations.
+In order to correct for errors accumulated by the state transition function we incorporate corrections based on measurements made from the output of the system. To do this, we use the \ac{EKF} update equations.
 %todo: more flesh here
 
-For each measurement, we compute the expected measurment given our current state estimate using $h$, and compute the difference $z_k$, and estimate the associated covariance matrix using a linear approximation:
+For each measurement, we compute the expected measurement given our current state estimate using $h$, and compute the difference $z_k$, and estimate the associated covariance matrix using a linear approximation:
 \begin{align}
 	z_k &= y_k - h(\hat{x}_{k|k-1}, \mathbb{E}[v_k]) \\
 	S_k &= \operatorname{cov}(z_k) \notag \\
 		&\approx H_k P_{k|k-1} H_k^\top + R_k
 \end{align}
-where $P$ and $R$ are defined in equation (\ref{eqn:noisedef}), and where whe assume that the noise has zero mean:
+where $P$ and $R$ are defined in equation (\ref{eqn:noisedef}), and where we assume that the noise has zero mean:
 \begin{align}
 	\mathbb{E}[v_k] &= 0
 \end{align}
@@ -673,7 +673,7 @@ which is the gain that yields the \ac{MMSE} estimates when used \cite{BerkelyCou
 	\begin{center}
 		\includegraphics[width=\textwidth]{coordinatesystem.png}
 	\end{center}
-	\caption{The craft is located in the world coordinate system using position vector $r$, and the local coordinate axies in the body frame are depicted on the craft. A plane is represented by its normal vector, $N$ and its distance from the origin, $D$, in the world coordinate system. When observed by the craft, the plane is seen as the normal vector in the body coordinate system and the distance $D'$. It is clear from the figure that the difference between $D$ and $D'$ is the projection of $r$ along $N$.}
+	\caption{The craft is located in the world coordinate system using position vector $r$, and the local coordinate axes in the body frame are depicted on the craft. A plane is represented by its normal vector, $N$ and its distance from the origin, $D$, in the world coordinate system. When observed by the craft, the plane is seen as the normal vector in the body coordinate system and the distance $D'$. It is clear from the figure that the difference between $D$ and $D'$ is the projection of $r$ along $N$.}
 	\label{fig:coordinatesystem}
 \end{figure}
 
@@ -815,7 +815,7 @@ The derivative of the state vector is computed in order to propagate the state o
 \end{align}
 
 where $a$ and $\omega$ are the true body frame accelerations and angular rates, respectively.
-$R_{eb}$, the body to earth rotation matrix and $\Xi$ is the matrix that maps the body frame angular rates to the rate of change of quaternion. Both matricies are a function of the current quarternion and are defined below.
+$R_{eb}$, the body to earth rotation matrix and $\Xi$ is the matrix that maps the body frame angular rates to the rate of change of quaternion. Both matrices are a function of the current quaternion and are defined below.
 
 \begin{align}
 	\omega &= \omega_m + w_\omega - b_\omega &
@@ -864,7 +864,7 @@ The process noise is defined as defined and it represents the noise in the inert
 	% \right]
 \end{align}
 
-$f$ in equation (\ref{eqn:system}) and (\ref{eqn:predictx}) operates in discrete time, but we have established our model in continous time. As such, we perform a first order approximation to the continous time system:
+$f$ in equation (\ref{eqn:system}) and (\ref{eqn:predictx}) operates in discrete time, but we have established our model in continuous time. As such, we perform a first order approximation to the continuous time system:
 \begin{align}
 	f &= x + \Delta T \dot{x}
 	\label{eqn:descrete_f}
@@ -899,7 +899,7 @@ $f$ in equation (\ref{eqn:system}) and (\ref{eqn:predictx}) operates in discrete
 				&= \frac{1}{2} \Xi(q) \omega
 \end{align}
 
-The derivation of the rate of change of the quaternion with respect to angular velocity in the body frame can be found in \cite{MARSlab} (see equation 108). Note that they use the convetion q = q4 + q1i + q2j + q3k, while we use the convention q0 + q1i + q2j + q3k, which is the same convetion used by MATLAB's Aerospace Blockset \cite{MATLABAerospace}, and the OpenPilot implementation \cite{OpenPilotPaper}.
+The derivation of the rate of change of the quaternion with respect to angular velocity in the body frame can be found in \cite{MARSlab} (see equation 108). Note that they use the convention q = q4 + q1i + q2j + q3k, while we use the convention q0 + q1i + q2j + q3k, which is the same convention used by MATLAB's Aerospace Blockset \cite{MATLABAerospace}, and the OpenPilot implementation \cite{OpenPilotPaper}.
 \begin{align}
 	q &= q_0 + q_1i + q_2j + q_3k
 \end{align}
@@ -1077,7 +1077,7 @@ We also need to evaluate the error in plane observation and thus we need a funct
 	\\
 	h &= T_h \pi
 \end{align}
-We also need to define H, the jacobian of the h matrix w.r.t the state. The $H$ matrix is only a function of the robot's state and the particular plane observation in question and thus is composed of only two sections, one relating to the state, and one relating to the plane itself. As only the associated plane is relevant, only the part of the H matrix that pertains to this specific plane in the state is populated, and the other entries are set to zero.
+We also need to define H, the Jacobian of the h matrix w.r.t the state. The $H$ matrix is only a function of the robot's state and the particular plane observation in question and thus is composed of only two sections, one relating to the state, and one relating to the plane itself. As only the associated plane is relevant, only the part of the H matrix that pertains to this specific plane in the state is populated, and the other entries are set to zero.
 In the implementation, we take advantage of this sparsity and compute matrix multiplication terms only related to the populated columns, as shown in \cite{Sola2013}.
 \begin{align}
 	\tilde{q} &= 
@@ -1241,29 +1241,29 @@ where
 
 \subsection{Landmark Association} % (fold)
 \label{sub:landmark_association}
-We use the statistic measurement called the mahalanobis distance to evaluate how closely a newly observed plane is related to the ones in the state map. In general the mahalanobis distance is a normalised measure that is used to identify and guage similarity of an unknown sample to a known data set. Using this measure, we leverage the stochastic properties of our system to reduce modelling inaccuracies as opposed to using Euler distance. We use a distance threshold/ validation date such that 99\% of true measurements are accepted.. For our 4 dimensional plane measurement, this evaluates to:
-$ d = chi2inv(0.99,4) = 13.2767$. In order to perform association,the procedure is we find the mahalanobis distance between our new observation and all the planes in the map, keeping the minimum. If this minimum is less than the threshold, then the data is associated, if not it is discarded as an outlier.
+We use the statistic measurement called the mahalanobis distance to evaluate how closely a newly observed plane is related to the ones in the state map. In general the mahalanobis distance is a normalised measure that is used to identify and gauge similarity of an unknown sample to a known data set. Using this measure, we leverage the stochastic properties of our system to reduce modelling inaccuracies as opposed to using Euler distance. We use a distance threshold/ validation date such that 99\% of true measurements are accepted.. For our 4 dimensional plane measurement, this evaluates to:
+$ d = chi2inv(0.99,4) = 13.2767$. In order to perform association, the procedure is we find the mahalanobis distance between our new observation and all the planes in the map, keeping the minimum. If this minimum is less than the threshold, then the data is associated, if not it is discarded as an outlier.
 
 \subsection{Optimisation} % (fold)
 \label{sub:optimisation}
 
 SerialUpdate: \cite{OpenPilotPaper} and chapter 4.2.2 of \cite{KFBookSerialupdate}, and also mentioned in \cite{Sola2013}
-The referenced papers perform an optimization which assumes an entirerly uncorrelated measurment noise covariance matrix. That is the $R$ matrix is purely diagonal.
-We, on the other hand, use a measurment model that includes the measurment of planes. These measurements consist of the estimated plane equation in hessian normal form. As the plane is in a three dimensional space, and thus the measurment error will have three degrees of freedom, and this form has four dimensions, the covariance matrix cannot be uncorrelated.
-That is, as the hessian normal form uses a unit vector, the length of this vector is bound to unity. As such, the probability distrubution of the error of the components of this normal vector cannot be spherical.
-In fact, after linearization, this distrubution is projected onto a plane tangential to the actual distrubution. 
+The referenced papers perform an optimization which assumes an entirely uncorrelated measurement noise covariance matrix. That is the $R$ matrix is purely diagonal.
+We, on the other hand, use a measurement model that includes the measurement of planes. These measurements consist of the estimated plane equation in hessian normal form. As the plane is in a three dimensional space, and thus the measurement error will have three degrees of freedom, and this form has four dimensions, the covariance matrix cannot be uncorrelated.
+That is, as the hessian normal form uses a unit vector, the length of this vector is bound to unity. As such, the probability distribution of the error of the components of this normal vector cannot be spherical.
+In fact, after linearisation, this distribution is projected onto a plane tangential to the actual distribution. 
 %TODO: insert picture of distrubution projected onto plane
 
-While we cannot serialise the individual componets of a plane measurment, the measurment error between planes are uncorrelated, so we can still make use of the serial update strategy. As such, at each time there is a new frame that has finished feature extraction, we serially apply the measurment updates for each plane, without running the predict loop in-between.
-That means the update stage will only have to invert $v$ matricies of size $4\times4$, instead of inverting a $4v \times 4v$ matrix. 
-As a further optimization, we find that the equation that transforms the state covariance matrix (\ref{eqn:predictP}) forms a seperable system. That is, the Jacobian matrix $F$ as defined in (\ref{eqn:F}) does not carry any information regarding the craft to the planes, and vica versa.
-In fact, all terms in $F$ regarding the planes are zero, execpt the main diagonal, which is unity. This means that not only is it a seperable system, but the plane subsystem is fully static.
-Because the system is seperable, and because the second half is static, we can ignore the second half of the system when computing (\ref{eqn:predictP}).
+While we cannot serialise the individual components of a plane measurement, the measurement error between planes are uncorrelated, so we can still make use of the serial update strategy. As such, at each time there is a new frame that has finished feature extraction, we serially apply the measurement updates for each plane, without running the predict loop in-between.
+That means the update stage will only have to invert $v$ matrices of size $4\times4$, instead of inverting a $4v \times 4v$ matrix. 
+As a further optimization, we find that the equation that transforms the state covariance matrix (\ref{eqn:predictP}) forms a separable system. That is, the Jacobian matrix $F$ as defined in (\ref{eqn:F}) does not carry any information regarding the craft to the planes, and vica versa.
+In fact, all terms in $F$ regarding the planes are zero, except the main diagonal, which is unity. This means that not only is it a separable system, but the plane subsystem is fully static.
+Because the system is separable, and because the second half is static, we can ignore the second half of the system when computing (\ref{eqn:predictP}).
 This makes an enormous difference in the scalability of the kalman filter approach. If the entire matrix-matrix multiplication is required, then the algorithm will scale like $O(n^3)$ where $n$ is the number of planes in the state vector. Now that this cubic dependence on $n$ is removed, only $O(n^2)$ terms remain, along with other terms.
 %TODO: explore complexity
 %TODO: incorporate reasoning from Sola2013
 
-	We crosscheck our implementation against a similar open source implementation by the OpenPilot team %\cite{OpenPilotinsgps}. \cite{Holz2011}
+	We cross check our implementation against a similar open source implementation by the OpenPilot team %\cite{OpenPilotinsgps}. \cite{Holz2011}
 
 % subsection implementation (end)
 
@@ -1273,7 +1273,7 @@ This makes an enormous difference in the scalability of the kalman filter approa
 \label{sub:testing_kalman}
 In our test setup, we based our coordinate system in a vertex of the room as origin defining the x,y and z coordinates to be along the three wall edges connected to the origin vertex. Our test system consist of Thalamus chip containing the inertial sensors and Xtion Pro taped together. To ensure a functional kalman filter, full observability of system in the x,y and z axis is needed. Thus we decided to observe three orthogonal planes formed by the wall that meet at the origin. We then initialise our state in the filter to be -2,2,2 in the x,y,z space. In practice however, the initial state will be close to but not exactly the same as in the filter. It is left to the kalman filter to converge to the real state estimate.
 
-To properly running the kalman filter, we had to tune the observation covariance parameter since the range of values obtained by using the RANSAC algorithm was too low (in the order of $10^{-7}$). A larger value would result in the kalman relying too much on the inertial sensors while a smaller one means we trust the xtion's output more [Fig:~\ref{fig:trustXtion}]. Feature extraction has considerable random noise due to the random initial point for the DBscan algorithm. Thus trusting the camera would result in high frequency noise or flunctuations in state estimate. On the otherhand, position estimate from the inertial sensors behave like low pass filtered values as it is obtained by double integrating the acceleration. Thus increasing the Xtion's uncertainty results in a lower frequency in estimate which means the filter is slow to respond. We choose an appropriate value such that our filter behaves within an optimal region based on three test as discussed in \cite{KalmanTuning} . We focus our analysis on position estimate alone because since it depends on speed and attitude change, a good position estimate is sufficient to validate our algorithm implying the other estimates are correct. 
+To properly running the kalman filter, we had to tune the observation covariance parameter since the range of values obtained by using the RANSAC algorithm was too low (in the order of $10^{-7}$). A larger value would result in the kalman relying too much on the inertial sensors while a smaller one means we trust the xtion's output more [Fig:~\ref{fig:trustXtion}]. Feature extraction has considerable random noise due to the random initial point for the DBscan algorithm. Thus trusting the camera would result in high frequency noise or fluctuations in state estimate. On the other hand, position estimate from the inertial sensors behave like low pass filtered values as it is obtained by double integrating the acceleration. Thus increasing the Xtion's uncertainty results in a lower frequency in estimate which means the filter is slow to respond. We choose an appropriate value such that our filter behaves within an optimal region based on three test as discussed in \cite{KalmanTuning} . We focus our analysis on position estimate alone because since it depends on speed and attitude change, a good position estimate is sufficient to validate our algorithm implying the other estimates are correct. 
 
 First we checked for consistency in the kalman filter by verifying that most(ideally \textgreater 95\%) of error magnitude in the observation measurements are bounded to $\pm\sqrt{2\sigma}$. [Show results].After increasing the Xtion's uncertainty by a factor of 100, the results suggest that 100 is indeed too small. A factor of 10000 gives better results.
 
@@ -1293,11 +1293,11 @@ Variable & Case\#1 (factor = 100) & Case\#2 (factor = 10000)  \\ [0.5ex] % inser
 \end{tabular}
 \label{table:firstTest} % is used to refer this table in the text
 \end{table}
-In the second test, we check for unbiasness by computing the normalised innovation squared
+In the second test, we check that it is not biased by computing the normalised innovation squared
 \begin{equation}
 	q_{k} = z_{k}^{T} S_(k)^{-1} z_{k}
 \end{equation}
-for a sequence of i trials. If the filter's assumptions are met then $q_{k}$ are each $\chi^{2}$ in 4 degrees of freedom. To test for unbiasness, we can use the mean of the sequence,
+for a sequence of i trials. If the filter's assumptions are met then $q_{k}$ are each $\chi^{2}$ in 4 degrees of freedom. To test for that it is not biased, we can use the mean of the sequence,
 \begin{equation}
 	\bar{q} = \frac{1}{N}\sum_{k=1}^N {q_k}
 \end{equation}
@@ -1335,7 +1335,7 @@ In the third test, we verify that error is white and to do this, we performed th
 \end{figure}
 
 
-In order to verify that our system works with the kalman tuning, we ran it from our default initial position leaving it stationary. Below is the trajectory results. It shows a point cloud indicating that our kalman filter does indeed converge to some estimate of our real position flunctuating by only millimeters. This  somewhat accurate result is due to the full observability provided by the three orthogonal planes lying in the xy, yz, zx spaces.
+In order to verify that our system works with the kalman tuning, we ran it from our default initial position leaving it stationary. Below is the trajectory results. It shows a point cloud indicating that our kalman filter does indeed converge to some estimate of our real position fluctuating by only millimetres. This  somewhat accurate result is due to the full observability provided by the three orthogonal planes lying in the xy, yz, zx spaces.
 
 \begin{figure}[H]
 	\begin{center}
@@ -1344,7 +1344,7 @@ In order to verify that our system works with the kalman tuning, we ran it from 
 	\caption{Cloud point showing bounded kalman filter stationary trajectory estimation}
 	\label{fig:stationary_trajectory}
 \end{figure}
-In the second test, we moved the setup by hand in a pseudo straight line of length 1m along across on a table in the y axis whilst ensuring that three orthogonal planes are always observed. In the figure, we see that the variation in the z axis is small as the table provided low variation in the z axis. Also, flunctuations in state estimate are in the order of millimeters.
+In the second test, we moved the setup by hand in a pseudo straight line of length 1m along across on a table in the y axis whilst ensuring that three orthogonal planes are always observed. In the figure, we see that the variation in the z axis is small as the table provided low variation in the z axis. Also, fluctuations in state estimate are in the order of millimetres.
 
 \begin{figure}[tbh]
 	\subfloat[Using an Xtion factor of 10000] {
