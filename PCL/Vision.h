@@ -187,13 +187,14 @@ class QCVision
 				//	
 				}
 
+				if (planes.size() > 0){
+					m_mutexLockPlanes.lock();
 
-				m_mutexLockPlanes.lock();
-
-				planeBuffer =  planes;
-				bNewSetOfPlanes = true;
-				//cout << "Unlocked planes in Vision class";
-				m_mutexLockPlanes.unlock();
+					planeBuffer =  planes;
+					bNewSetOfPlanes = true;
+					//cout << "Unlocked planes in Vision class";
+					m_mutexLockPlanes.unlock();
+				}
 				
 //				myfile << t2 << endl;
 //				myfile << "<<<" << endl; 
