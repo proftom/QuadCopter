@@ -513,7 +513,9 @@ void controlCraft(){
 
 
 bool getNewMeasurementThalamus(){
+
 	static Serial SP("/dev/ttyACM0");
+
 	int SPba = SP.BytesAvailable();
 	//int SPba = sp.Peek();
 	if (SPba >= 10*2)
