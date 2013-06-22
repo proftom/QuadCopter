@@ -125,7 +125,7 @@ This report investigates the design of indoor state estimation techniques, and d
 	\acro{RANSAC}{Random Sample Consensus}
 	\acro{RGB-D}{Red Green Blue - Depth}
 	\acro{RGB}{Red Green Blue}
-	\acro{SLAM}{Simultaneous localization and mapping}
+	\acro{SLAM}{simultaneous localization and mapping}
 	\acro{UAV}{Unmanned Aerial Vehicle}
 \end{acronym}
 \clearpage
@@ -134,14 +134,17 @@ This report investigates the design of indoor state estimation techniques, and d
 \section{Executive Summary} % (fold)
 \label{sec:executive_summary}
 \subsection{Introduction}
+%todo: UAV)s acro messes up
+%todo: Ryan: imo rewrite quite a lot of exec sum
+%todo: exec sum should be at the front? separate doc? how to handle acros
 In the present world of increasing machine presence and autonomy, it is important for robots to be able to correctly and accurately estimate their position, velocity and in general their current state at any given time in order to perform tasks with much better accuracy. For our project we focused on determining the indoor state also known as the indoor localisation problem of quadcopters. Quadcopters have become a famous hobbyist platform but more importantly, they can be used in autonomous rescue operations and aerial photography. Our project is in essence a first step towards implementing indoor \ac{SLAM}. With this in mind, we served as consultants to a start up company called MAVRX who specialises in developing \ac{UAV}s, supporting electronics and software platforms. Our mission is to enhance MAVRX's interest and research by developing an indoor state estimator that can be used for autonomous quadcopters. They in turn provide us with necessary tools including an R10 quadcopter, wireless remote controller hardware, and code primitives for stabilising and controlling the \ac{UAV}.
 \subsection{Our Solution}
-While there has been lots of work done in the area of localisation, we propose a unique solution targeting indoor environments which consists of using on-board processing with an inexpensive \ac{RGB-D} camera as our primary sensor combined with accelerometer and gyroscope sensors capable of working in \ac{GPS} deficient areas. Our approach leverages the powerful yet cheap capabilities of the Xtion Pro camera. A typical solution to localisation involves modeling the motion of the agent as it moves in the environment, extracting features from the environment using sensors and then combining this information to approximate its location within the environment. We decided to track planes (i.e. walls) as our features, extracting plane equations from the Xtion Pro using intelligent vision algorithms with good resistance to noise and bounded-time operation. Moreover, using an \ac{RGB-D} camera provides a plethora of information and resilience to interference compared to that of sonar or infra-red sensors. For the state estimation engine, we employ the widely popular Kalman filter as it produces optimal solutions in the presence of noise.  
+While there has been lots of work done in the area of localisation, we propose a unique solution targeting indoor environments which consists of using on-board processing with an inexpensive \ac{RGB-D} camera as our primary sensor combined with accelerometer and gyroscope sensors capable of working in \ac{GPS} denied areas. Our approach leverages the powerful yet cheap capabilities of the Xtion Pro camera. A typical solution to localisation involves modeling the motion of the agent as it moves in the environment, extracting features from the environment using sensors and then combining this information to approximate its location within the environment. We decided to track planes (i.e. walls) as our features, extracting plane equations from the Xtion Pro using intelligent vision algorithms with good resistance to noise and bounded-time operation. Moreover, using an \ac{RGB-D} camera provides a plethora of information and resilience to interference compared to that of sonar or infra-red sensors. For the state estimation engine, we employ the widely popular Kalman filter as it produces optimal solutions in the presence of noise.  
 \subsection{Results}
 Using vision algorithms, we were able to extract planes as features. Observing three orthogonal planes provides full observability in the x, y and z axes. Using the extended Kalman filter, we were able to show that our system can estimate its position, velocity and attitude in an indoor environment. We had to tune the filter providing empirical values for uncertainties in the Xtion's observation obtained through numerous testing. We confirmed the consistency of our filter by checking for bias in its measurement error and ensuring its bounds is described by its covariance. Our system gave us accurate positioning (within 10mm precision) verified using a measuring tape. 
 
 \subsection{Conclusion}
-Localisation and state estimation is a first step towards full autonomous simultaneous localisation and mapping which combined with the high maneuverability of a quadcopter opens up new domains in robotic applications. We have thus pushed forward a bit the goal of our client company, Mavrx in developing unmanned aerial vehicles. Our project has shown and demonstrated the possibilities of indoor state estimation without GPS data which has commercial benefits in the aerial photography market as well as applications in search and rescue operations. Our system can be applied in the industry where aerial monitoring is essential such as pipeline inspection and area mapping.  
+Localisation and state estimation is a first step towards full autonomous simultaneous localisation and mapping which combined with the high maneuverability of a quadcopter opens up new domains in robotic applications. We have thus pushed forward a bit the goal of our client company, Mavrx in developing unmanned aerial vehicles. Our project has shown and demonstrated the possibilities of indoor state estimation without \ac{GPS} data which has commercial benefits in the aerial photography market as well as applications in search and rescue operations. Our system can be applied in the industry where aerial monitoring is essential such as pipeline inspection and area mapping.  
 \clearpage
 
 
@@ -150,18 +153,19 @@ Localisation and state estimation is a first step towards full autonomous simult
 
 \subsection{Project Aim}
 \label{sub:what_are_we_trying_to_achieve}
-\cite{OpenPilotinsgps}
+%todo: \cite{OpenPilotinsgps} was here, why?
 This project aims to provide our client with a functional prototype of an autonomous flying platform, much like a traditional \ac{UAV}. The novel aspect of this prototype will be the fact that it can operate in \ac{GPS} denied environments, such as indoors and in urban canyons. The aim of the prototype is to be a proof of concept, showing that with current technology, a flying robot can be autonomous in \ac{GPS} denied environments using only on-board sensors and computing. 
 
 There are often situations where unmanned aerial vehicles could be useful, such as: search and rescue; infrastructure inspection (power lines, sewers); photography and videography. These tasks are already performed routinely by \ac{UAV}s, though usually controlled remotely by a human operator. In some cases the human operator is removed, and \ac{GPS} is used to close the loop on absolute positioning. This is a great solution for many problems, as it is quite cheap and can work nearly anywhere in the world. There are some places though where \ac{GPS} will not work reliably, such as inside a building or between many tall buildings (often called an urban canyon). These environments also would put pressure on the skill of a human operator due to the abundance of obstacles. Therefore providing a system that can reliably navigate indoors without a human operator is a very good idea.
 
-\subsection{Who are MavRX and Why are They Interested?} % (fold)
+\subsection{Who is Mavrx and why are they interested?} % (fold)
 \label{sub:why_are_mavrx_interested_in_this_work_}
 
-MavRX are a small start-up firm that are trying to push the frontiers of affordable \ac{UAV}s for the masses. Having achieved massive success in crowd-funding a cheap quadcopter platform, they are looking at pushing into more novel areas of \ac{UAV} production. They have asked us to help pave the road to a fully autonomous flying platform that will be priced in the consumer range rather than military/defence category like similar autonomous platforms. The main thing they are interested is a proof of concept model that they can use to attract support and funding with, as well as using it as a base for future experimentation. We must also give some thought to the pricing of the hardware to ensure we are not developing an infeasible product, though MavRX do not want us to spend much time on pricing and comparison of components, nor to develop a financial plan for this project as they already have a team of people working on the business aspect of this project.  
+Mavrx is a small start-up firm that is aiming to provide autonomous aerial imaging hardware and software for commercial enterprise. Furthermore, Mavrx has a daughter firm, UAir, that targets the hobbyist market and which recently succeeded in crowd-funding a cheap quadcopter development platform. They have asked us to help pave the road to a fully autonomous flying platform that will be priced in the consumer range rather than the military/commercial category of existing platforms. The main deliverable is a proof of concept model that can be used to attract support and funding, as well as serving as a base for future experimentation. While the product should aim to stay within the pricing constraints, the project group is not tasked with detailed pricing and comparison of components or developing a financial plan.
+%We must also give some thought to the pricing of the hardware to ensure we are not developing an infeasible product, though MavRX do not want us to spend much time on pricing and comparison of components, nor to develop a financial plan for this project as they already have a team of people working on the business aspect of this project.  
 
-\subsection{Other Work in This Field} % (fold)
-\label{sub:other_work_in_this_field}
+\subsection{Related research} % (fold)
+\label{sub:related_works}
 
 This section will explore solutions to this and similar problems generated by other academics. The approaches to localisation for \ac{UAV}s and \ac{MAV}s (Micro Aerial Vehicles) fall into 3 main categories: Optical flow tracking \cite{DBLP:conf/icra/GrabeBG12}; time of flight laser scanners \cite{Bry2012} and rgb-d cameras \cite{Shen2012}.
 
@@ -285,7 +289,7 @@ However, in practice it was found that porting third party libraries used in the
 For the above reasons, the project was implemented on Intel Atom D2550 (Dual Core @1.86 GHz) processor running x86-Linux. 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%throw in fpga as additional possibilities, zynq7 style?, fixed point scaling etc
+%throw in fpga as additional possibilities?, zynq7 style?, fixed point scaling etc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Sensor Calibration} % (fold)
