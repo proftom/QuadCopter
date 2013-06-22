@@ -599,7 +599,7 @@ struct bridge_sensor_packet_t
     float sonar_data;
 };
 
-
+#pragma pack(1)
 struct host_attitude_packet_t
 {
     char sync_byte;
@@ -607,6 +607,8 @@ struct host_attitude_packet_t
     float pitch;
     float roll;
 };
+
+#pragma pack()
 
 bool getNewMeasurementThalamus(){
 	int SPba = SP.BytesAvailable();
@@ -672,7 +674,7 @@ void controlCraft(){
 	const float I = 6.26e-5;
 	const float D = 0.2;
 
-	Vector2f horizSetpoint(-1,3);
+	Vector2f horizSetpoint(-1.2950182, 1.2415010);
 	Vector2f currPos(state.segment<2>(0));
 	Vector2f posErr = horizSetpoint - currPos;
 
@@ -693,7 +695,7 @@ void controlCraft(){
 	Vector2f velErrBody = DCM2D * velErr;
 
 	static Vector2f bias(0,0);
-	bias += I * posErrBody * Sampling_Time;
+	//bias += I * posErrBody * Sampling_Time;
 
 	Vector2f attitudeXY = P*posErrBody + bias + D*velErrBody;
 
@@ -712,7 +714,7 @@ void controlCraft(){
 	while (YawAngleErr < -PI) YawAngleErr += TWO_PI;
 
 	static float yawbias = 0;
-	yawbias += Iyaw * YawAngleErr * Sampling_Time;
+	//yawbias += Iyaw * YawAngleErr * Sampling_Time;
 
 	float yawrate = Pyaw * YawAngleErr + yawbias;
 
@@ -721,18 +723,20 @@ void controlCraft(){
 	
 	host_attitude_packet_t outpacket;
 	outpacket.sync_byte = 0xbe;
-	outpacket.roll = attitudeXY(1);
-	outpacket.pitch = -attitudeXY(0);
-	outpacket.yaw_rate = yawrate;
+	outpacket.roll = min(max(attitudeXY(1), -0.1f), 0.1f);
+	outpacket.pitch = min(max(-attitudeXY(0), -0.1f), 0.1f);
+	outpacket.yaw_rate = min(max(yawrate/400, -0.2f/400.0f), 0.2f/400.0f);
 
-	/*
+	//cout << "sizeof attitude " << sizeof(outpacket) << endl;
+	//while(1);
+	
 	static int seq = 1;
 	if(!--seq){
 		seq = 32;
-		cout << "Setpointyaw: " << setpointYawAngle << "  currYawAngle: " << currYawAngle << endl << endl;
-		cout << "---------------------------------------------------------Control: " << outpacket.roll  << "  " << outpacket.pitch << "  " << outpacket.yaw_rate << endl << endl;
+		//cout << "Setpointyaw: " << setpointYawAngle << "  currYawAngle: " << currYawAngle << endl << endl;
+		cout << "--------------------------------Control: " << outpacket.roll  << "  " << outpacket.pitch << "  " << outpacket.yaw_rate << endl << endl;
 	}
-	*/
+	
 
 	SP.WriteData((char*)&outpacket, sizeof(outpacket));
 
