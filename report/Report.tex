@@ -113,8 +113,8 @@ This report investigates the design of indoor state estimation techniques, and d
 	\acro{DoF}{Degrees of Freedom}
 	\acro{MMSE}{minimum mean square error}
 	\acro{PCL}{point cloud library}
-	\acro{DBScan}{density based scan}
-	\acro{PCA}{principle component axis}
+	\acro{DBScan}{Density Based Spatial Clusttering of Applications with Noise}
+	\acro{PCA}{Principle Component Axis}
 	\acro{GPS}{Global Positioning System}
 	\acro{RGB}{Red Green Blue}
 	\acro{RGB-D}{Red Green Blue - Depth}
@@ -134,7 +134,7 @@ Using vision algorithms, we were able to extract planes as features. Observing t
 
 \subsection{Conclusion}
 Localisation and state estimation is a first step towards full autonomous simultaneous localisation and mapping which combined with the high maneuverability of a quadcopter opens up new domains in robotic applications. We have thus pushed forward a bit the goal of our client company, Mavrx in developing unmanned aerial vehicles. Our project has shown and demonstrated the possibilities of indoor state estimation without GPS data which has commercial benefits in the aerial photography market as well as applications in search and rescue operations. Our system can be applied in the industry where aerial monitoring is essential such as pipeline inspection and area mapping.  
-
+\clearpage
 
 
 \section{Problem Specification}
@@ -369,7 +369,7 @@ In order to avoid large computation times on the embedded device it is important
 \section{Feature Extraction} % (fold)
 \label{sec:feature_extraction}
 
-To obtain consistent and robust computer vision the open source \ac{PCL} was used as a foundation on which our vision algorithms were implemented. By levering the both well featured and documented \ac{PCL} allowed us to rapidly develop and test our algorithms in real time. The PCL library allowed direct connection to the Xtion hardware, exposing the data captures or point clouds at speeds of up to 30 frames per second.
+To obtain consistent and robust computer vision the open source \ac{PCL} was used as a foundation on which our vision algorithms were implemented. By levering the both well featured and documented \ac{PCL} allowed us to rapidly develop and test our algorithms in real time. Among other features, the PCL library provided an interface to the Xtion hardware, exposing the data captures or point clouds at speeds of up to 30 frames per second.
 
 \subsection{Normal Estimation} % (fold)
 \label{sub:normal_estimation}
@@ -1298,7 +1298,7 @@ This makes an enormous difference in the scalability of the kalman filter approa
 \label{sub:testing_kalman}
 In our test setup, we based our coordinate system in a vertex of the room as origin defining the x,y and z coordinates to be along the three wall edges connected to the origin vertex. Our test system consist of Thalamus chip containing the inertial sensors and Xtion Pro taped together. To ensure a functional kalman filter, full observability of system in the x,y and z axis is needed. Thus we decided to observe three orthogonal planes formed by the wall that meet at the origin. We then initialise our state in the filter to be -2,2,2 in the x,y,z space. In practice however, the initial state will be close to but not exactly the same as in the filter. It is left to the kalman filter to converge to the real state estimate.
 
-To properly running the kalman filter, we had to tune the observation covariance parameter since the range of values obtained by using the RANSAC algorithm was too low (in the order of $10^{-7}$). A larger value would result in the kalman relying too much on the inertial sensors while a smaller one means we trust the xtion's output more [Fig:~\ref{fig:trustXtion}]. Feature extraction has considerable random noise due to the random initial point for the DBscan algorithm. Thus trusting the camera would result in high frequency noise or fluctuations in state estimate. On the other hand, position estimate from the inertial sensors behave like low pass filtered values as it is obtained by double integrating the acceleration. Thus increasing the Xtion's uncertainty results in a lower frequency in estimate which means the filter is slow to respond. We choose an appropriate value such that our filter behaves within an optimal region based on three test as discussed in \cite{KalmanTuning} . We focus our analysis on position estimate alone because since it depends on speed and attitude change, a good position estimate is sufficient to validate our algorithm implying the other estimates are correct. 
+To properly running the kalman filter, we had to tune the observation covariance parameter since the range of values obtained by using the DBscan algorithm was too low (in the order of $10^{-7}$). A larger value would result in the kalman relying too much on the inertial sensors while a smaller one means we trust the xtion's output more [Fig:~\ref{fig:trustXtion}]. Feature extraction has considerable random noise due to the random initial seed point for the DBscan algorithm. Thus trusting the camera would result in high frequency noise or fluctuations in state estimate. On the other hand, position estimate from the inertial sensors behave like low pass filtered values as it is obtained by double integrating the acceleration. Thus increasing the Xtion's uncertainty results in a lower frequency in estimate which means the filter is slow to respond. We choose an appropriate value such that our filter behaves within an optimal region based on three test as discussed in \cite{KalmanTuning} . We focus our analysis on position estimate alone because since it depends on speed and attitude change, a good position estimate is sufficient to validate our algorithm implying the other estimates are correct. 
 
 First we checked for consistency in the kalman filter by verifying that most(ideally \textgreater 95\%) of error magnitude in the observation measurements are bounded to $\pm\sqrt{2\sigma}$. [Show results].After increasing the Xtion's uncertainty by a factor of 100, the results suggest that 100 is indeed too small. A factor of 10000 gives better results.
 
