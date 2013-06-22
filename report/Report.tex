@@ -122,11 +122,11 @@ This report investigates the design of indoor state estimation techniques, and d
 	\acro{MMSE}{Minimum mean square error}
 	\acro{PCA}{Principle component analysis}
 	\acro{PCL}{Point Cloud Library}
+	\acro{RANSAC}{Random Sample Consensus}
 	\acro{RGB-D}{Red Green Blue - Depth}
 	\acro{RGB}{Red Green Blue}
 	\acro{SLAM}{Simultaneous localization and mapping}
 	\acro{UAV}{Unmanned Aerial Vehicle}
-	\acro{RANSAC}{Random Sample Consensus}
 \end{acronym}
 \clearpage
 % section acronyms (end)
@@ -179,6 +179,7 @@ Our solution is to use an \ac{RGB-D} camera as our primary sensor, supplemented 
 
 With the above we can create a system that can accurately locate itself in a \ac{GPS} denied environment, and this will be satisfactory for MavRX to see the viability of the system. Though in order to get qualitative and quantitative data we wish to implement this system on an embedded platform on a \ac{MAV}. This will allow us to demonstrate the outcome of the project in a closed loop system and give MavRX valuable information about the utility of such a localisation system. 
 
+%todo
 For the embedded platform we have chosen to use a board called the 'arndale' board from INSIGNAL. This is due to its large amount of processing power and reasonably light weight design. It offers a dual core ARM A15 processor which will allow us to separate the two major tasks onto the different cores; feature extraction and Kalman filtering. 
 
 We have decided to go with a quadcopter airframe for closed loop experimentation. This is because quadcopters have the ability to move around their environment slowly by hovering, this is especially useful when there is limited space for manoeuvre. Quadcopters also will have good stability, and therefore limit the amount of motion blur on the depth camera. Finally quadcopters are MavRX's speciality, so we will be able to make use of their expertise as well as helping them gather experience with this kind of air frame. 
@@ -244,9 +245,9 @@ To extract planes, we employed the popular and much referenced \ac{DBScan} to cl
 
 \subsection{Extended Kalman Filter}
 The job of the \ac{EKF} is to perform an optimal evaluation of the robot's state given the presence of uncertainties in measurements. The \ac{EKF} is a non-linear extension of the Kalman filter which is itself a linear quadratic estimator capable of giving optimal values of a measurement in the presence of noise. Its results are more accurate than those obtained from single measurements. The \ac{EKF} operates iteratively producing optimal values around the current mean and covariance. The other alternative to the \ac{EKF} is the particle filter. The main difference is that the \ac{EKF} produces optimal results using an approximate mathematical model while the particle filter produces optimal results based on physical models.
-\cite{CompareFilters}Based on a comparative study on the difference between the two approached, for guassian noise model the Kalman filter will always produce a better result in less computation time.
+\cite{CompareFilters}Based on a comparative study on the difference between the two approached, for Gaussian noise model the Kalman filter will always produce a better result in less computation time.
 
-The state of the robot consists of its position, velocity, attitude, accelerometer bias, gyroscope biases  and landmark positions.The non-trivial state components, the biases due to heat variation and manufacture process errors are stored because they exhibit a random walk and thus depend on their previous values. \textbf{Insert reference for bias behaviour here}. The Kalman filter iteratively update the robot's state along with its uncertainties called its covariance matrix.
+The state of the robot consists of its position, velocity, attitude, accelerometer and gyroscope biases, and landmark positions. The non-trivial state components, the biases due to temperature variation and manufacturing process errors, are stored because they exhibit a random walk and thus depend on their previous values. \textbf{Insert reference for bias behaviour here}. The Kalman filter iteratively updates the robot's state along with its uncertainties, referred to as its covariance matrix.
 
 The below image shows the basic concept of the \ac{EKF}:
 \begin{figure}[H]
@@ -281,10 +282,10 @@ Additionally, we evaluated the possibility of using consumer grade smartphones a
 
 However, in practice it was found that porting third party libraries used in the project and drivers for the \ac{RGB-D} camera sensor, while possible, needed significant investment of engineering time. Additionally, the android platform enforces restricted APIs to underlying hardware resources, so it is not always possible to get the direct hardware control (e.g. for \ac{IMU}) usually found in embedded Linux systems.
 
+For the above reasons, the project was implemented on Intel Atom D2550 (Dual Core @1.86 GHz) processor running x86-Linux. 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%include the final config? atom board specs
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%throw in fpga as additional possibilities, zynq7? :P, fixed point scaling etc
+%throw in fpga as additional possibilities, zynq7 style?, fixed point scaling etc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Sensor Calibration} % (fold)
@@ -630,7 +631,7 @@ The filter is based on the following discrete time update model
 \end{align}
 where $x_k$ is the state vector at time $k$, $f$ is the state transition function, $u$ is the control input vector at time $k$, $w_k$ is the process noise vector at time $k$, $y_k$ is the measurement vector at time $k$, $h$ is the function that maps the state space to the observed space, and $v_k$ is the measurement noise vector.
 
-For compartibility with the Kalman filter, we assumed the noise in the system to be gaussian white noise as follows
+For compartibility with the Kalman filter, we assumed the noise in the system to be Gaussian white noise as follows
 \begin{align}
 	w_k &\sim N(0,Q_k) \notag \\
 	v_k &\sim N(0,R_k) \notag \\
