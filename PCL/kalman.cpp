@@ -149,8 +149,9 @@ int kalman(QCVision& vision) {
 			firstplane  =true;
 			vision.m_mutexLockPlanes.unlock();
 			processObservation(true); //timeSteps > startupConvergeTimesteps);
-			cout << "state at time t = " << timeSteps << endl<< state.segment(0,3) << endl<<endl;
-			cout << "numplanes: " << landmarks.size() << endl;
+			Vector3f currpos = state.segment(0,3);
+			cout << "state at time t = " << timeSteps << endl<< currpos(0) << " " << currpos(1) << " " << currpos(2) << endl<<endl;
+			//cout << "numplanes: " << landmarks.size() << endl;
 
 		} else {
 			vision.m_mutexLockPlanes.unlock();
@@ -646,12 +647,12 @@ bool getNewMeasurementThalamus(){
 			acc_t -= state.segment(13,3);
 			acc = acc_t;
 
-			
+			/*
 			if(SPba <= 2*sizeof(bridge_sensor_packet_t)){
 				printf("\r");
 				cout << "acc: " << acc(0) << "  " << acc(1) << "  " << acc(2);
 			}
-			
+			*/
 			
 			sonarAlt = inbuff.sonar_data / 1000.0f;
 			newsonar = true;
@@ -684,7 +685,7 @@ void controlCraft(){
 	float normFactor = 1/(DCM.row(0).segment<2>(0).norm());
 	float DCM11N = DCM(0,0)*normFactor;
 	float DCM12N = DCM(0,1)*normFactor;
-	Matrix2f DCM2D;
+	Matrix<float,2,2> DCM2D;
 	DCM2D << DCM11N, DCM12N,
 			-DCM12N, DCM11N;
 	//matrix needs renormalising. Figure out if normalising rows or columns is required

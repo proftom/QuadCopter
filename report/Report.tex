@@ -94,12 +94,15 @@ columns=flexible
 \author{Oskar Weigl, Ryan Savitski, Thomas Morrison, Chinemelu Ezeh, Joshua Elsdon}
 \begin{document}
 \maketitle
-\center{\textbf{\large{\emph{"...a profound trust in the advances of science."}	}}}
+\center{\textbf{\large{\emph{"I think we will have it flying by tonight..."}	}}}
+
+
+%\center{\textbf{\large{\emph{"...a profound trust in the advances of science."}	}}}
 
 \abstract{
-A Lovely Abstract full of insight and long words that makes it apparent we did lots of stuff 
+This report investigates the design of indoor state estimation techniques, and demonstrates one particular implementation using a depth camera mounted to a quadcopter frame. The approach consists of collecting data from the environment and detecting planes within it. Using these in combination with an extended kalman filter we estimate the location of the frame. We combine more traditional sensors such as an accelerometer and gyro to complete the localisation system. We investigate the hardware necessary to process point clouds in real time, whilst being light enough to fly.  
 \tableofcontents
-\clearpage
+
 
 \section{Acronyms} % (fold)
 \label{sec:acronyms}
@@ -115,6 +118,7 @@ A Lovely Abstract full of insight and long words that makes it apparent we did l
 	\acro{GPS}{Global Positioning System}
 	\acro{RGB}{Red Green Blue}
 	\acro{RGB-D}{Red Green Blue - Depth}
+	\acro{UAV}{unmanned aerial vehicle}
 \end{acronym}
 \clearpage
 % section acronyms (end)
@@ -122,15 +126,15 @@ A Lovely Abstract full of insight and long words that makes it apparent we did l
 \section{Executive Summary} % (fold)
 \label{sec:executive_summary}
 \subsection{Introduction}
-In the present world of increasing machine usage and autonomy, it is important for robots to be able to correctly estimate their position, velocity and in general their current state at any given time in order to perform tasks with much better accuracy. For our project we focused on determining the indoor state also known as the indoor localisation problem of quadcopters. Quadcopters have become a famous hobbyist platform but more importantly, they can be used in autonomous rescue operations and aerial photography. Our project is in essence a first step towards implementing indoor simultaneous localisation and mapping (SLAM). With this in mind, we served as consultants to a start up company called MAVRX who specialises in developing unmanned aerial vehicles(UAVs), supporting electronics and software. Our mission is to enhance MAVRX's interest and research by developing an indoor state estimator that can be used for autonomous quadcopters. They in turn provide us with necessary tools including an R10 quadcopter, a wireless remote controller, and basic code for stabilising and controlling the UAV.
+In the present world of increasing machine presence and autonomy, it is important for robots to be able to correctly and accurately estimate their position, velocity and in general their current state at any given time in order to perform tasks with much better accuracy. For our project we focused on determining the indoor state also known as the indoor localisation problem of quadcopters. Quadcopters have become a famous hobbyist platform but more importantly, they can be used in autonomous rescue operations and aerial photography. Our project is in essence a first step towards implementing indoor simultaneous localisation and mapping (SLAM). With this in mind, we served as consultants to a start up company called MAVRX who specialises in developing \ac{UAV}s, supporting electronics and software platforms. Our mission is to enhance MAVRX's interest and research by developing an indoor state estimator that can be used for autonomous quadcopters. They in turn provide us with necessary tools including an R10 quadcopter, wireless remote controller hardware, and code primitives for stabilising and controlling the UAV.
 \subsection{Our Solution}
-While there has been lots of work done in the area of localisation, we propose a unique solution targeting indoor environments which consists using on-board processing and RGB-D cameras as our primary sensor combined with accelerometer and gyroscope sensors capable of working in GPS deficient areas. Our approach leverages the powerful yet cheap capabilities of the Xtion Pro camera. A typical solution to localisation involves modelling the motion of the agent as it moves in the environment, extracting features from the environment using sensors and using this information to approximate its location within the environment. We decided to track wall planes as our feature extracting plane equations from the Xtion Pro using DBSCAN algorithm because of the algorithm's resistance to noise and bounded-time operation. Moreover, Using an RGB-D camera provides lots of information and is resistant to interference compared to sonar sensors. For the actual state estimation, we employ the kalman filter algorithm as it produces optimal solutions in the presence of noise.  
+While there has been lots of work done in the area of localisation, we propose a unique solution targeting indoor environments which consists of using on-board processing with an inexpensive RGB-D camera as our primary sensor combined with accelerometer and gyroscope sensors capable of working in GPS deficient areas. Our approach leverages the powerful yet cheap capabilities of the Xtion Pro camera. A typical solution to localisation involves modeling the motion of the agent as it moves in the environment, extracting features from the environment using sensors and then combining this information to approximate its location within the environment. We decided to track planes (i.e. walls) as our features, extracting plane equations from the Xtion Pro using intelligent vision algorithms with good resistance to noise and bounded-time operation. Moreover, using an RGB-D camera provides a plethora of information and resilience to interference compared to that of sonar or infra-red sensors. For the state estimation engine, we employ the widely popular and provably optimal Kalman filter as it produces optimal solutions in the presence of noise.  
 \subsection{Results}
-Using vision algorithms, we were able to extract planes as features. Observing three orthogonal planes provide full observability in the x, y and z axis. Using the extended kalman filter, we were able to show that our system can estimate its position, velocity and attitude in an indoor environment. We had to tune the filter providing empirical values for uncertainties in the Xtion's observation obtained through numerous testing. We confirmed the consistency of our filter by checking for bias in its measurement error and ensuring its boundedness is described by its covariance. Our system gave us accurate positioning (within 10mm precision) verified using a measuring tape. 
+Using vision algorithms, we were able to extract planes as features. Observing three orthogonal planes provides full observability in the x, y and z axes. Using the extended kalman filter, we were able to show that our system can estimate its position, velocity and attitude in an indoor environment. We had to tune the filter providing empirical values for uncertainties in the Xtion's observation obtained through numerous testing. We confirmed the consistency of our filter by checking for bias in its measurement error and ensuring its bounds is described by its covariance. Our system gave us accurate positioning (within 10mm precision) verified using a measuring tape. 
 
 \subsection{Conclusion}
-Localisation and state estimation is a first step towards full autonomous simultaneous localisation and mapping which combined with the high maneuverability of the quadcopter opens up new areas in robotics. We have thus pushed forward a bit the goal of our client company, Mavrx in developing unmanned aerial vehicles. Our project has shown and demonstrated the possibilities of indoor state estimation without GPS data which has commercial benefits in the aerial photography market as well as applications in search and rescue operations. Our system can be applied in the industry where aerial monitoring is essential such as pipeline inspection and area mapping.  
-
+Localisation and state estimation is a first step towards full autonomous simultaneous localisation and mapping which combined with the high maneuverability of a quadcopter opens up new domains in robotic applications. We have thus pushed forward a bit the goal of our client company, Mavrx in developing unmanned aerial vehicles. Our project has shown and demonstrated the possibilities of indoor state estimation without GPS data which has commercial benefits in the aerial photography market as well as applications in search and rescue operations. Our system can be applied in the industry where aerial monitoring is essential such as pipeline inspection and area mapping.  
+\clearpage
 
 
 \section{Problem Specification}
@@ -367,9 +371,15 @@ In order to avoid large computation times on the embedded device it is important
 
 To obtain consistent and robust computer vision the open source \ac{PCL} was used as a foundation on which our vision algorithms were implemented. By levering the existing features of the library and their sufficient documentation featured and documented, we were able to rapidly develop and test our algorithms in real time. 
 
+\subsection{Normal Estimation} % (fold)
+\label{sub:normal_estimation}
+
 The first feature employed from the \ac{PCL} was normal estimation. Once the Xtion passes the raw point cloud data to the \ac{PCL}, we run a kernel operator over the image which integrates over many points to obtain an estimate of the normal. By using this integral normal estimation we smooth out noisy and sporadic normal estimations which occur if normal estimates are taken for just a single point. However, by using a kernel we require an initial amount of information, and hence, for pixels situated near the edges of the image there are no available normal estimations as there are no neighbouring points available in each direction to estimate the normal. Further another caveat of using this technique is the loss of high frequency normal information, such as sharp corners or edges, due to averaging (loss of high frequency information). This latter property is discovered and discussed later in the flood fill algorithm. 
+\subsection{Density Based Scan} % (fold)
+\label{sub:density_based_scan}
 
 A much referenced and popular algorithm for density based clustering is \ac{DBScan}, having excellent noise immunity. The basic idea is to take a point and find all other neighbouring points within a certain neighbourhood or radius (of a distance epsilon). If enough are found (decided by a threshold value $\gamma$), then we are able iteratively expand these neighbouring points, again checking if the minimum number of neighbouring points ($\gamma$) is sufficient to be considered within the same cluster. Figure~\ref{fig:dbscan} demonstrates a pass of the algorithm starting from a point within region A and clustering outward until the density of connected points becomes to small. Listing~\ref{alg:dbscan} details the full algorithm to find all densely connected regions within an image space.
+
 
 \begin{figure}[bt]
 	\begin{center}
@@ -431,6 +441,11 @@ We then moved onto performing the region query in normal space, meaning planes w
 
 Four parameters are required to uniquely characterize planes $(N_A, N_B, N_C, D)$ so finally we combined both the normal space with distance space (z) for the region query criteria. To make things easier, as soon as an Xtion capture becomes available, we convert the data cloud to a plane cloud (a large list containing the 4 plane parameters).
 
+\subsection{DBScan Optimisations} % (fold)
+\label{sub:dbscan_optimisations}
+
+% subsection dbscan_optimisations (end)
+
 We made modifications to the DBScan algorithm to decrease the running time. By using tag fields to set whether points had already been visited or were already part of a cluster (a point can belong to one cluster only), we prevented the region query being performed superfluously. Further we built a custom conditional insertion procedure to insert into a list-like data structure without duplication, decreasing the complexity of insertion from $O(m \cdot log(n))$ (if using the \"set\" STL template class) to $O(m)$.
 
 The DBScan algorithm completes in $O(n^2)$ if the region query completes in $O(n)$, and $O(n \cdot log(n))$ if the region query completes within $O(log(n))$. Our implementation lay somewhere between the two, having a complexity dependent on run time, where a field of view containing more planar features took closer to the upper boundary. This is because captures with large or many planar features cause the region query procedure to be invoked more often, shifting the runtime complexity towards $O(n^2)$.
@@ -475,7 +490,14 @@ As mentioned, the flood fill algorithm is analogous to a paint bucket function i
 
 Once a single fill has terminated and more than a certain threshold of the image has either been filled (call it $\sigma$, i.e. 90\%) then the algorithm terminates. If this threshold has not been satisfied then begin a new fill, selecting a new random seed point from a point that has not been already included in a previous fill region. The algorithm will repeat until $\sigma$ is satisfied or it has attempted to flood fill the plane cloud for more than a certain number of times (call it $\gamma$, i.e. 50). The flood fill algorithm works iteratively using only a simple queue structure and list keep track if points have been explored yet in the context of the current fill or already added to a previous fill (plane) respectively, resulting in a linear complexity of O(n). 
 
+
+\subsection{Complications in the Segmentation Algorithm} % (fold)
+\label{sub:complications_in_the_segmentation_algorithm}
+
+% subsection complications_in_the_segmentation_algorithm (end)
+
 Complications arose when performing the flooding. As explained before, the projected grid from the Xtion opens in a conic fashion. This means that objects closer the Xtion will be showered in points, while those further away will contain far fewer points. This drop off happens at a quadratic rate, meaning the error in distance also occurs at a quadratic rate. To deal with this we modified the condition on the D parameter for a point to be considered within the region. As depth increases we open the parameter quadratically by projecting the z component of the plane normal onto the quadratic point z component. We do this for both the seed point and the point being queried, taking their absolute values and sum. We then multiply this value by an adjusted epsilon value ($\epsilon_{depth}$). 
+
 
 The conditions (which all must be satisfied) for accepting a point into the current fill region becomes:
 \begin{align}
@@ -504,31 +526,32 @@ This method was never implemented as after thinking ahead towards plane associat
 
 
 
-\begin{figure}[tbp]
+\begin{figure}[p]
 	\centering
-	\subfloat[\ac{DBScan} in normal space. A total of 4 planes were found: The floor, the white boards and two back walls] 
+	\subfloat[ in normal space. A total of 4 planes were found:, the floor, the white boards and two back walls] 
 	{
 		\label{fig:dbscan_planes}
-		\includegraphics[width=0.5\textwidth]{6normal_boards.png}
+		\includegraphics[width=0.4\textwidth]{6normal_boards.png}
 	}
-	\subfloat[\ac{DBScan} of the laboratory in xyz space. Each white board is considered a separate cluster. Distant objects coloured in blue.] {
+	\subfloat[of a laboratory in xyz space. Each white board is considered a separate cluster. Distant objects coloured in blue.] {
 		\label{fig:table_dbscan}
-		\includegraphics[width=0.5\textwidth]{6table_dbscan.png}
+		\includegraphics[width=0.4\textwidth]{6table_dbscan.png}
+
 	}
 	\caption{Images}
 	\label{fig:DBSCAN_LAB}
 
 \end{figure}
 
-\begin{figure}[tbp]
+\begin{figure}[p]
 	\centering     %%% not \center
 	\subfloat[Box before applying DBScan algorithm in normal space]{
 		\label{fig:6box_before}
-		\includegraphics[width=0.45\textwidth]{6box_before.PNG}
+		\includegraphics[width=0.4\textwidth]{6box_before.PNG}
 	}
 	\subfloat[Box after applying DBScan algorithm in normal space]{
 		\label{fig:6box_after}
-		\includegraphics[width=0.45\textwidth]{6box_after.PNG}
+		\includegraphics[width=0.4\textwidth]{6box_after.PNG}
 	}
 
 	\caption{Cluster using \ac{DBScan} in normal space}
@@ -537,21 +560,22 @@ This method was never implemented as after thinking ahead towards plane associat
 
 
 
-\begin{figure}[tbp]
+\begin{figure}[p]
 	\centering     %%% not \center
 	\subfloat[Flood fill generating false planes along intersecting plane edge]{
 		\label{fig:spurious_plane_normals1}
-		\includegraphics[width=0.45\textwidth]{6spuriousplanes_normals.PNG}
+		\includegraphics[width=0.4\textwidth]{6spuriousplanes_normals.PNG}
 	}
 	\;
 	\subfloat[Kernel averaging operation, causing the loss of high frequency information on the edges of 2 planes]{
 		\label{fig:spurious_plane_normals_2}
-		\includegraphics[width=0.45\textwidth]{6spuriousplanes_normals_2.PNG}
+		\includegraphics[width=0.4\textwidth]{6spuriousplanes_normals_2.PNG}
 	}
 
 	\caption{Normal estimation kernel causing loss of high frequency information of normals}
 	\label{fig:spurious_plane_normals}
 \end{figure}
+\clearpage
 
 % \subsection{Sensor Calibration} % (fold)
 % \label{sub:sensor_calibration}
@@ -1241,8 +1265,8 @@ where
 
 \subsection{Landmark Association} % (fold)
 \label{sub:landmark_association}
-We use the statistic measurement called the mahalanobis distance to evaluate how closely a newly observed plane is related to the ones in the state map. In general the mahalanobis distance is a normalised measure that is used to identify and gauge similarity of an unknown sample to a known data set. Using this measure, we leverage the stochastic properties of our system to reduce modelling inaccuracies as opposed to using Euler distance. We use a distance threshold/ validation date such that 99\% of true measurements are accepted.. For our 4 dimensional plane measurement, this evaluates to:
-$ d = chi2inv(0.99,4) = 13.2767$. In order to perform association, the procedure is we find the mahalanobis distance between our new observation and all the planes in the map, keeping the minimum. If this minimum is less than the threshold, then the data is associated, if not it is discarded as an outlier.
+We use the statistic measurement called the mahalanobis distance to evaluate how closely a newly observed plane is related to the ones in the state map. In general the mahalanobis distance is a normalised measure that is used to identify and gauge similarity of an unknown sample to a known data set. Using this measure, we leverage the stochastic properties of our system to reduce modelling inaccuracies as opposed to using Euler distance. We use a distance threshold/ validation date such that 99\% of true measurements are accepted. For our 4 dimensional plane measurement, this evaluates to:
+\verb"d = chi2inv(0.99,4) = 13.2767" which is the MATLAB command for the inverse chi squared distribution with 4 degrees of freedom and evaluated at 0.99. In order to perform association, the procedure is we find the mahalanobis distance between our new observation and all the planes in the map, keeping the minimum. If this minimum is less than the threshold, then the data is associated, if not it is discarded as an outlier.
 
 \subsection{Optimisation} % (fold)
 \label{sub:optimisation}
