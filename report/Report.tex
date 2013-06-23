@@ -199,26 +199,7 @@ The aircraft configuration of choice is a quadcopter, due to its ability to navi
 \section{Implementation Overview}
 \label{sub:implementation_overview}
 
-<<<<<<<<<<<<<<<<<<<<<<<<<<<<WIP>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-%todo
-localisation is done through a ekf
-
-which is a filter for blablabla, maybe diagram
-
-<<talk about just imu being hrap?
-
-the primary sensor for feature extraction is a depth camera, streaming qqvga at 30 fps. ONLY DEPTH CHANNEL IS OF INTEREST TO US
-
-openni + pcl gives us data in point cloud form (xyz) relative to the camera, and the ability to operate on the cloud
-
-from these point clouds, integral image estimation to get local (Nx, Ny, Nz) normal vector at each point in the cloud. Then a flood fill algorithm is used to cluster points with similar local normals. Note that the region growing for the clusters is done in the xyz space but the condition for adding a point to the cluster operates in nxnynz space.
-
-flood fill, for a point cloud data obtained from one depth frame. starting from a set of randomised seed points... for each seed point, the algorithm visits its neighbours in the camera-xy space 
-
-patches thrown into the kalman filter, and associated based on mahalanobis distance
-
-include the fact that dbscan was toyed with at the start?
+%todo!!!: the below is not too bad, include it somewhere?
 
 % Our state estimator involves a moving agent such as a quadcopter which deploys one sensor to gather information about its surroundings. This is called an exteroceptive sensor and in our case, we use a depth camera. We also incorporate extra sensors to measure the agent's own movement. These are called preprioceptive sensors and we used an accelerometer and a gyroscope. The state evaluation process involves the following steps:
 
@@ -232,26 +213,22 @@ include the fact that dbscan was toyed with at the start?
 
 % The tasks can be group into two main categories feature extraction and extended Kalman filter implementation.
 
-% \subsection{Feature Extraction}
-% The agent needs to properly observe its environment in order to be able to have some information of its relationship within the environment. First, we must chose a suitable sensor for our implementation taking into account the type of feature we want to extract. We chose to use a visual sensor/camera with depth information called the Xtion Pro as it is more more accurate and less prone to interference than using sound to observe the agent's environment. The camera essentially collects raw depth map data of 640 by 480 pixels at 30 frames per second. This is a huge amount of data to process especially in an embedded environment with limited resources. Moreover, the data in its raw form doesn't give much information in and off itself as it is only pixels with their depth information.
+The localisation scheme used is based on a feature tracking Extended Kalman Filter (EKF). The features tracked are planar surfaces within the environment, which are obtained from depth data of a consumer RGB-D camera. Planes are tracked as they can represent walls, floors and ceiling, which are abundant in man-made environments, are static and easily reobservable. Furthermore, this abstraction drastically reduces both the computational and space complexity of the filter. The filter fuses extracted feature information with other sensors: accelerometer, gyroscope and a downward facing sonar, which in turns allows the quadrotor to localise itself within the environment.
 
-% We use the PCL which is open source and is dedicated to processing such information from our xtion pro depth camera in order to perform a robust feature extraction process. With the PCL, we can extract feature of the indoor environment from the raw data of our camera. In selecting suitable features, we need them to be easily re-observable. With the assumption that our indoor environment is mostly cubic in nature, we decided to track walls, floors and ceilings as these are easily re-observable. Also, we can essentially represent a large wall as a plane and this requires minimal storage space as opposed to the millions of pixel data. This abstraction reduces considerably both computation and space complexity needed. The trade-off is .....
-% To extract planes, we employed the popular and much referenced DBScan to cluster points in 3D in order to obtain the regression plane normal and distance information of the points. An alternative is to use the RANSAC. There isn't however an upper bound time limit on the RANSAC algorithm while DBScan completes in $O(n^{2})$ time. In an embedded real-time environment with time constraints, an unbounded-time operation is not optimal. The planes produced are then sent to the extended Kalman filter for state evaluation.
+The job of the EKF is to perform an optimal evaluation of the robot's state given the presence of uncertainties in measurements. The EKF is a non-linear extension of the Kalman filter which is itself a linear quadratic estimator capable of giving optimal values of a measurement in the presence of noise. Its results are more accurate than those obtained from single measurements. The EKF operates iteratively producing optimal values around the current mean and covariance. The other alternative to the EKF is the particle filter. The main difference is that the EKF produces optimal results using an approximate mathematical model while the particle filter produces optimal results based on physical models.
+Based on a comparative study \cite{CompareFilters} on the difference between the two approaches, for Gaussian noise model the Kalman filter will always produce a better result in less computation time.
 
-% \subsection{Extended Kalman Filter}
-% The job of the EKF is to perform an optimal evaluation of the robot's state given the presence of uncertainties in measurements. The EKF is a non-linear extension of the Kalman filter which is itself a linear quadratic estimator capable of giving optimal values of a measurement in the presence of noise. Its results are more accurate than those obtained from single measurements. The EKF operates iteratively producing optimal values around the current mean and covariance. The other alternative to the EKF is the particle filter. The main difference is that the EKF produces optimal results using an approximate mathematical model while the particle filter produces optimal results based on physical models.
-% \cite{CompareFilters}Based on a comparative study on the difference between the two approached, for Gaussian noise model the Kalman filter will always produce a better result in less computation time.
+The state of the robot consists of its position, velocity, attitude, accelerometer and gyroscope biases, and landmark positions. The non-trivial state components, the biases due to temperature variation and manufacturing process errors, are stored because they exhibit a random walk and thus depend on their previous values. \textbf{TODO Insert reference for bias behaviour here}. The Kalman filter iteratively updates the robot's state along with its uncertainties, referred to as its covariance matrix.
 
-% The state of the robot consists of its position, velocity, attitude, accelerometer and gyroscope biases, and landmark positions. The non-trivial state components, the biases due to temperature variation and manufacturing process errors, are stored because they exhibit a random walk and thus depend on their previous values. \textbf{Insert reference for bias behaviour here}. The Kalman filter iteratively updates the robot's state along with its uncertainties, referred to as its covariance matrix.
+The feature extraction pipeline starts with 160x120 depth frames at 30 frames per second from the RGB-D camera. Using Point Cloud Library (PCL) the data is transformed into a xyz point cloud. Next, local surface normals at each point are computed using integral images \cite{Holz2011}. The use of integral images lets us remove the high frequency noise from the depth camera in a computationally efficient manner. At this stage there is a point cloud in xyz space with a local normal vector $(N_x, N_y, N_z)$ at each point. 
 
-% The below image shows the basic concept of the EKF:
-% \begin{figure}[H]
-% \centering     %%% not \center
-% \subfloat[MATLAB]{\label{fig:kalman_pic}\includegraphics[width=60mm]{kalman_pic.PNG}} \;
-% \caption{Kalman algorithm Diagram}
-% \end{figure}
+The above point cloud is then clustered by a custom flood fill algorithm. The algorithm starts with a set of randomised seed points within the CCD pixel space (as each pixel corresponds to a point in xyz space). For each seed, the fill incrementally grows a cluster by visiting neighbours along the CCD (i.e. xy) space. The condition for adding a point to the cluster is derived from how similar the local normal is at that point to that of the initial seed. Clusters are then rejected if they do not meet the depth-dependent minimum parameter, the clusters passing this test are considered further as planar patches. The feature extraction pipeline also calculates the uncertainties associated with the discovered planes, passing that information to the EKF. An alternative clustering approach, based on the DBScan algorithm was also evaluated and is discussed in the relevant section.
 
-% If more than one plane is observed, the update step is run for each plane re-observed. If a new plane is observed, it is added as a new landmark into the Kalman filter and its covariance is added onto the covariance matrix.
+The incoming plane data invokes an update iteration in the EKF, which tries to associate measured planes to existing features in its state. The association is based on Mahalanobis distance, which is a measurement used in multi-dimensional statistical analysis for classification of samples.
+
+Additionally, the project produced the necessary mathematical derivations and a partial implementation of feature registration. Registration enables the filter to increase the landmark map with previously unobserved features online. This will allow the quadrotor to solve the full simultaneous localisation and mapping (SLAM) problem and operate in environments without any prior knowledge.
+
+
 
 \section{Preliminaries}
 
@@ -316,7 +293,7 @@ Figure~\ref{fig:avDist2} shows the average measurement across all of the frame f
 
 Given the paired measurement and ground truth data, we mapped the correction vectors into a 3D space that later we can look up in to correct new data. In order to have the 3D correction field be continuous, data needs to be smoothed and interpolated in all 3 dimensions. One significant issue is that all obtained correction vectors fall into thin regions in the 3D space along the camera-z (i.e. depth) axis, and within those areas the data is dense in the x and y dimensions. Therefore our task is to preform smoothing in the x and y directions to remove the signal noise and to find a good interpolation scheme looking in the camera-z direction. The interpolation should be smooth to avoid damaging the flatness of planes. 
 
-In order to avoid large computation times on the embedded device it is important that the correction function is inverted to a map from measurement to corrected data. Otherwise, for each data point in the input, it would be required to search for the two closest calibration measurements for that pixel. With an inverted correction lookup table it is possible to go directly to the correct entries in the table (i.e. O(1)). Assuming the uninverted approach doing binary search, this is a factor of 3 difference at the depth data compensation stage alone. 
+In order to avoid large computation times on the embedded device it is important that the correction function is inverted to a map from measurement to corrected data. Otherwise, for each data point in the input, it would be required to search for the two closest calibration measurements for that pixel. With an inverted correction lookup table it is possible to go directly to the correct entries in the table (i.e. $O(1)$). Assuming the uninverted approach doing binary search, this is a factor of 3 difference at the depth data compensation stage alone. 
 
 \subsection{Results of calibration} % (fold)
  \label{sub:results_of_calibration}
