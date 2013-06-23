@@ -27,7 +27,7 @@ typedef Matrix< float , 16 , 1> Vector16f;
 #define STATENUM 16
 #define Sampling_Time 0.01	// unit is seconds.
 //#define distThreshold 5000
-int distThreshold = 4500;
+int distThreshold = 500;
 #define startupConvergeTimesteps 1000
 //#define XtionCovarFudge 100
 int XtionCovarFudge = 10000;
@@ -239,34 +239,37 @@ void state_prediction () {
 	xdelta(1) = state(4);
 	xdelta(2) = state(5);
 
+	/*
 	//limit acc impulse which may be unbounded due to comms errors
 	float accLimParts[3];
 	for (int i = 0; i < 2; ++i)
 	{
-		accLimParts[i] = min(max(acc(i), -5.0f), 5.0f);
+		accLimParts[i] = min(max(acc(i), -10.0f), 10.0f);
 	}
-	accLimParts[2] = min(max(acc(2), -5.0f - 9.816f), 5.0f - 9.816f);
+	accLimParts[2] = min(max(acc(2), -10.0f - 9.816f), 10.0f - 9.816f);
 	Vector3f accLim(accLimParts[0], accLimParts[1], accLimParts[2]);
+	*/
 
 	//Velocity
 	//initialize the DCM using quaternions from state.
-	xdelta.segment(3,3) << DCM.transpose() *  accLim;
+	xdelta.segment(3,3) << DCM.transpose() *  acc;
 	xdelta(5) += 9.816;
 
-
+	/*
 	float gyroLimParts[3];
 	for (int i = 0; i < 3; ++i)
 	{
-		gyroLimParts[i] = min(max(gyro(i), -4.0f), 4.0f);
+		gyroLimParts[i] = min(max(gyro(i), -10.0f), 10.0f);
 	}
 	Vector3f gyroLim(gyroLimParts[0], gyroLimParts[1], gyroLimParts[2]);
+	*/
 
 	//Quaternions
 	/*
 	* To compute quaternion transition, first compute angular velocity vector
 	*/
 
-	xdelta.segment(6,4) << 0.5 * Xi * gyroLim;
+	xdelta.segment(6,4) << 0.5 * Xi * gyro;
 	xdelta.segment(10,6) << 0,0,0,0,0,0;
 	//Biases
 	//xdelta.block<6,1>(10,1) = 0;
