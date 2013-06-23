@@ -31,6 +31,7 @@ extern int XtionCovarFudge;
 #include <queue>
 
 #define RESOLUTION_MODE pcl::OpenNIGrabber::OpenNI_QQVGA_30Hz
+#define VIEWER
 
 #define FPS_CALC(_WHAT_) \
 do \
@@ -68,8 +69,9 @@ class QCVision
 
 	unsigned int eventflag; 
 	unsigned int Perseventflag; 
-	
+#if defined VIEWER
     pcl::visualization::CloudViewer viewer;
+#endif
     std::string device_id_;
     boost::mutex mtx_;
 	boost::mutex m_mutexLockPlanes;
@@ -87,7 +89,12 @@ class QCVision
 	//PCL_Connector con;						//
 	
 
-	QCVision (const std::string& device_id = "") : viewer ("PCL OpenNI NormalEstimation Viewer"), device_id_(device_id), eventflag(1)
+	QCVision (const std::string& device_id = "") : 
+#if defined VIEWER
+	viewer ("PCL OpenNI NormalEstimation Viewer"),
+#endif
+	device_id_(device_id)
+	, eventflag(1)
     {
 
       ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::SIMPLE_3D_GRADIENT);
@@ -95,7 +102,9 @@ class QCVision
 	  ne_.setMaxDepthChangeFactor (G_depthdepend);
       ne_.setNormalSmoothingSize (G_smoothsize);
       new_cloud_ = false;
+#if defined VIEWER
       viewer.registerKeyboardCallback(&QCVision::keyboard_callback, *this);
+#endif
 	  //Plane cloud
 	  planeCloud_.assign(19200, Plane(0,0,0,0));
 
@@ -242,102 +251,106 @@ class QCVision
 		else{
 		}
     }
+    
+	    void viz_cb (pcl::visualization::PCLVisualizer& viz)
+	    {
+#if defined VIEWER
+	      mtx_.lock ();
+	      if (!cloud_ || !normals_)
+	      {
+	        //boost::this_thread::sleep(boost::posix_time::seconds(1));
+	        mtx_.unlock ();
+	        return;
+	      }
 
-    void viz_cb (pcl::visualization::PCLVisualizer& viz)
-    {
-      mtx_.lock ();
-      if (!cloud_ || !normals_)
-      {
-        //boost::this_thread::sleep(boost::posix_time::seconds(1));
-        mtx_.unlock ();
-        return;
-      }
+	      CloudConstPtr temp_cloud;
+	      pcl::PointCloud<pcl::Normal>::Ptr temp_normals;
 
-      CloudConstPtr temp_cloud;
-      pcl::PointCloud<pcl::Normal>::Ptr temp_normals;
+	      temp_cloud.swap (cloud_); //here we set cloud_ to null, so that
+	      temp_normals.swap (normals_);
+	      mtx_.unlock ();
 
-      temp_cloud.swap (cloud_); //here we set cloud_ to null, so that
-      temp_normals.swap (normals_);
-      mtx_.unlock ();
+	      if (!viz.updatePointCloud (temp_cloud, "OpenNICloud"))
+	      {
+	        viz.addPointCloud (temp_cloud, "OpenNICloud");
+			viz.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "OpenNICloud");
+	        viz.resetCameraViewpoint ("OpenNICloud");
+	      }
+	      // Render the data
+	      if (new_cloud_)
+	      {
 
-      if (!viz.updatePointCloud (temp_cloud, "OpenNICloud"))
-      {
-        viz.addPointCloud (temp_cloud, "OpenNICloud");
-		viz.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "OpenNICloud");
-        viz.resetCameraViewpoint ("OpenNICloud");
-      }
-      // Render the data
-      if (new_cloud_)
-      {
+	        viz.removePointCloud ("normalcloud");
 
-        viz.removePointCloud ("normalcloud");
+	        //viz.addPointCloudNormals<PointType, pcl::Normal> (temp_cloud, temp_normals, 5, 0.05f, "normalcloud");
+	        new_cloud_ = false;
 
-        //viz.addPointCloudNormals<PointType, pcl::Normal> (temp_cloud, temp_normals, 5, 0.05f, "normalcloud");
-        new_cloud_ = false;
+	      }
+#endif
+	    }
 
-      }
-    }
+	    void keyboard_callback (const pcl::visualization::KeyboardEvent& event, void*)
+	    {
+#if defined VIEWER
+			ofstream MyFile;
+			MyFile.open ("data1.csv", ios::out | ios::ate | ios::app) ;
+	      boost::mutex::scoped_lock lock (mtx_);
+	      
+		  switch (event.getKeyCode ())
+	      {
+	        case '1':
 
-    void keyboard_callback (const pcl::visualization::KeyboardEvent& event, void*)
-    {
-		ofstream MyFile;
-		MyFile.open ("data1.csv", ios::out | ios::ate | ios::app) ;
-      boost::mutex::scoped_lock lock (mtx_);
-      
-	  switch (event.getKeyCode ())
-      {
-        case '1':
+	       /*   ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::COVARIANCE_MATRIX);
+	          std::cout << "switched to COVARIANCE_MATRIX method\n";
+				(cloud_dbscanproc->width, cloud_dbscanproc->height, cloud_dbscanproc);*/
+				for (int p = 0; p <19200; p++){
 
-       /*   ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::COVARIANCE_MATRIX);
-          std::cout << "switched to COVARIANCE_MATRIX method\n";
-			(cloud_dbscanproc->width, cloud_dbscanproc->height, cloud_dbscanproc);*/
-			for (int p = 0; p <19200; p++){
+					MyFile << cloud_->points[p].x << "," << cloud_->points[p].y <<","<< cloud_->points[p].z<<"\n";
 
-				MyFile << cloud_->points[p].x << "," << cloud_->points[p].y <<","<< cloud_->points[p].z<<"\n";
-
-			}
+				}
 
 
-			MyFile << "//\n"; 
-          break;
-        case '2':
+				MyFile << "//\n"; 
+	          break;
+	        case '2':
 
-		  
-          ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::AVERAGE_3D_GRADIENT);
-          std::cout << "switched to AVERAGE_3D_GRADIENT method\n";
-          break;
-        case '3':
-          ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::AVERAGE_DEPTH_CHANGE);
-          std::cout << "switched to AVERAGE_DEPTH_CHANGE method\n";
-          break;
-        case '4':
-          ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::SIMPLE_3D_GRADIENT);
-          std::cout << "switched to SIMPLE_3D_GRADIENT method\n";
-          break;
-		case '5':
-			ne_.setMaxDepthChangeFactor (G_depthdepend);
-			ne_.setNormalSmoothingSize (G_smoothsize);
-			eventflag |= 0x1;
-			break;
-		case '6':
-			eventflag &= ~0x1;
-			break;
-		case '7':
-			Perseventflag |= 0x1;
-			break;
-		case '8':
-			Perseventflag &= ~0x1;
-			break;
-		case '9':
-			ifstream myfile;
-			myfile.open("vars.txt");
-			myfile >> XtionCovarFudge;
-			myfile >> distThreshold;
-			myfile.close();
-			break;
-      }
-    }
-
+			  
+	          ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::AVERAGE_3D_GRADIENT);
+	          std::cout << "switched to AVERAGE_3D_GRADIENT method\n";
+	          break;
+	        case '3':
+	          ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::AVERAGE_DEPTH_CHANGE);
+	          std::cout << "switched to AVERAGE_DEPTH_CHANGE method\n";
+	          break;
+	        case '4':
+	          ne_.setNormalEstimationMethod (pcl::IntegralImageNormalEstimation<PointType, pcl::Normal>::SIMPLE_3D_GRADIENT);
+	          std::cout << "switched to SIMPLE_3D_GRADIENT method\n";
+	          break;
+			case '5':
+				ne_.setMaxDepthChangeFactor (G_depthdepend);
+				ne_.setNormalSmoothingSize (G_smoothsize);
+				eventflag |= 0x1;
+				break;
+			case '6':
+				eventflag &= ~0x1;
+				break;
+			case '7':
+				Perseventflag |= 0x1;
+				break;
+			case '8':
+				Perseventflag &= ~0x1;
+				break;
+			case '9':
+				ifstream myfile;
+				myfile.open("vars.txt");
+				myfile >> XtionCovarFudge;
+				myfile >> distThreshold;
+				myfile.close();
+				break;
+	      }
+#endif
+	    }
+	    
     void run ()
     {
       pcl::Grabber* interface = new pcl::OpenNIGrabber (device_id_, RESOLUTION_MODE, RESOLUTION_MODE);
@@ -345,11 +358,13 @@ class QCVision
       boost::function<void (const CloudConstPtr&)> f = boost::bind (&QCVision::cloud_cb, this, _1);
       boost::signals2::connection c = interface->registerCallback (f);
 
+#if defined VIEWER
       viewer.runOnVisualizationThread (boost::bind(&QCVision::viz_cb, this, _1), "viz_cb");
+#endif
 
       interface->start ();
 
-      while (!viewer.wasStopped ())
+      while (true)
       {
         boost::this_thread::sleep(boost::posix_time::seconds(1));
       }
