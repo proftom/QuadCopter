@@ -212,9 +212,9 @@ the primary sensor for feature extraction is a depth camera, streaming qqvga at 
 
 openni + pcl gives us data in point cloud form (xyz) relative to the camera, and the ability to operate on the cloud
 
-from these point clouds, integral image estimation to get local (Nx, Ny, Nz) normal vector at each point in the cloud. Then a flood fill algorithm is used to cluster points with similar local normals. Note that the region growing for the clusters is done in the xyz space but the condition for adding a point to the cluster operates in nxnynz space.
+from these point clouds, integral image estimation to get local (Nx, Ny, Nz) normal vector at each point in the cloud. Then a Flood Fill algorithm is used to cluster points with similar local normals. Note that the region growing for the clusters is done in the xyz space but the condition for adding a point to the cluster operates in nxnynz space.
 
-flood fill, for a point cloud data obtained from one depth frame. starting from a set of randomised seed points... for each seed point, the algorithm visits its neighbours in the camera-xy space 
+Flood Fill, for a point cloud data obtained from one depth frame. starting from a set of randomised seed points... for each seed point, the algorithm visits its neighbours in the camera-xy space 
 
 patches thrown into the kalman filter, and associated based on mahalanobis distance
 
@@ -377,12 +377,12 @@ In order to avoid large computation times on the embedded device it is important
 \section{Feature Extraction} % (fold)
 \label{sec:feature_extraction}
 
-To obtain consistent and robust computer vision the open source PCL was used as a foundation on which our vision algorithms were implemented. By levering the both well featured and documented PCL allowed us to rapidly develop and test our algorithms in real time. Among other features, the PCL library provided an interface to the Xtion hardware, exposing the data captures or point clouds at speeds of up to 30 frames per second.
+To obtain consistent and robust computer vision the open source PCL was used as a foundation on which our vision algorithms were implemented. By leveraging the both well featured and documented PCL allowed us to rapidly develop and test our algorithms in real time. Among other features, the PCL library provided an interface to the Xtion hardware, exposing the data captures or point clouds at speeds of up to 30 frames per second.
 
 \subsection{Normal Estimation} % (fold)
 \label{sub:normal_estimation}
 
-The first feature employed from the PCL was normal estimation. Once the Xtion passes the raw point cloud data to the PCL, a kernel operator is run over the image which integrates over many points to obtain an estimate of the normal. By using this integral normal estimation noisy and sporadic normal estimations are smoothed out, which are present if normal estimates are taken for just a single point. However, by using a kernel an initial amount of information is required, and hence, for pixels (points) situated near the edges of the image there are no available normal estimations as there are no neighbouring points available in each direction to estimate the normal. Further another caveat of using this technique is the loss of high frequency normal information, such as sharp corners or edges, due to averaging (loss of high frequency information). This latter property is discovered and discussed later in the flood fill algorithm. 
+The first feature employed from the PCL was normal estimation. Once the Xtion passes the raw point cloud data to the PCL, a kernel operator is run over the image which integrates over many points to obtain an estimate of the normal. By using this integral normal estimation noisy and sporadic normal estimations are smoothed out, which are present if normal estimates are taken for just a single point. However, by using a kernel an initial amount of information is required, and hence, for pixels (points) situated near the edges of the image there are no available normal estimations as there are no neighbouring points available in each direction to estimate the normal. Further another caveat of using this technique is the loss of high frequency normal information, such as sharp corners or edges, due to averaging (loss of high frequency information). This latter property is discovered and discussed later in the Flood Fill algorithm. 
 \subsection{Density Based Scan} % (fold)
 \label{sub:density_based_scan}
 
@@ -453,11 +453,11 @@ Four parameters are required to uniquely characterize planes $(N_A, N_B, N_C, D)
 
 % subsection dbscan_optimisations (end)
 
-Modifications to the DBScan algorithm were made to decrease the running time. By using tag fields to set whether points had already been visited or were already part of a cluster (a point can belong to one cluster only), the region query was prevented from being performed on points already part of a cluster. Further a  custom conditional insertion procedure to insert into a list-like data structure without duplication was created, decreasing the complexity of insertion from $O(m \cdot log(n))$ (if using the standard template library set object) to $O(m)$.
+Modifications to the DBScan algorithm were made to decrease the running time. By using tag fields to set whether points had already been visited or were already part of a cluster (a point can belong to one cluster only), the region query was prevented from being performed on points already part of a cluster. Further a custom conditional insertion procedure to insert into a list-like data structure without duplication was created, decreasing the complexity of insertion from $O(m \cdot log(n))$ (if using the standard template library set object) to $O(m)$.
 
 The DBScan algorithm completes in $O(n^2)$ if the region query completes in $O(n)$, and $O(n \cdot log(n))$ if the region query completes within $O(log(n))$. Our implementation lay somewhere between the two, having a complexity dependent on run time, where a field of view containing more planar features took closer to the upper boundary. This is because captures with large or many planar features cause the region query procedure to be invoked more often, shifting the runtime complexity towards $O(n^2)$.
 
-To combat against the possibility of slow run-time performance, it was decided to use a 2 step algorithm. A simple flood fill algorithm fills the initial field of view captured from the depth camera by flooding (clustering) connected points which have the same plane equation (remember the XYZ-Normal point cloud is converted to a plane cloud once the vision module receives a frame from the Xtion). The flood fill will generate a new set of planes, typically of a plane count less than 10. This will then be passed to the DBScan algorithm for the second step of the two step algorithm. Where as the flood fill algorithm moved only between neighbouring points, the DBScan looks over the whole image space to find points within tolerance $\epsilon$ of the seed point plane equation. Planes which are partially obscured or divided  will still be recognised as a single plane in DBScan. This is not the case in flood fill, and hence why a 2 step algorithm is employed. The flood fill rapidly finds planes and the slower DBScan corrects for any planes that have been segmented. Using the analogy of a graphical editing package, if the flood fill is the paint bucket tool, the DBScan is the patching tool.
+To combat against the possibility of slow run-time performance, it was decided to use a 2 step algorithm. A simple Flood Fill algorithm fills the initial field of view captured from the depth camera by flooding (clustering) connected points which have the same plane equation (remember the XYZ-Normal point cloud is converted to a plane cloud once the vision module receives a frame from the Xtion). The Flood Fill will generate a new set of planes, typically of a plane count less than 10. This will then be passed to the DBScan algorithm for the second step of the two step algorithm. Where as the Flood Fill algorithm moved only between neighbouring points, the DBScan looks over the whole image space to find points within tolerance $\epsilon$ of the seed point plane equation. Planes which are partially obscured or divided  will still be recognised as a single plane in DBScan. This is not the case in Flood Fill, and hence why a 2 step algorithm is employed. The Flood Fill rapidly finds planes and the slower DBScan corrects for any planes that have been segmented. Using the analogy of a graphical editing package, if the Flood Fill is the paint bucket tool, the DBScan is the patching tool.
 
 \begin{algorithm}[tbp]
 	\SetAlgoLined
@@ -487,16 +487,16 @@ To combat against the possibility of slow run-time performance, it was decided t
 		}
 	}
 	\bigskip
-	\caption{Flood fill pseudo code for a single fill area}
+	\caption{Flood Fill pseudo code for a single fill area}
 	\label{alg:flood_fill}
 \end{algorithm}
 
-This design leads to increased throughput as the flood fill deals with the raw data from CCD space, converting 19200 points to only a few planes. The DBScan, having complexity towards a greedy $O(n^{2})$, only works on the plane set generated by the flood fill algorithm, meaning the near-quadratic complexity does not dominate run time as there are much less planes than there are points.
+This design leads to increased throughput as the Flood Fill deals with the raw data from CCD space, converting 19200 points to only a few planes. The DBScan, having complexity towards a greedy $O(n^{2})$, only works on the plane set generated by the Flood Fill algorithm, meaning the near-quadratic complexity does not dominate run time as there are much less planes than there are points.
 
 \subsection{The Flood Fill Algorithm}
-As mentioned, the flood fill algorithm is analogous to a paint bucket function in a graphical editing package. We randomly choose a seed point in pixel space (that is we randomly select a point from the Xtion sensor output) and take the normal and distance (plane space), and then proceed to fill out from this point in all directions until the planes parameters $(N_A, N_B, N_C, D)$ differ by more than a value $\epsilon$ from the original seed point. Algorithm~\ref{alg:flood_fill} lists how given a seed point, a region fill is generated.
+As mentioned, the Flood Fill algorithm is analogous to a paint bucket function in a graphical editing package. We randomly choose a seed point in pixel space (that is we randomly select a point from the Xtion sensor output) and take the normal and distance (plane space), and then proceed to fill out from this point in all directions until the planes parameters $(N_A, N_B, N_C, D)$ differ by more than a value $\epsilon$ from the original seed point. Algorithm~\ref{alg:flood_fill} lists how given a seed point, a region fill is generated.
 
-Once a single fill has terminated and more than a certain threshold of the image has either been filled (call it $\sigma$, i.e. 90\%) then the algorithm terminates. If this threshold has not been satisfied then begin a new fill, selecting a new random seed point from a point that has not been already included in a previous fill region. The algorithm will repeat until $\sigma$ is satisfied or it has attempted to flood fill the plane cloud for more than a certain number of times (call it $\gamma$, i.e. 50). The flood fill algorithm works iteratively using only a simple queue structure and list keep track if points have been explored yet in the context of the current fill or already added to a previous fill (plane) respectively, resulting in a linear complexity of O(n). 
+Once a single fill has terminated and more than a certain threshold of the image has either been filled (call it $\sigma$, i.e. 90\%) then the algorithm terminates. If this threshold has not been satisfied then begin a new fill, selecting a new random seed point from a point that has not been already included in a previous fill region. The algorithm will repeat until $\sigma$ is satisfied or it has attempted to Flood Fill the plane cloud for more than a certain number of times (call it $\gamma$, i.e. 50). The Flood Fill algorithm works iteratively using only a simple queue structure and list keep track if points have been explored yet in the context of the current fill or already added to a previous fill (plane) respectively, resulting in a linear complexity of O(n). 
 
 
 \subsection{Complications and Caveats in Segmentation} % (fold)
@@ -515,13 +515,13 @@ The conditions (which all must be satisfied) for accepting a point into the curr
 |P_{seed|D}-P_{D}| &< (|N_{seed|z} \times P^{2}_{seed|z}| + |N_{z} \times P^{2}_{z}|) \times \epsilon_{depth}
 \end{align}
 where as before the last equation was the same as the previous three, except changed to the D parameter.
-Note that P is the point which is under test (to investigate whether it should exist in the flood region), while $P_{seed}$ is the seed point at which was first chosen to characterise the flood fill region. 
+Note that P is the point which is under test (to investigate whether it should exist in the flood region), while $P_{seed}$ is the seed point at which was first chosen to characterise the Flood Fill region. 
 
-Unforeseen consequences arose from the flood fill algorithm where when the flood fill selects a random seed point, it can select a point near a vertex. The problem is that in order to get realistic normal components, the integral image normal estimation performs an averaging operation over normals in a kernel space of 40x40 normals. This means that high frequency information is lost, as shown in Figures~\ref{fig:spurious_plane_normals} and \ref{fig:spurious_plane_normals_2}. Hence, when the flood fill algorithm is filling out, spurious long thin planes may be generated along edges, giving rise to a false positive. Initial attempts to resolve this problem by adjusting the flood fill algorithm parameters such as the minimum points to consider a plane failed.
+Unforeseen consequences arose from the Flood Fill algorithm where when the Flood Fill selects a random seed point, it can select a point near a vertex. The problem is that in order to get realistic normal components, the integral image normal estimation performs an averaging operation over normals in a kernel space of 40x40 normals. This means that high frequency information is lost, as shown in Figures~\ref{fig:spurious_plane_normals} and \ref{fig:spurious_plane_normals_2}. Hence, when the Flood Fill algorithm is filling out, spurious long thin planes may be generated along edges, giving rise to a false positive. Initial attempts to resolve this problem by adjusting the Flood Fill algorithm parameters such as the minimum points to consider a plane failed.
 
-In an effort to deal with this caveat, introducing an additional step between the Flood Fill and the DBScan which detects for false positives was undertaken. By computing the covariance matrix in XYZ space for each point in a cluster, then finding the eigenvalues of this matrix calculates the PCA of each plane allowing us the investigate the dimensionality of each plane by checking the ratio of Eigen values generated. If there is much disparity, it can be assumed that a plane has been encountered fitting to the caveat described above and hence the plane is removed from the set of planes generated by the flood fill algorithm. 
+In an effort to deal with this caveat, introducing an additional step between the Flood Fill and the DBScan which detects for false positives was undertaken. By computing the covariance matrix in xyz space for each point in a cluster, then finding the eigenvalues of this matrix calculates the PCA of each plane allowing us the investigate the dimensionality of each plane by checking the ratio of Eigen values generated. If there is much disparity, it can be assumed that a plane has been encountered fitting to the caveat described above and hence the plane is removed from the set of planes generated by the Flood Fill algorithm. 
 
-This method was never implemented as after thinking ahead towards plane association in the state update of the EKF (below), it was realised that neither the DBScan or PCA algorithms were required.  In fact, it was found that DBScan was no longer the algorithm suitable, but rather a similar algorithm called Iterative Nearest Neighbour (INN) should be used. This is discussed in detail in the registration section of the EKF.
+This method was never implemented as after thinking ahead towards plane association in the state update of the EKF (below), it was realised that neither the DBScan algorithm or PCA was required. In fact, it was found that DBScan was no longer the algorithm suitable, but rather a similar algorithm called Iterative Nearest Neighbour (INN) should be used. This is discussed in detail in the registration section of the EKF.
 
 
 
@@ -570,7 +570,7 @@ This method was never implemented as after thinking ahead towards plane associat
 
 \begin{figure}[p]
 	\centering     %%% not \center
-	\subfloat[Flood fill generating false planes along intersecting plane edge]{
+	\subfloat[Flood Fill generating false planes along intersecting plane edge]{
 		\label{fig:spurious_plane_normals1}
 		\includegraphics[width=0.4\textwidth]{6spuriousplanes_normals.PNG}
 	}
