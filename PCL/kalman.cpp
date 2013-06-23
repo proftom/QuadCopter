@@ -243,9 +243,9 @@ void state_prediction () {
 	float accLimParts[3];
 	for (int i = 0; i < 2; ++i)
 	{
-		accLimParts[i] = min(max(acc(i), -0.0f), 0.0f);
+		accLimParts[i] = min(max(acc(i), -5.0f), 5.0f);
 	}
-	accLimParts[2] = min(max(acc(2), -0.0f - 9.816f), 0.0f - 9.816f);
+	accLimParts[2] = min(max(acc(2), -5.0f - 9.816f), 5.0f - 9.816f);
 	Vector3f accLim(accLimParts[0], accLimParts[1], accLimParts[2]);
 
 	//Velocity
@@ -257,7 +257,7 @@ void state_prediction () {
 	float gyroLimParts[3];
 	for (int i = 0; i < 3; ++i)
 	{
-		gyroLimParts[i] = min(max(gyro(i), -0.0f), 0.0f);
+		gyroLimParts[i] = min(max(gyro(i), -4.0f), 4.0f);
 	}
 	Vector3f gyroLim(gyroLimParts[0], gyroLimParts[1], gyroLimParts[2]);
 
