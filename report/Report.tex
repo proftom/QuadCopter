@@ -312,7 +312,6 @@ Figure~\ref{fig:avDist2} shows the average measurement across all of the frame f
 	\caption{Measured distance against true distance as average of all the pixels per frame. Measured data in blue. Ground truth in green.}
 	\label{fig:avDist2}
 \end{figure}
-%todo: legend straight in figure?
 
 Given the paired measurement and ground truth data, we mapped the correction vectors into a 3D space that later we can look up in to correct new data. In order to have the 3D correction field be continuous, data needs to be smoothed and interpolated in all 3 dimensions. One significant issue is that all obtained correction vectors fall into thin regions in the 3D space along the camera-z (i.e. depth) axis, and within those areas the data is dense in the x and y dimensions. Therefore our task is to preform smoothing in the x and y directions to remove the signal noise and to find a good interpolation scheme looking in the camera-z direction. The interpolation should be smooth to avoid damaging the flatness of planes. 
 
