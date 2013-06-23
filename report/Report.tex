@@ -318,9 +318,9 @@ In order to avoid large computation times on the embedded device it is important
 
 \subsection{Results of calibration} % (fold)
  \label{sub:results_of_calibration}
- After performing the calculations described above we are left with 19200 look up tables (one for each pixel), each of these contain the real depth value for a given depth measurement. This correction lookup was applied to the point cloud data of uninterrupted planes. The results are very good, Figure~\ref{fig:beforeAfter} shows the point cloud data before and after correction, where both images are produced by subtracting the images average distance from all pixels and setting the dynamic range to be from -10\% of the average to +10\%. Therefore an ideal image of a plane should be a pure grey. As you can see the image before has a large area of distortion in the upper right hand corner, this is almost completely removed after correction. Table~\ref{tab:averages} shows the average distance measured over the whole plane for a range of measurements and their respective corrections, this shows that we have also corrected effectively for the absolute inaccuracy found with the Xtion sensor. 
+ After performing the calculations described above we are left with 19200 look up tables (one for each CCD pixel), each of these contain the real depth value for a given depth measurement. Figure~\ref{fig:beforeAfter} shows an example of the depth data before and after correction for one given distance test, where both images are produced by subtracting the frame's average depth from all pixels and setting the dynamic range to be from -10\% of the average to +10\%. Therefore an ideal image of a plane would be of pure grey. Table~\ref{tab:averages} shows the average distance measured over the whole plane for a range of measurements and their respective corrections, it can be seen that both the local and global inaccuracies have been effectively compensated. 
 
- Figure~\ref{fig:outputTest} shows very clearly how important the calibration of the sensor was. The camera took the data points while pointing at a flat wall, a small section of orthogonal flat wall is also visible. Pre-calibration the walls are curved and the data points describing them are dispersed, this would make finding planes very difficult. After processing the image shows the walls being properly orthogonal and flat. Also the grouping of the data points to the surface is much better.
+ Figure~\ref{fig:outputTest} visualises the importance of the calibration. The camera took the data points while pointing at a flat wall, a small section of orthogonal flat wall is also visible. With only the factory calibration, the walls are curved and the data points describing them are dispersed, including an error in average depth. After processing the image shows the walls being properly orthogonal and flat. Also the grouping of the data points to the surface is much better.
 
 
 \begin{figure}[htb]
@@ -334,7 +334,7 @@ In order to avoid large computation times on the embedded device it is important
 	\centering     %%% not \center
 	\subfloat[Before processing]{\label{fig:NewBeforeMatlab}\includegraphics[width=60mm]{NewBeforeMatlab.PNG}} \;
 	\subfloat[After processing]{\label{fig:NewAfterMatlab}\includegraphics[width=60mm]{NewAfterMatlab}}
-	\caption{A demonstration of the correction compensating for the systematic depth errors. Plotted as a projection of 3d point cloud data.}
+	\caption{A demonstration of the correction compensating for the systematic depth errors. Plotted as a projection of xyz point cloud data.}
 	\label{fig:outputTest}
 \end{figure}
 
@@ -367,7 +367,7 @@ In order to avoid large computation times on the embedded device it is important
 		\hline
 	\end{tabular}
 	\end{center}
-	\caption{Table showing the performance of the correction function, all units in meters}
+	\caption{Average distance measured over the whole plane for a range of measurements and their respective corrections, all units in meters.}
 	\label{tab:averages}
 \end{figure}
 
