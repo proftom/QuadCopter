@@ -387,7 +387,7 @@ To obtain consistent and robust computer vision the open source PCL was used as 
 \label{sub:normal_estimation}
 
 
-The first feature employed from the PCL was normal estimation. Once the RGB-D camera passes the raw point cloud data to the PCL, a kernel operator is run over the image which integrates over many points to obtain an estimate of the normal. By using this integral normal estimation noisy and sporadic normal estimations are smoothed out, which are present if normal estimates are taken for just a single point. However, by using a kernel an initial amount of information is required, and hence, for pixels (points) situated near the edges of the image there are no available normal estimations as there are no neighbouring points available in each direction to estimate the normal. Further another caveat of using this technique is the loss of high frequency normal information, such as sharp corners or edges, due to averaging (loss of high frequency information). This property is discussed further in section 6.5. 
+The first feature employed from the PCL was normal estimation. Once the RGB-D camera passes the raw point cloud data to the PCL, an integral image kernel is run over the RGB-D data, obtaining an estimate of the surface normals in the field of view. By using this integral normal estimation noisy and sporadic normal estimations are smoothed out, which are present if normal estimates are taken for just a single point. However, by using a kernel an initial amount of information is required, and hence, for pixels (points) situated near the edges of the image there are no available normal estimations as there are no neighbouring points available in each direction to estimate the normal. Further another caveat of using this technique is the loss of high frequency normal information, such as sharp corners or edges, due to averaging (loss of high frequency information). This property is discussed further in section 6.5. 
 
 \subsection{Density Based Scan} % (fold)
 \label{sub:density_based_scan}
@@ -1390,6 +1390,11 @@ In the second test, we moved the setup by hand in a pseudo straight line of leng
 
 \section{Conclusion}
 
+The project was created with the goal to use inexpensive and available hardware to accurately estimate the state of a . 
+
+Can accurately detect and ignore noise. The tailored vision algorithms worker particularly well, having very good resilence to noise. 
+
+The next chapter of the research and work performed in this document would be to achieve robust 
 
 \nocite{*}
 
