@@ -27,7 +27,7 @@ typedef Matrix< float , 16 , 1> Vector16f;
 #define STATENUM 16
 #define Sampling_Time 0.01	// unit is seconds.
 //#define distThreshold 5000
-int distThreshold = 35;
+int distThreshold = 4500;
 #define startupConvergeTimesteps 1000
 //#define XtionCovarFudge 100
 int XtionCovarFudge = 10000;
@@ -182,8 +182,8 @@ void initialisation () { //Incomplete.
 	planeCloud_t << 0,1,0,0;
 	landmarks.push_back(planeCloud_t);
 	//planeCloud_t << 0,0,1,0;
-	//planeCloud_t << 0,0,-1,0;
-	//landmarks.push_back(planeCloud_t);
+	planeCloud_t << 0,0,-1,0;
+	landmarks.push_back(planeCloud_t);
 
 	//initialise landmarks and P
 	Matrix3f block1 = Matrix3f::Identity();
@@ -239,17 +239,34 @@ void state_prediction () {
 	xdelta(1) = state(4);
 	xdelta(2) = state(5);
 
+	//limit acc impulse which may be unbounded due to comms errors
+	float accLimParts[3];
+	for (int i = 0; i < 2; ++i)
+	{
+		accLimParts[i] = min(max(acc(i), -0.0f), 0.0f);
+	}
+	accLimParts[2] = min(max(acc(2), -0.0f - 9.816f), 0.0f - 9.816f);
+	Vector3f accLim(accLimParts[0], accLimParts[1], accLimParts[2]);
+
 	//Velocity
 	//initialize the DCM using quaternions from state.
-	xdelta.segment(3,3) << DCM.transpose() *  acc;
+	xdelta.segment(3,3) << DCM.transpose() *  accLim;
 	xdelta(5) += 9.816;
+
+
+	float gyroLimParts[3];
+	for (int i = 0; i < 3; ++i)
+	{
+		gyroLimParts[i] = min(max(gyro(i), -0.0f), 0.0f);
+	}
+	Vector3f gyroLim(gyroLimParts[0], gyroLimParts[1], gyroLimParts[2]);
 
 	//Quaternions
 	/*
 	* To compute quaternion transition, first compute angular velocity vector
 	*/
 
-	xdelta.segment(6,4) << 0.5 * Xi * gyro;
+	xdelta.segment(6,4) << 0.5 * Xi * gyroLim;
 	xdelta.segment(10,6) << 0,0,0,0,0,0;
 	//Biases
 	//xdelta.block<6,1>(10,1) = 0;
@@ -418,7 +435,9 @@ MatrixXf H_fn(int planeId) {
 association_struct dataAssociation(const planeStruct& planeData) {
 
 	Matrix4f transPlane;
-	transPlane << DCM, Vector3f::Zero(), state.segment(0,3).transpose(), 1;
+	float xtionXdisplace = 0.15;
+	Vector3f xtionTotalDisplace = state.segment(0,3) + xtionXdisplace * DCM.transpose().col(0);
+	transPlane << DCM, Vector3f::Zero(), xtionTotalDisplace.transpose(), 1;
 
 	Vector4f inP(planeData.plane);
 	Matrix4f inC(planeData.cov);
@@ -507,11 +526,18 @@ void writeErrorToFile(const Vector4f& error, const Matrix4f& errCov) {
 void updateSonar(){
 	float y = sonarAlt - state(2);
 	float s = P(2,2) + sonarVariance;
-	VectorXf K = P.col(2) / s;
-	state += K*y;
-	//P -= K*s*K.transpose();
-	P -= K*P.row(2);
+
 	newsonar = false;
+
+	if (false)//y*y > 9*s)
+	{
+		cout << "-------------------------------------------------SONAR REJECT" << endl;
+	} else {
+		VectorXf K = P.col(2) / s;
+		state += K*y;
+		//P -= K*s*K.transpose();
+		P -= K*P.row(2);
+	}
 }
 
 
@@ -670,9 +696,22 @@ void controlCraft(){
 
 	//Pitch Roll section
 
-	const float P = 0.0072;
-	const float I = 6.26e-5;
-	const float D = 0.2;
+	//2s response mod
+	// const float P = 0.02;
+	// const float I = 6.26e-5;
+	// const float D = 0.1;
+
+
+	//2s response
+	// const float P = 0.0072;
+	// const float I = 6.26e-5;
+	// const float D = 0.2;
+
+	//1s resp
+	const float P = 0.029;
+	const float I = 0.00051;
+	const float D = 0.41;
+
 
 	Vector2f horizSetpoint(-1.2950182, 1.2415010);
 	Vector2f currPos(state.segment<2>(0));
@@ -702,7 +741,7 @@ void controlCraft(){
 
 	//yaw section
 
-	const float Pyaw = 3.5;
+	const float Pyaw = 2.5;
 	const float Iyaw = 0.2;
 
 	float setpointYawAngle = atan2(-currPos(1), -currPos(0));
@@ -723,9 +762,9 @@ void controlCraft(){
 	
 	host_attitude_packet_t outpacket;
 	outpacket.sync_byte = 0xbe;
-	outpacket.roll = min(max(attitudeXY(1), -0.1f), 0.1f);
-	outpacket.pitch = min(max(-attitudeXY(0), -0.1f), 0.1f);
-	outpacket.yaw_rate = min(max(yawrate/400, -0.2f/400.0f), 0.2f/400.0f);
+	outpacket.roll = min(max(attitudeXY(1), -0.03f), 0.03f);
+	outpacket.pitch = min(max(-attitudeXY(0), -0.03f), 0.03f);
+	outpacket.yaw_rate = min(max(yawrate/400, -1.0f/400.0f), 1.0f/400.0f);
 
 	//cout << "sizeof attitude " << sizeof(outpacket) << endl;
 	//while(1);
