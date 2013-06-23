@@ -290,12 +290,12 @@ The depth data obtained by the RGB-D camera of choice has two distinct adverse p
 Additionally, it is important to note that transforming per-pixel depth data to a xyz point cloud is based on the cone projection model of the sensor. Therefore an error in the depth measurement for a CCD pixel will also introduce error in the corresponding point's x and y coordinates within the xyz space.
 %todo: paint a quick and dirty explanation picture?
 
-As mentioned above, the factory calibration of the RGB-D camera's depth sensor is unsatisfactory for the target application. Straight walls as seen by the sensor at distances of more than 2m quickly become warped (see Figure~\ref{fig:uncal5m}). Such depth data quality would make feature extraction infeasible at distances of interest.
+As mentioned above, the factory calibration of the RGB-D camera's depth sensor is unsatisfactory for the target application. Straight walls as seen by the sensor at distances of more than 2m quickly become warped (see Figure~\ref{fig:uncal5m2}). Such depth data quality would make feature extraction infeasible at distances of interest.
 
 
 \begin{figure}[H]
 \centering     %%% not \center
-\includegraphics[width=0.8\textwidth]{uncal5m.PNG}
+\includegraphics[width=0.8\textwidth]{uncal5m2.PNG}
 %\subfloat[coloured point cloud]{\label{fig:clouduncal5m}\includegraphics[width=60mm]{wallat6m}}
 \caption{Example of the poor factory calibration of the Xtion sensor when looking at a wall 4 meters from the camera, plotted as xyz space point cloud.}
 \label{fig:uncal5m}
@@ -303,14 +303,14 @@ As mentioned above, the factory calibration of the RGB-D camera's depth sensor i
 %todo!!!: would be nice to fix up the lhs matlab plot, no axes labeling, too small to see, etc. Maybe just nuke the colour plot
 
 
-Figure~\ref{fig:avDist} shows the average measurement across all of the frame for a range of distances. It can be seen that the depth data is not just warped per pixel, but also wrong on average. At 4m the average distance measured was 3.32m, which represents a 17\% error. The maximum per-pixel error being 0.941m at 4m, which corresponds to 23.5\% error. 
+Figure~\ref{fig:avDist2} shows the average measurement across all of the frame for a range of distances. It can be seen that the depth data is not just warped per pixel, but also wrong on average. At 4m the average distance measured was 3.32m, which represents a 17\% error. The maximum per-pixel error being 0.941m at 4m, which corresponds to 23.5\% error. 
 
 \begin{figure}[htb]
 	\begin{center}
-		\includegraphics[width = 0.8\textwidth]{avDist}
+		\includegraphics[width = 0.8\textwidth]{avDist2}
 	\end{center}
 	\caption{Measured distance against true distance as average of all the pixels per frame. Measured data in blue. Ground truth in green.}
-	\label{fig:avDist}
+	\label{fig:avDist2}
 \end{figure}
 %todo: legend straight in figure?
 
@@ -334,8 +334,8 @@ In order to avoid large computation times on the embedded device it is important
 \end{figure}
 \begin{figure}[htb]
 	\centering     %%% not \center
-	\subfloat[Before processing]{\label{fig:NewBeforeMatlab}\includegraphics[width=60mm]{NewBeforeMatlab.PNG}} \;
-	\subfloat[After processing]{\label{fig:NewAfterMatlab}\includegraphics[width=60mm]{NewAfterMatlab}}
+	\subfloat[Before processing]{\label{fig:NewBeforeMatlab}\includegraphics[width=60mm]{NewBeforeMatlab2.PNG}} \;
+	\subfloat[After processing]{\label{fig:NewAfterMatlab}\includegraphics[width=60mm]{NewAfterMatlab2}}
 	\caption{A demonstration of the correction compensating for the systematic depth errors. Plotted as a projection of xyz point cloud data.}
 	\label{fig:outputTest}
 \end{figure}
