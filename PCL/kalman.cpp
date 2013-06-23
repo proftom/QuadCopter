@@ -27,7 +27,7 @@ typedef Matrix< float , 16 , 1> Vector16f;
 #define STATENUM 16
 #define Sampling_Time 0.01	// unit is seconds.
 //#define distThreshold 5000
-int distThreshold = 500;
+int distThreshold = 4500;
 #define startupConvergeTimesteps 1000
 //#define XtionCovarFudge 100
 int XtionCovarFudge = 10000;
@@ -458,6 +458,13 @@ association_struct dataAssociation(const planeStruct& planeData) {
 		S = H * P * H.transpose() + inC;
 		diff = inP - transPlane*landmarks[index];
 		dist = diff.transpose() *  S.inverse() * diff;
+
+		cout << "dist " << dist << endl;
+
+		if (dist < 0)
+		{
+			dist = -dist;//2e45;
+		}
 		//cout << "dist " << endl << dist << endl << endl;
 
 		if ((first == true) || (dist < data.distance)) {
@@ -510,6 +517,7 @@ void update(const association_struct& data) {
 
 	//P -= kalmanGain * S * kalmanGain.transpose();
 	P = (Matrix<float, 16, 16>::Identity() - kalmanGain * H_opt) * P;
+
 	//writeErrorToFile(diff, S);
 //	cout << "change " << change << endl << endl;
 //	cout << "P: " << P << endl << endl;
