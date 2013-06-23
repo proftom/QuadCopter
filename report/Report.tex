@@ -103,10 +103,7 @@ columns=flexible
 This report investigates the design of indoor state estimation techniques, and demonstrates one particular implementation using a depth camera mounted to a quadcopter frame. The approach consists of collecting data from the environment and detecting planes within it. Using these in combination with an extended Kalman filter we estimate the location of the frame. We combine more traditional sensors such as an accelerometer and gyro to complete the localisation system. We investigate the hardware necessary to process point clouds in real time, whilst being light enough to fly.  
 \tableofcontents
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% todo: decide on consistent capitalisation for acronyms?
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% todo: also, need to align expanded acros vertically
+%todo: kill acronyms
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Acronyms} % (fold)
@@ -135,9 +132,8 @@ This report investigates the design of indoor state estimation techniques, and d
 \section{Executive Summary} % (fold)
 \label{sec:executive_summary}
 \subsection{Introduction}
-%todo: UAV)s acro messes up
 %todo: Ryan: imo rewrite quite a lot of exec sum
-%todo: exec sum should be at the front? separate doc? how to handle acros
+%todo: exec sum should be at the front? separate doc?
 In the present world of increasing machine presence and autonomy, it is important for robots to be able to correctly and accurately estimate their position, velocity and in general their current state at any given time in order to perform tasks with much better accuracy. For our project we focused on determining the indoor state also known as the indoor localisation problem of quadcopters. Quadcopters have become a famous hobbyist platform but more importantly, they can be used in autonomous rescue operations and aerial photography. Our project is in essence a first step towards implementing indoor SLAM. With this in mind, we served as consultants to a start up company called MAVRX who specialises in developing UAVs, supporting electronics and software platforms. Our mission is to enhance MAVRX's interest and research by developing an indoor state estimator that can be used for autonomous quadcopters. They in turn provide us with necessary tools including an R10 quadcopter, wireless remote controller hardware, and code primitives for stabilising and controlling the UAV.
 \subsection{Our Solution}
 While there has been lots of work done in the area of localisation, we propose a unique solution targeting indoor environments which consists of using on-board processing with an inexpensive RGB-D camera as our primary sensor combined with accelerometer and gyroscope sensors capable of working in GPS denied areas. Our approach leverages the powerful yet cheap capabilities of the Xtion Pro camera. A typical solution to localisation involves modeling the motion of the agent as it moves in the environment, extracting features from the environment using sensors and then combining this information to approximate its location within the environment. We decided to track planes (i.e. walls) as our features, extracting plane equations from the Xtion Pro using intelligent vision algorithms with good resistance to noise and bounded-time operation. Moreover, using an RGB-D camera provides a plethora of information and resilience to interference compared to that of sonar or infra-red sensors. For the state estimation engine, we employ the widely popular Kalman filter as it produces optimal solutions in the presence of noise.  
@@ -154,8 +150,6 @@ Localisation and state estimation is a first step towards full autonomous simult
 \section{Problem Specification}
 \label{sec:problem_specification}
 
-
-%todo: vote on naming section "problem context" instead?
 \subsection{Context} % (fold)
 \label{sub:context}
 
@@ -179,7 +173,6 @@ The main deliverable is a proof of concept model that can be used to attract sup
 
 \subsection{Related research} % (fold)
 \label{sub:related_works}
-%todo: fix UAV MAV acronym + plural latex ugliness
 The approaches to localisation for UAVs in GPS denied environments fall into three main categories: optical flow tracking \cite{DBLP:conf/icra/GrabeBG12}, time of flight (ToF) laser scanners \cite{Bry2012} and color with depth (RGB-D) cameras \cite{Shen2012}.
 
 Grabe et al. \cite{DBLP:conf/icra/GrabeBG12} produced a MAV that uses a downward facing RGB camera on a quadcopter to correct for sensor drift. This approach's highlight is the low cost of hardware, as cheap RGB cameras are now common place in many consumer electronics. In combination with other cheap sensors such as gyroscopes, accelerometers, magnetometers and barometers, a complete navigation solution becomes easily affordable. The downsides of this approach include no easy way to extract absolute data from the system. The concept of an absolute distance must be derived from the inertial sensors at some point, hence the whole system could be susceptible to drift over time. The conclusion of this paper suggests that this system would be well applied as a backup for a more robust tracking system. Therefore we can dismiss the use of optical flow tracking as a primary localisation technique. 
@@ -190,8 +183,8 @@ Bry et al. \cite{Bry2012} use a fixed-wing model aircraft and a planar time of f
 As such, laser scanner sensors are out of the project's target solution price. Furthermore, these range finders only scan in one plane, hence returning quite sparse data. In order to identify features one must accumulate data along many planes, which, depending on feature type, may make detection time prohibitively long. 
 
 Shen et al. \cite{Shen2012} use a quadcopter airframe and a RGB-D camera combined with a laser range finder for localisation. Using the depth channel of the camera they extract point cloud data to form an occupancy map and localise using the laser scanner. The benefit of the RGB-D camera is that due to this technology being pushed to entertainment platforms, the sensors are now considerably cheaper than before (e.g. Microsoft's Kinect at \$200). 
-%todo: need to tie this up in a better way as laser sicks were already discussed above, plus our approach hasn't been presented yet
-%The laser range finder is used in a similar way to the above methods. Our implementation would not need the high density occupancy data that a full point cloud gives, therefore a better use of such sensor may be to use it as the primary localisation sensor.
+%todo: need to tie this up in a better way
+%todo: given time, add the gaussian pyramid optical slam from IARC 2010(ish) entry.
 
 \subsection{Our Solution} % (fold)
 \label{sub:our_solution}
@@ -205,41 +198,60 @@ The aircraft configuration of choice is a quadcopter, due to its ability to navi
 % % section problem_specification (end)
 \section{Implementation Overview}
 \label{sub:implementation_overview}
-Our state estimator involves a moving agent such as a quadcopter which deploys one sensor to gather information about its surroundings. This is called an exteroceptive sensor and in our case, we use a depth camera. We also incorporate extra sensors to measure the agent's own movement. These are called preprioceptive sensors and we used an accelerometer and a gyroscope. The state evaluation process involves the following steps:
 
-\textbf{The agent moves, reaching a new point of view in the room} As a result of unavoidable noise
-and errors, this movement increases the uncertainty on the robot's localization.
-There is a need to model this motion to in implementing our state evaluation. This, we will call the motion model.
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<WIP>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-\textbf{The robot observes features in the room which need to be added to its interior map.} These features we call called landmarks. However, dues to errors in the depth camera, the location of the landmark will be uncertain. Moreover the robot's already uncertain position means that these two uncertainties have to be properly combined. We thus require a mathematical model to determine the position of the landmark from data obtained by the exteroceptive sensor. This we will call the inverse observation model.
+%todo
+localisation is done through a ekf
 
-\textbf{The robot re-observes landmarks and it uses them to  make corrections to its self-localisation and landmark position.} Thus reducing uncertainties on both. We also need a mathematical model to predict the values of the measurement from the predicted landmark location and the robot localisation. This will be the direct observation model.
+which is a filter for blablabla, maybe diagram
 
-The tasks can be group into two main categories feature extraction and extended Kalman filter implementation.
+<<talk about just imu being hrap?
 
-\subsection{Feature Extraction}
-The agent needs to properly observe its environment in order to be able to have some information of its relationship within the environment. First, we must chose a suitable sensor for our implementation taking into account the type of feature we want to extract. We chose to use a visual sensor/camera with depth information called the Xtion Pro as it is more more accurate and less prone to interference than using sound to observe the agent's environment. The camera essentially collects raw depth map data of 640 by 480 pixels at 30 frames per second. This is a huge amount of data to process especially in an embedded environment with limited resources. Moreover, the data in its raw form doesn't give much information in and off itself as it is only pixels with their depth information.
+the primary sensor for feature extraction is a depth camera, streaming qqvga at 30 fps. ONLY DEPTH CHANNEL IS OF INTEREST TO US
 
-We use the PCL which is open source and is dedicated to processing such information from our xtion pro depth camera in order to perform a robust feature extraction process. With the PCL, we can extract feature of the indoor environment from the raw data of our camera. In selecting suitable features, we need them to be easily re-observable. With the assumption that our indoor environment is mostly cubic in nature, we decided to track walls, floors and ceilings as these are easily re-observable. Also, we can essentially represent a large wall as a plane and this requires minimal storage space as opposed to the millions of pixel data. This abstraction reduces considerably both computation and space complexity needed. The trade-off is .....
-To extract planes, we employed the popular and much referenced DBScan to cluster points in 3D in order to obtain the regression plane normal and distance information of the points. An alternative is to use the RANSAC. There isn't however an upper bound time limit on the RANSAC algorithm while DBScan completes in $O(n^{2})$ time. In an embedded real-time environment with time constraints, an unbounded-time operation is not optimal. The planes produced are then sent to the extended Kalman filter for state evaluation.
+openni + pcl gives us data in point cloud form (xyz) relative to the camera, and the ability to operate on the cloud
 
-\subsection{Extended Kalman Filter}
-The job of the EKF is to perform an optimal evaluation of the robot's state given the presence of uncertainties in measurements. The EKF is a non-linear extension of the Kalman filter which is itself a linear quadratic estimator capable of giving optimal values of a measurement in the presence of noise. Its results are more accurate than those obtained from single measurements. The EKF operates iteratively producing optimal values around the current mean and covariance. The other alternative to the EKF is the particle filter. The main difference is that the EKF produces optimal results using an approximate mathematical model while the particle filter produces optimal results based on physical models.
-\cite{CompareFilters}Based on a comparative study on the difference between the two approached, for Gaussian noise model the Kalman filter will always produce a better result in less computation time.
+from these point clouds, integral image estimation to get local (Nx, Ny, Nz) normal vector at each point in the cloud. Then a flood fill algorithm is used to cluster points with similar local normals. Note that the region growing for the clusters is done in the xyz space but the condition for adding a point to the cluster operates in nxnynz space.
 
-The state of the robot consists of its position, velocity, attitude, accelerometer and gyroscope biases, and landmark positions. The non-trivial state components, the biases due to temperature variation and manufacturing process errors, are stored because they exhibit a random walk and thus depend on their previous values. \textbf{Insert reference for bias behaviour here}. The Kalman filter iteratively updates the robot's state along with its uncertainties, referred to as its covariance matrix.
+flood fill, for a point cloud data obtained from one depth frame. starting from a set of randomised seed points... for each seed point, the algorithm visits its neighbours in the camera-xy space 
 
-The below image shows the basic concept of the EKF:
-\begin{figure}[H]
-\centering     %%% not \center
-\subfloat[MATLAB]{\label{fig:kalman_pic}\includegraphics[width=60mm]{kalman_pic.PNG}} \;
-\caption{Kalman algorithm Diagram}
-\end{figure}
+patches thrown into the kalman filter, and associated based on mahalanobis distance
 
-If more than one plane is observed, the update step is run for each plane re-observed. If a new plane is observed, it is added as a new landmark into the Kalman filter and its covariance is added onto the covariance matrix.
+% Our state estimator involves a moving agent such as a quadcopter which deploys one sensor to gather information about its surroundings. This is called an exteroceptive sensor and in our case, we use a depth camera. We also incorporate extra sensors to measure the agent's own movement. These are called preprioceptive sensors and we used an accelerometer and a gyroscope. The state evaluation process involves the following steps:
+
+% \textbf{The agent moves, reaching a new point of view in the room} As a result of unavoidable noise
+% and errors, this movement increases the uncertainty on the robot's localization.
+% There is a need to model this motion to in implementing our state evaluation. This, we will call the motion model.
+
+% \textbf{The robot observes features in the room which need to be added to its interior map.} These features we call called landmarks. However, dues to errors in the depth camera, the location of the landmark will be uncertain. Moreover the robot's already uncertain position means that these two uncertainties have to be properly combined. We thus require a mathematical model to determine the position of the landmark from data obtained by the exteroceptive sensor. This we will call the inverse observation model.
+
+% \textbf{The robot re-observes landmarks and it uses them to  make corrections to its self-localisation and landmark position.} Thus reducing uncertainties on both. We also need a mathematical model to predict the values of the measurement from the predicted landmark location and the robot localisation. This will be the direct observation model.
+
+% The tasks can be group into two main categories feature extraction and extended Kalman filter implementation.
+
+% \subsection{Feature Extraction}
+% The agent needs to properly observe its environment in order to be able to have some information of its relationship within the environment. First, we must chose a suitable sensor for our implementation taking into account the type of feature we want to extract. We chose to use a visual sensor/camera with depth information called the Xtion Pro as it is more more accurate and less prone to interference than using sound to observe the agent's environment. The camera essentially collects raw depth map data of 640 by 480 pixels at 30 frames per second. This is a huge amount of data to process especially in an embedded environment with limited resources. Moreover, the data in its raw form doesn't give much information in and off itself as it is only pixels with their depth information.
+
+% We use the PCL which is open source and is dedicated to processing such information from our xtion pro depth camera in order to perform a robust feature extraction process. With the PCL, we can extract feature of the indoor environment from the raw data of our camera. In selecting suitable features, we need them to be easily re-observable. With the assumption that our indoor environment is mostly cubic in nature, we decided to track walls, floors and ceilings as these are easily re-observable. Also, we can essentially represent a large wall as a plane and this requires minimal storage space as opposed to the millions of pixel data. This abstraction reduces considerably both computation and space complexity needed. The trade-off is .....
+% To extract planes, we employed the popular and much referenced DBScan to cluster points in 3D in order to obtain the regression plane normal and distance information of the points. An alternative is to use the RANSAC. There isn't however an upper bound time limit on the RANSAC algorithm while DBScan completes in $O(n^{2})$ time. In an embedded real-time environment with time constraints, an unbounded-time operation is not optimal. The planes produced are then sent to the extended Kalman filter for state evaluation.
+
+% \subsection{Extended Kalman Filter}
+% The job of the EKF is to perform an optimal evaluation of the robot's state given the presence of uncertainties in measurements. The EKF is a non-linear extension of the Kalman filter which is itself a linear quadratic estimator capable of giving optimal values of a measurement in the presence of noise. Its results are more accurate than those obtained from single measurements. The EKF operates iteratively producing optimal values around the current mean and covariance. The other alternative to the EKF is the particle filter. The main difference is that the EKF produces optimal results using an approximate mathematical model while the particle filter produces optimal results based on physical models.
+% \cite{CompareFilters}Based on a comparative study on the difference between the two approached, for Gaussian noise model the Kalman filter will always produce a better result in less computation time.
+
+% The state of the robot consists of its position, velocity, attitude, accelerometer and gyroscope biases, and landmark positions. The non-trivial state components, the biases due to temperature variation and manufacturing process errors, are stored because they exhibit a random walk and thus depend on their previous values. \textbf{Insert reference for bias behaviour here}. The Kalman filter iteratively updates the robot's state along with its uncertainties, referred to as its covariance matrix.
+
+% The below image shows the basic concept of the EKF:
+% \begin{figure}[H]
+% \centering     %%% not \center
+% \subfloat[MATLAB]{\label{fig:kalman_pic}\includegraphics[width=60mm]{kalman_pic.PNG}} \;
+% \caption{Kalman algorithm Diagram}
+% \end{figure}
+
+% If more than one plane is observed, the update step is run for each plane re-observed. If a new plane is observed, it is added as a new landmark into the Kalman filter and its covariance is added onto the covariance matrix.
 
 \section{Preliminaries}
-In this section, we discuss important procedures outside the main project implementation that has to be setup for the project implementation to work. This includes board selection, board configuration and Xtion sensor calibration. 
 
 \subsection{System platform} % (fold)
 \label{sub:system_platform}
@@ -269,34 +281,40 @@ For the above reasons, the project was implemented on Intel Atom D2550 (Dual Cor
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Sensor Calibration} % (fold)
-Upon inspecting the output of the Xtion Pro from Asus it became apparent that the accuracy of the data was poor as the sensor uses a logarithmic scale and not a linear one. At short ranges things appeared normal, and planes were indeed flat. At distance more than 2m planes quickly became warped (see Figure~\ref{fig:uncal5m}). This issue will corrupt the accuracy of planes that we extract from the cloud data, rendering the extra sensor of little use. 
+
+The depth data obtained by the RGB-D camera of choice has two distinct adverse properties. Firstly, the depth values are quantised to levels that scale quadratically, i.e. there is a loss of resolution at longer distances. Furthermore, the feature extraction pipeline needs to account for this effect and have depth-dependent parameters. Secondly, the factory calibration of the sensor was evaluated and found to be inadequate for our application, already having as much as 23.5\% error at 4 meter distance. This section further discusses the sensor's performance and our calibration routine.
+%todo: mention depth-dependent smoothing in integral image convolution?
+
+Additionally, it is important to note that transforming per-pixel depth data to a xyz point cloud is based on the cone projection model of the sensor. Therefore an error in the depth measurement for a CCD pixel will also introduce error in the corresponding point's x and y coordinates within the xyz space.
+%todo: paint a quick and dirty explanation picture?
+
+As mentioned above, the factory calibration of the RGB-D camera's depth sensor is unsatisfactory for the target application. Straight walls as seen by the sensor at distances of more than 2m quickly become warped (see Figure~\ref{fig:matlabuncal5m}). Such depth data quality would make feature extraction infeasible at distances of interest.
+>>>>>>> 25994a8476b1133c950341a33779703d05c5b4e3
 
 \begin{figure}[H]
 \centering     %%% not \center
-\subfloat[MATLAB]{\label{fig:matlabuncal5m}\includegraphics[width=60mm]{uncal5m.PNG}} \;
-\subfloat[Colour Point Cloud]{\label{fig:clouduncal5m}\includegraphics[width=60mm]{wallat6m}}
-\caption{Example of the poor calibration of the Xtion sensor}
+\subfloat[xyz space point cloud]{\label{fig:matlabuncal5m}\includegraphics[width=0.8\textwidth]{uncal5m.PNG}} \;
+%\subfloat[coloured point cloud]{\label{fig:clouduncal5m}\includegraphics[width=60mm]{wallat6m}}
+\caption{Example of the poor factory calibration of the Xtion sensor when looking at a wall 4 meters from the camera}
 \label{fig:uncal5m}
 \end{figure}
+%todo!!!: would be nice to fix up the lhs matlab plot, no axes labeling, too small to see, etc. Maybe just nuke the colour plot
 
 
-To attempt to counteract this issue we collected cloud data from when the sensor is facing a large plane, in this case a wall, at a number of distances (from 0.8m to 4m). This cloud data included lots of objects that are of no use to the calibration\textbf{(What do you mean by object and of no use?)}, so these data points were written to \verb"NaN" in the analysis to avoid corruption of our results. This was achieved by using the data written to an image file, with the z distance (down range from the camera) encoding the grey-scale. Then, by hand, we masked with black all the unwanted areas. This is then easy to correlate against the original data in MATLAB. \textbf{Section is needs clarity. Description is vague.}
-
-Figure~\ref{fig:avDist} shows the average measurement across all of the frame for a range of distances. This represents another mode of inaccuracy not only is the image distorted, the distance measurement is very poor. At 4m the average distance measured was 3.32m, which represents a 17\% error. Though the maximum error is 0.941m at 4m, which represents a huge 23.5\% error. 
+Figure~\ref{fig:avDist} shows the average measurement across all of the frame for a range of distances. It can be seen that the depth data is not just warped per pixel, but also wrong on average. At 4m the average distance measured was 3.32m, which represents a 17\% error. The maximum per-pixel error being 0.941m at 4m, which corresponds to 23.5\% error. 
 
 \begin{figure}[htb]
 	\begin{center}
 		\includegraphics[width = 0.8\textwidth]{avDist}
 	\end{center}
-	\caption{Measured distance vs set distance. This is the average of all the pixels in the frames at a range of distances, the blue line shows the data. Green shows the target line.}
+	\caption{Measured distance against true distance as average of all the pixels per frame. Measured data in blue. Ground truth in green.}
 	\label{fig:avDist}
 \end{figure}
+%todo: legend straight in figure?
 
-Now with the clean data we know that all the data points must belong to a plane with distance to the plane being the calibration distance. For now we assume that the x and y directions are not in need of calibration, as objects in the visualisations do not too distorted in these directions. Therefore we only need to find the difference between measured data and the calibration distance. Mapping these correction vectors into a 3D space that later we can look up in to correct new data. 
+Given the paired measurement and ground truth data, we mapped the correction vectors into a 3D space that later we can look up in to correct new data. In order to have the 3D correction field be continuous, data needs to be smoothed and interpolated in all 3 dimensions. One significant issue is that all obtained correction vectors fall into thin regions in the 3D space along the camera-z (i.e. depth) axis, and within those areas the data is dense in the x and y dimensions. Therefore our task is to preform smoothing in the x and y directions to remove the signal noise and to find a good interpolation scheme looking in the camera-z direction. The interpolation should be smooth to avoid damaging the flatness of planes. 
 
-In order to have the 3D correction field be continuous we must smooth and interpolate the data in all 3 dimensions. One significant issue is that all of our correction vectors fall into quite thin regions in the 3D space along the z axis, and within those areas the data is very dense in the x and y dimensions. Therefore our task is to preform smoothing in the x and y directions to remove the signal noise and to find a good interpolation scheme looking in the z direction. The interpolation should be smooth to avoid damaging the flatness of planes. 
-
-In order to avoid large computation times on the embedded device it is important that we must invert the correction function. As it stands for each data point at the input we would have to search for the two closest calibration measurements for that pixel doing this for every pixel will be very time consuming. With an inverted correction lookup table it is possible to go directly to the correct entries in the table. Assuming we would have done the search on each pixel using binary search, this is a saving of at least 3 times for this section of the algorithm. 
+In order to avoid large computation times on the embedded device it is important that the correction function is inverted to a map from measurement to corrected data. Otherwise, for each data point in the input, it would be required to search for the two closest calibration measurements for that pixel. With an inverted correction lookup table it is possible to go directly to the correct entries in the table (i.e. O(1)). Assuming the uninverted approach doing binary search, this is a factor of 3 difference at the depth data compensation stage alone. 
 
 \subsection{Results of calibration} % (fold)
  \label{sub:results_of_calibration}
@@ -309,14 +327,14 @@ In order to avoid large computation times on the embedded device it is important
 	\centering     %%% not \center
 	\subfloat[Before correction]{\label{fig:preflat8}\includegraphics[width=60mm]{preflat8}} \;
 	\subfloat[After correction]{\label{fig:postflat8}\includegraphics[width=60mm]{postflat8}}
-	\caption{Example of the correction function in action. Images show divergence from the measurements average distance, white is +10\% and black is -10\% of the average respectively.}
+	\caption{Example of the correction function in action for a flat surface at a specific distance from the sensor. Images show divergence from the measurements average distance, white is +10\% and black is -10\% of the average respectively.}
 	\label{fig:beforeAfter}
 \end{figure}
 \begin{figure}[htb]
 	\centering     %%% not \center
 	\subfloat[Before processing]{\label{fig:NewBeforeMatlab}\includegraphics[width=60mm]{NewBeforeMatlab.PNG}} \;
 	\subfloat[After processing]{\label{fig:NewAfterMatlab}\includegraphics[width=60mm]{NewAfterMatlab}}
-	\caption{A demonstration of the correction removing curvature from the Xtion data}
+	\caption{A demonstration of the correction compensating for the systematic depth errors. Plotted as a projection of 3d point cloud data.}
 	\label{fig:outputTest}
 \end{figure}
 
