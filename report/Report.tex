@@ -1153,11 +1153,10 @@ In the implementation, we take advantage of this sparsity and compute matrix mul
 
 \subsection{Landmark Initialization} % (fold)
 \label{sub:landmark_initialization}
-
-Cool stuff from \cite{Sola2013}
+The ability to observe new planes as the craft explores its environment is crucial for it to keep track of its location. By re-observing these new features, the craft is able to compute corrections in its location. When the craft sees a new plane, it add this to its internal state transforming the plane equations in the body frame to the world frame and then storing this and its associated covariance information. It uses an inverse observation model, e which describes how we can derive the current state from an observed plane equation y. Mathematically we have,
 
 \begin{align}
-	y_i = 
+	y_{k} = y|_{x(k)} =  
 	\left[
 	\begin{matrix}
 		\hat{N}_x \\
@@ -1177,18 +1176,19 @@ Cool stuff from \cite{Sola2013}
 	\end{matrix}
 	\right]
 \end{align}
+$T_e$ defines the transformation matrix from the body frame to the earth frame. The new plane numbered j is defined below, 
 
 \begin{align}
-	\pi_i	&= e(y_i,x) \notag \\
-			&= T_e y_i
+	\pi_j	&= e(y_k,x) \notag \\
+			&= T_e y_k
 \end{align}
-
+The new state at time k now becomes, 
 \begin{align}
-	x &\leftarrow
+	x_{k} &\leftarrow
 	\left[
 	\begin{matrix}
-		x \\
-		\pi_i
+		x_{k} \\
+		\pi_j
 	\end{matrix}
 	\right]
 \end{align}
