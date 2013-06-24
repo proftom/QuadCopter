@@ -350,11 +350,29 @@ In order to avoid large computation times on the embedded device it is important
 
 The feature extraction pipeline aims to identify and classify planar surfaces within the data coming from a forward facing depth camera, the reasoning for extracting planes is given in section \ref{sub:implementation_overview}. The input data is depth values for 160x120 pixel frames at 30 fps, which is turned into a point cloud using the Point Cloud Library (PCL). Local surface normals are found at each point, which are used for clustering the data into planar patches with a flood fill algorithm. The details of each stage in the feature extraction are presented in this section. 
 
+Two clustering algorithms were designed, implemented and evaluated: a density based scan (DBScan) variant and a flood fill algorithm, with the final implementation using the latter.
 \subsection{Normal Estimation} % (fold)
 \label{sub:normal_estimation}
 
-The first feature employed from the PCL was normal estimation. Once the RGB-D camera passes the raw point cloud data to the PCL, an integral image kernel is run over the RGB-D data, obtaining an estimate of the surface normals in the field of view. By using this integral normal estimation noisy and sporadic normal estimations are smoothed out, which are present if normal estimates are taken for just a single point. However, by using a kernel an initial amount of information is required, and hence, for pixels (points) situated near the edges of the image there are no available normal estimations as there are no neighbouring points available in each direction to estimate the normal. Further another caveat of using this technique is the loss of high frequency normal information, such as sharp corners or edges, due to averaging (loss of high frequency information). This property is discussed further in section \ref{sub:flood_fill_algo}. 
+As the depth sensor is a consumer grade RGB-D camera, operated at over double the quoted distance, the depth data is significantly noisy. A naive local surface normal kernel would take several nearest neighbours to a point and construct its local normal. However, with the high frequency noise level seen in the sensor readings, this method would produce effectively random normals. Instead, we use a technique called integral image convolution \cite{Holz2011} to combine normal estimation with low pass filtering. This is done through a data structure called an integral image (also known as a summed area table), which is computationally efficient and allows the normal estimator to run in real time. 
 
+The downside of low pass filtering is illustrated in Figure~\ref{fig:spurious_plane_normals}, which shows that intersections of planes (which are common indoors) are smoothed and instead look like curved surfaces. This can cause clustering algorithms to either follow the smooth curve and classify everything as one cluster, or instead break the curve into many planar strips. This problem was one of the main concerns and is discussed further in the clustering algorithms' sections. Additionally, the kernel nature of the normal estimator effectively reduces the depth sensor's field of view as it cannot operate on points near edges. Furthermore, the sensor cannot return data around sharp depth discontinuities due to parallax. This means that the kernel operator is also unable to operate within very small clusters of points. The kernel's size used in this prototype was the experimentally best tradeoff between low pass filtering of noise, corruption of edges and reduction of the sensor's field of view.
+
+\begin{figure}[p]
+	\centering     %%% not \center
+	\subfloat[Smoothed corners can give rise to planar strips being found by plane finding algorithms]{
+		\label{fig:spurious_plane_normals1}
+		\includegraphics[width=0.4\textwidth]{6spuriousplanes_normals.PNG}
+	}
+	\;
+	\subfloat[high frequency content along the edge of two orthogonal planes smoothed by the kernel]{
+		\label{fig:spurious_plane_normals_2}
+		\includegraphics[width=0.4\textwidth]{6spuriousplanes_normals_2.PNG}
+	}
+
+	\caption{Effects of the low pass filtering by the normal estimation kernel}
+	\label{fig:spurious_plane_normals}
+\end{figure}
 
 \subsection{Density Based Scan} % (fold)
 \label{sub:density_based_scan}
@@ -496,6 +514,8 @@ In an effort to deal with this caveat, introducing an additional step between th
 The PCA was never implemented as it was found that by increasing the minimum number of points required for a fill region to be classified as a plane fixed the issue sufficiently for the purpose of this project. Additionally, it was decided to remove the DBScan algorithm altogether as it was realised that although planes occasionally become segmented using the Flood Fill, in practice running DBScan after Flood Fill made no measurable performance difference to the Kalman filter.
 
 
+
+
 \begin{figure}[p]
 	\centering
 	\subfloat[ in normal space. A total of 4 planes were found:, the floor, the white boards and two back walls] 
@@ -532,21 +552,7 @@ The PCA was never implemented as it was found that by increasing the minimum num
 
 
 
-\begin{figure}[p]
-	\centering     %%% not \center
-	\subfloat[Flood Fill generating false planes along intersecting plane edge]{
-		\label{fig:spurious_plane_normals1}
-		\includegraphics[width=0.4\textwidth]{6spuriousplanes_normals.PNG}
-	}
-	\;
-	\subfloat[Kernel averaging operation, causing the loss of high frequency information on the edges of 2 planes]{
-		\label{fig:spurious_plane_normals_2}
-		\includegraphics[width=0.4\textwidth]{6spuriousplanes_normals_2.PNG}
-	}
 
-	\caption{Normal estimation kernel causing loss of high frequency information of normals}
-	\label{fig:spurious_plane_normals}
-\end{figure}
 \clearpage
 
 % section feature_extraction (end)
