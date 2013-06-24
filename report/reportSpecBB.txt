@@ -1,0 +1,45 @@
+The Flavour
+
+Students are asked to form groups of 5 - 7 to act as technical consultants to a brief provided by a 'knowledgeable client' from industry. Details and briefs are provided below.
+Student groups are to respond to the brief and design, implement and test a pre-production prototype of a new product/technical solution to the defined problem for demonstration (unless specified otherwise). The client needs to be convinced that the product proposal fulfils the client brief and is attractive enough to be worked up into a full product and put into production. Students are expected to show design and engineering skills in the widest possible view. Technical innovation is the main thrust of the project but they must also show good project planning, consideration of the potential users’ expectations and consider the selling points and commercial awareness (i.e. they should not over engineer the solution at vast expense)
+Students are asked to form groups of 5 - 7 to act as technical consultants to a brief provided by a 'knowledgeable client' from industry. Details and briefs are provided below.
+Student groups are to respond to the brief and design, implement and test a pre-production prototype of a new product/technical solution to the defined problem for demonstration (unless specified otherwise). The client needs to be convinced that the product proposal fulfils the client brief and is attractive enough to be worked up into a full product and put into production. Students are expected to show design and engineering skills in the widest possible view. Technical innovation is the main thrust of the project but they must also show good project planning, consideration of the potential users’ expectations and consider the selling points and commercial awareness (i.e. they should not over engineer the solution at vast expense)
+
+
+Project Organisation
+
+The project will run throughout the summer term with deliverables in the last week of term.  The projects will be conducted in groups of 5 - 7.
+Final Report
+
+The final report has a strict page limit of 25 + 1 page executive summary. These limits are for the main body of the report and do not include title page or contents page etc. You may use appendices which also do not count in your page limit, but the main body of your report should be self contained as your supervisor will only briefly skim the appendices. Think carefully about what should be and should not be in the appendices.
+The report must conform to the following:
+Paper size: A4.
+Minimum font size: 11 point.
+Margins: 2.5cm on all sides.
+Page numbers at foot of page.
+Figures and references to be properly numbered.
+Outline section numbering to be applied.
+An executive summary of 1 page must be included.  This summary should cover the complete report. (As an example of an executive summary, the report here is a 70 page document with a 2 page executive summary - Brighton Mainline Utilisation. You will notice that the summary encapsulates the key outcomes in the main report and is concise and factual.)
+Deliverables due in the last week of term are:
+
+Report (as detailed above).  Please hand in the report at the end of your presentation/demo session.
+Powerpoint presentation on project as a whole
+15 minute demonstration of working prototype: Marks will be awarded for whether the demonstration was well chosen for illustrating the success of the project and whether the demonstration was itself successful.
+Self Mark sharing form: Each group member will be asked to complete and submit (in confidence) a form assessing how evenly or otherwise group members contributed
+Your presentation and demo will be done in a session with 3 to 4 other groups and will include your industrial client.  You will be audience members when you are not presenting and are free to ask questions to other groups.
+You should allow roughly 15 mins for your presentation, 15 mins for demonstration and 10 mins for questions.  Some supervisors will want the demos done along with the presentation itself and some will want to run the demos from all the groups all together at the end.  My suggestion is if your demo can be done at the same time as the presentation, then this is what you should do - it can look more impressive.  If you can't (requires lab equipment) then the group will relocate to the lab at the end of the presentations.
+
+Mark Schemes
+
+The percentages indicated will give the overall project mark and the project is worth 20% of the total marks for the third year. You may like to examine the marking schedules used by the staff:
+3E Group Project Mark Sheet - Design Report.pdf 
+3E Group Project Mark Sheet - Demo-Presentation.pdf 
+Plagiarism
+
+All of your reports will be handed in electronically via Blackboard.  As a consequence they are all automatically checked for plagiarism against each other and the entire web.  If anyone is unclear as to what constitutes plagiarism and the consequences of doing it, please read the college statement on the matter.
+Last Week of the Year
+
+You will have noted above that a demonstration is to be given in the last week of the academic year.  Do not miss this week by flying home early or accepting a job which starts before your commitments to the department are over for the year.  Your marks will suffer badly if you do not turn up to the final demo.
+Notes on Good Projects
+
+The EE3 design and build project is a good chance for you to work as a team and actually design and make something that works.  There is emphasis now on making something that really works.  This is important.  Be ambitious but do not try to do more than you are able and have many parts half finished that demonstrate nothing.  A less ambitious project that works nicely is of more value.
