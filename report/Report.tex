@@ -1296,7 +1296,7 @@ This makes an enormous difference in the scalability of the kalman filter approa
 
 \section{Testing and Results} % (fold)
 \label{sub:testing_kalman}
-In our test setup, we based our coordinate system in a vertex of the room as origin defining the x,y and z coordinates to be along the three wall edges connected to the origin vertex. Our test system consist of Thalamus chip containing the inertial sensors and Xtion Pro taped together. To ensure a functional kalman filter, full observability of system in the x,y and z axis is needed. Thus we decided to observe three orthogonal planes formed by the wall that meet at the origin. We then initialise our state in the filter to be -2,2,2 in the x,y,z space. In practice however, the initial state will be close to but not exactly the same as in the filter. It is left to the kalman filter to converge to the real state estimate.
+In our test setup, we based our coordinate system in a vertex of the room as origin defining the x,y and z coordinates to be along the three wall edges connected to the origin vertex. Our test system consist of Thalamus chip containing the inertial sensors and Xtion Pro taped together. To ensure a functional kalman filter, full observability of system in the x,y and z axis is needed. Ideally, an observation should be a definite point in space giving information in all the components of the Nx, Ny, Nz and D spaces. Planes however, fundamentaly provides accurate information in at most two of the three axis and distance.  Thus we decided to observe three orthogonal planes formed by the wall that meet at the origin in order to acheive full observability. We then initialise our state in the filter to be -2,2,2 in the x,y,z space. In practice however, the initial state will be close to but not exactly the same as in the filter. It is left to the kalman filter to converge to the real state estimate.
 
 To ensure a properly running the kalman filter, we had to tune the observation covariance parameter since the range of values obtained by using our custom feature extraction algorithm was too low (in the order of $10^{-7}$). A larger value would result in the kalman relying too much on the inertial sensors while a smaller one means we trust the xtion's output more [Fig:~\ref{fig:trustXtion}]. Feature extraction has considerable random noise due to the random initial seed point for the custom floodfill algorithm. Thus trusting the camera would result in high frequency noise or fluctuations in state estimate. On the other hand, position estimate from the inertial sensors behave like low pass filtered values as it is obtained by double integrating the acceleration. Thus trusting the inertial sensors more by increasing the Xtion's uncertainty results in a lower frequency in estimation. We choose an appropriate value such that our filter behaves within an optimal region based on three test as discussed in \cite{KalmanTuning} . We focus our analysis on position estimate alone because since it depends on speed and attitude change, a good position estimate is sufficient to validate our algorithm implying the other estimates are correct. 
 
@@ -1332,30 +1332,30 @@ P(N\bar{q}\in [r_{1}, r_{2}] | H_{0}) = 1 - \alpha
 \end{equation}
 We choose $\alpha$ = 0.005 (i.e. defining a two sided 95\% confidence region). We get that
 [$r_{1}, r_{2}$] = [$\chi_{4}(0.025), \chi_{4}(0.975)$] = 0.4844, 11.1433. For a factor of 10000 , we obtain $\bar{q}$ = 3.6561 which is within the confidence region.
-In the third check, we verify that error is white and thus uncorrelated with its past values. To do this, we performed the autocorrelation of the noise using our obtained Xtion factor of 10000. Ideally for whiteness, autocorrelation peaks at a lag of 0 and is essentially zero for all others. For large enough N, we can assume that r($\tau$) is normally distributed with mean 0 and variance $\frac{1}{N}$. Practically, we can compute the $\pm$ 2$\sigma$ gate and check that aleast 95\% of values fall within this confidence region. In our test, we obtained that percentage of innovation in Nx,Ny and Nz that satisfy are the condition are 98.40$\%$, 97.81\%, 98.35\%, respectively. Error in distance however gives 93.14\%. 
+In the third check, we verify that error is white and thus uncorrelated with its past values. To do this, we performed the autocorrelation of the noise using our obtained Xtion factor of 10000. Ideally for whiteness, autocorrelation peaks at a lag of 0 and is essentially zero for all others. For large enough N, we can assume that r($\tau$) is normally distributed with mean 0 and variance $\frac{1}{N}$. Practically, we can compute the $\pm$ 2$\sigma$ gate and check that aleast 95\% of values fall within this confidence region. In our test, we obtained that percentage of innovation in Nx,Ny and Nz that satisfy are the condition are 98.40$\%$, 97.81\%, 98.35\%, respectively. Error in distance however gives 93.14\% confidence. We are unable to explain why the confidence in the distance is below the accepted value.
 \begin{figure}[H]
 	\centering     %%% not \center
-	\subfloat[Nx error]{
+	\subfloat[Nx]{
 		\label{fig:errorNx}
 		\includegraphics[width=0.45\textwidth]{noiseNx.PNG}
 	}
 	\;
-	\subfloat[Ny error]{
+	\subfloat[Ny]{
 		\label{fig:errorNy}
 		\includegraphics[width=0.45\textwidth]{noiseNy.PNG}
 	}
 	\;
-	\subfloat[Nz error]{
+	\subfloat[Nz]{
 		\label{fig:errorNz}
 		\includegraphics[width=0.45\textwidth]{noiseNz.PNG}
 	}
 	\;
-	\subfloat[D error]{
+	\subfloat[D]{
 		\label{fig:errorD}
 		\includegraphics[width=0.45\textwidth]{noised.PNG}
 	}
 	\;
-	\caption{Error in innovation showing whiteness expect for the distance variable}
+	\caption{Autocorrelation of error in innovation showing whiteness except for the distance variable}
 	\label{fig:errorfigures}
 \end{figure}
 
