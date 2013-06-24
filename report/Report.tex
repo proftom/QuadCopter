@@ -184,14 +184,6 @@ Shen et al. \cite{Shen2012} use a quadcopter airframe and a RGB-D camera combine
 %todo: need to tie this up in a better way
 %todo: given time, add the gaussian pyramid optical slam from IARC 2010(ish) entry.
 
-\subsection{Our Solution} % (fold)
-\label{sub:our_solution}
-
-The intended approach is to use a consumer grade RGB-D camera as the primary sensor, supplemented with accelerometers, gyroscopes and a downward facing sonar sensor. In order to generate the estimate of the robot's state we use an Extended Kalman Filter (EKF) to fuse the data. To simplify feature extraction and reduce the computational complexity, features tracked by the filter are planar surfaces. This is due to planes are being easy to characterise from all directions as well as being a consistently available feature in man-made environments. 
-
-The depth camera of choise is the Asus Xtion Pro as it is considerably lighter than the copeting products, while maintaining a similar price point. Due to the relatively narrow field of view (58$^{\circ}$ horizontal, 45$^{\circ}$ vertical), the floor and the ceiling is expected to often be out of view, resulting in reduced observability in the elevation direction. The depth camera is complemented with a downward facing sonar sensor to address this issue.
-
-The aircraft configuration of choice is a quadcopter, due to its ability to navigate environments with limited space and stability. The latter also helps to reduce the amount of motion blur in the depth camera. Finally, it presents a good opportunity to test Mavrx/UAir's R10 quadcopter platform's reliability and robustness.
 
 % % section problem_specification (end)
 \section{Implementation Overview}
@@ -211,7 +203,7 @@ The aircraft configuration of choice is a quadcopter, due to its ability to navi
 
 % The tasks can be group into two main categories feature extraction and extended Kalman filter implementation.
 
-The localisation scheme used is based on a feature tracking Extended Kalman Filter (EKF). The features tracked are planar surfaces within the environment, which are obtained from depth data of a consumer RGB-D camera. Planes are tracked as they can represent walls, floors and ceiling, which are abundant in man-made environments, are static and easily reobservable. Furthermore, this abstraction drastically reduces both the computational and space complexity of the filter. The filter fuses extracted feature information with other sensors: accelerometer, gyroscope and a downward facing sonar, which in turns allows the quadrotor to localise itself within the environment.
+The localisation scheme used is based on a feature tracking Extended Kalman Filter (EKF). The features tracked are planar surfaces within the environment, which are obtained from depth data of a consumer RGB-D camera.The depth camera of choise is the Asus Xtion Pro as it is considerably lighter than the copeting products, while maintaining a similar price point. Due to the relatively narrow field of view (58$^{\circ}$ horizontal, 45$^{\circ}$ vertical), the floor and the ceiling is expected to often be out of view, resulting in reduced observability in the elevation direction. The depth camera is complemented with a downward facing sonar sensor to address this issue. Planes are tracked as they can represent walls, floors and ceiling, which are abundant in man-made environments, are static and easily reobservable. Furthermore, this abstraction drastically reduces both the computational and space complexity of the filter. The filter fuses extracted feature information with other sensors: accelerometer, gyroscope and a downward facing sonar, which in turns allows the quadrotor to localise itself within the environment.
 
 The job of the EKF is to perform an optimal evaluation of the robot's state given the presence of uncertainties in measurements. The EKF is a non-linear extension of the Kalman filter which is itself a linear quadratic estimator capable of giving optimal values of a measurement in the presence of noise. Its results are more accurate than those obtained from single measurements. The EKF operates iteratively producing optimal values around the current mean and covariance. The other alternative to the EKF is the particle filter. The main difference is that the EKF produces optimal results using an approximate mathematical model while the particle filter produces optimal results based on physical models.
 Based on a comparative study \cite{CompareFilters} on the difference between the two approaches, for Gaussian noise model the Kalman filter will always produce a better result in less computation time.
@@ -225,6 +217,8 @@ The above point cloud is then clustered by a custom Flood Fill algorithm. The al
 The incoming plane data invokes an update iteration in the EKF, which tries to associate measured planes to existing features in its state. The association is based on Mahalanobis distance, which is a measurement used in multi-dimensional statistical analysis for classification of samples.
 
 Additionally, the project produced the necessary mathematical derivations and a partial implementation of feature registration. Registration enables the filter to increase the landmark map with previously unobserved features online. This will allow the quadrotor to solve the full simultaneous localisation and mapping (SLAM) problem and operate in environments without any prior knowledge.
+
+The aircraft configuration of choice is a quadcopter for our demonstration platform, due to its ability to navigate environments with limited space and stability. The latter also helps to reduce the amount of motion blur in the depth camera. Finally, it presents a good opportunity to test Mavrx/UAir's R10 quadcopter platform's reliability and robustness.
 
 
 \section{Preliminaries}
