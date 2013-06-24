@@ -378,8 +378,7 @@ The downside of low pass filtering is illustrated in Figure~\ref{fig:spurious_pl
 \label{sub:density_based_scan}
 
 
-A much referenced and popular algorithm for density based clustering is density based scan (DBScan), having excellent noise immunity. The basic idea is to take an initial point and find all other neighbouring points within a certain neighbourhood or radius (of a distance epsilon). If enough are found (decided by a threshold value $\gamma$), then these neighbouring points are iteratively expanded upon, again checking if the minimum number of neighbouring points ($\gamma$) is sufficient to be considered within the same cluster. Figure~\ref{fig:dbscan} demonstrates a pass of the algorithm starting from a point within region A and clustering outward until the density of connected points becomes to small. Listing~\ref{alg:dbscan} details the full algorithm to find all densely connected regions within an image space. The $\gamma$ threshold was derived empirically, typically having a numerical figure equatable to 10mm.  
-
+One popular algorithm for density based clustering is density based scan (DBScan), which can find arbitrarily shaped clusters, needs no apriori cluster count information and a has a notion of noise. The basic idea is to take an initial point and find all other neighbouring points within a certain neighbourhood (of a distance $\epsilon$). If enough are found (decided by a threshold value $\gamma$), then these neighbouring points are iteratively expanded upon, again checking if the minimum number of neighbouring points ($\gamma$) is sufficient to be considered within the same cluster. Figure~\ref{fig:dbscan} demonstrates a pass of the algorithm starting from a point within region A and clustering outward until the density of connected points becomes too small. Listing~\ref{alg:dbscan} details the full algorithm to find all densely connected regions within an image space.
 
 \begin{figure}[bt]
 	\begin{center}
@@ -431,11 +430,7 @@ A much referenced and popular algorithm for density based clustering is density 
 	\label{alg:dbscan}
 \end{algorithm}
 
-To begin, a basic naïve implementation was built which iteratively looped through each point in the cloud, discovering all further points in x, y, z space that are within a certain distance  $(\epsilon)$. This procedure is listed as region query in algorithm~\ref{alg:dbscan}. This was then progressed to performing the region query in normal space, meaning planes with a similar normal equation would appear in the same cluster, shown in Figure~\ref{fig:dbscan_planes}
-
-
-
-Four parameters are required to uniquely characterize planes $(N_A, N_B, N_C, D)$ so finally the normal space was combined with distance space (z) for the region query criteria conditions. To make things easier, as soon as an RGB-D camera capture becomes available, the data cloud is converted to a plane cloud (a large list containing the 4 plane parameters).
+Four parameters are required to uniquely characterize planes, in this case we use the Hessian plane form with parameters $(N_A, N_B, N_C, D)$. Hence our DBScan implementation operates in this four dimensional space, with the normal components coming from the normal estimator and the $D$ components mathematically derived from xyz and N spaces. An example of the clustering is shown in Figure~\ref{fig:box_normal_clustering}.
 
 \subsection{DBScan Optimisations} % (fold)
 \label{sub:dbscan_optimisations}
@@ -516,23 +511,23 @@ The PCA was never implemented as it was found that by increasing the minimum num
 
 
 
-\begin{figure}[p]
-	\centering
-	\subfloat[ in normal space. A total of 4 planes were found:, the floor, the white boards and two back walls] 
-	{
-		\label{fig:dbscan_planes}
-		\includegraphics[width=0.4\textwidth]{6normal_boards.png}
-	}
-	\;
-	\subfloat[of a laboratory in xyz space. Each white board is considered a separate cluster. Distant objects coloured in blue.] {
-		\label{fig:table_dbscan}
-		\includegraphics[width=0.4\textwidth]{6table_dbscan.png}
+% \begin{figure}[p]
+% 	\centering
+% 	\subfloat[ in normal space. A total of 4 planes were found:, the floor, the white boards and two back walls] 
+% 	{
+% 		\label{fig:dbscan_planes}
+% 		\includegraphics[width=0.4\textwidth]{6normal_boards.png}
+% 	}
+% 	\;
+% 	\subfloat[of a laboratory in xyz space. Each white board is considered a separate cluster. Distant objects coloured in blue.] {
+% 		\label{fig:table_dbscan}
+% 		\includegraphics[width=0.4\textwidth]{6table_dbscan.png}
 
-	}
-	\caption{Images}
-	\label{fig:DBSCAN_LAB}
+% 	}
+% 	\caption{Images}
+% 	\label{fig:DBSCAN_LAB}
 
-\end{figure}
+% \end{figure}
 
 \begin{figure}[p]
 	\centering     %%% not \center
@@ -1224,7 +1219,7 @@ The new state at time k now becomes,
 	\end{matrix}
 	\right]
 \end{align}
-
+To update the P or state covariance matrix, we have to compute the jacobian of e w.r.t the state denoted as $E_x$ and the jacobiain w.r.t the newly observed plane denoted as $E_y$. Mathematically we have, 
 \begin{align}
 	E_y &= \frac{\partial e}{\partial y} \notag \\
 		&= T_e \\
@@ -1263,7 +1258,8 @@ where
 \begin{align}
 	E_{Nq(0\cdots3)} &= \Xi(q) \hat{N}
 \end{align}
-
+TODO(define Enq and N hat)
+The updated P matrix is defined as: 
 \begin{align}
 	P_{\pi \pi} &= E_x P_{(0-15,0-15)} E_x^\top + E_y R E_y^\top \notag \\
 	P_{x \pi} 	&= E_x P_{(0-15,all)} \notag \\
@@ -1401,18 +1397,21 @@ With the yaw control loop activated, it is obvious that the craft attempts to co
 
 
 \section{Conclusion}
- 
-The system correctly estimates the indoor state of a small aerial vehicle using an inexpensive and readily available depth camera coupled with an embedded platform. The state includes information about the quad copter such as position within the global coordinate system, velocity. By using a Kalman filter which combines inertial sensors with a vision landmark map, an accuracy to within 10mm was achieved up to a distance of 4 meters. The vision system performed consistently well with minimal tuning and when paired with the Kalman filter, provided robust state estimation.
+An off the shelf depth camera designed to track body movements (and hence had no need for precise distance measurements) was successfully calibrated using a custom calibration method. After this the point clouds generated gave accurate values and a distortion free image. This was instrumental for the detection of planes to work reliably. 
+
+Selection of an appropriate computing platform was preformed, and showed that support for the ARM application processors and the software tools that we were using was not mature, and implementation was not tenable in the time frame. The final implementation used an x86 mini-itx board, which worked successfully but was sub optimal for weight and for connectivity to custom peripherals (specifically SPI).
+
+A system was developed that correctly estimates the indoor state of a small aerial vehicle using an inexpensive and readily available depth camera coupled with an embedded platform. The state includes information about the quad copter such as position within the global coordinate system, velocity and attitude of the craft (yaw, pitch and roll). By using a Kalman filter which combines inertial sensors with a vision landmark map, an accuracy to within 10mm was achieved up to a distance of 4 meters. The vision system performed consistently well with minimal tuning and when paired with the Kalman filter, provided robust state estimation.
 
 
 REGISTRATION
 
-It has been hypothesised that the reason for the over correction in yaw at higher speeds is due to latency in the communication between the x86 platform and the R10 quad copter flight controller hardware. The flight controller board, which is situated on the quad copter provides basic maneuverability and stability functions, along with housing the inertial sensors.  
+When mounted on an airframe the implementation successfully controled the yaw of the craft successfully, though the response was slow due to over correction. It has been hypothesised that the reason for the over correction in yaw at higher speeds is due to latency in the communication between the x86 platform and the R10 quad copter flight controller hardware. The slow communication was due to having to buffer the communication to the control board as there was not an SPI port available on the x86 board.
 
-The flight controller board only supports quad copter maneuverability control over a SPI bus, while the x86 board, which ran the vision and Kalman filter had no such interface. To enable communication between the two pieces of hardware, a small embedded processor known as an MBed was used. This processor ran a software SPI to USB bridge, allowing the x86 to connect to the flight controller through a USB port. The communication buffers in this bridge, the flight controller and the USB controller of the x86 board would amount to a considerable delay. From observing filmed footage of the craft in flight running the yaw control loop, the estimate for the latency between an the flight controller measuring the inertial sensors and the measurement being available for computation in the Linux environment is about half a second. This figure has not yet been confirmed or fully investigated, but would explain why the system cannot track the corner point at high speeds.
+% The flight controller board only supports quad copter maneuverability control over a SPI bus, while the x86 board, which ran the vision and Kalman filter had no such interface. To enable communication between the two pieces of hardware, a small embedded processor known as an MBed was used. This processor ran a software SPI to USB bridge, allowing the x86 to connect to the flight controller through a USB port. The communication buffers in this bridge, the flight controller and the USB controller of the x86 board would amount to a considerable delay. From observing filmed footage of the craft in flight running the yaw control loop, the estimate for the latency between an the flight controller measuring the inertial sensors and the measurement being available for computation in the Linux environment is about half a second. This figure has not yet been confirmed or fully investigated, but would explain why the system cannot track the corner point at high speeds.
 
 %Ryan would want to look at this
-An immediate solution to this problem is to use a platform with a dedicated SPI bus or install a fast peripheral SPI expansion card. If possible, decreasing the buffer size of both SPI and USB will reduce latency. Additionally, by using an RGB-D camera with a wider field of view should allow the system to maintain vision for longer. Further, using a smaller convolution kernel for normal estimation would allow more of the RGB-D image to be utilised. Another possibility is to use more accurate gyroscopes and accelerometers as when vision is lost, the system would take longer to lose state.   
+% An immediate solution to this problem is to use a platform with a dedicated SPI bus or install a fast peripheral SPI expansion card. If possible, decreasing the buffer size of both SPI and USB will reduce latency. Additionally, by using an RGB-D camera with a wider field of view should allow the system to maintain vision for longer. Further, using a smaller convolution kernel for normal estimation would allow more of the RGB-D image to be utilised. Another possibility is to use more accurate gyroscopes and accelerometers as when vision is lost, the system would take longer to lose state.   
 
 \section{Further Work}
 Although much work was done on trying to implement our system on an ARM application processor during the course of this project, significant problems surrounding compatibility with OpenNI (the frame work linking the Xtion depth camera with PCL). This is currently in version 1.6. Version 2.0 will be released soon and is intended to increase compatibility with arm platforms. This will allow a much lighter setup with more options of development boards with low level outputs, which would also solve some of the latency issues that we had. 

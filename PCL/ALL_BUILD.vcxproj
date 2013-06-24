@@ -1,0 +1,211 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|Win32">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|Win32">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGUID>{AD61934F-B389-4E42-ACFF-FC7B22D6FFE1}</ProjectGUID>
+    <Keyword>Win32Proj</Keyword>
+    <Platform>Win32</Platform>
+    <ProjectName>ALL_BUILD</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+    <PropertyGroup>
+      <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+      <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+      <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+      <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+      <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Midl>
+      <AdditionalIncludeDirectories>C:/Program Files (x86)/PCL 1.6.0/3rdParty/VTK/include/vtk-5.8;C:/Program Files (x86)/PCL 1.6.0/include/pcl-1.6;C:/Program Files (x86)/PCL 1.6.0/3rdParty/Eigen/include;C:/Program Files (x86)/PCL 1.6.0/3rdParty/Boost/include;C:/Program Files (x86)/OpenNI/Include;C:/Program Files (x86)/PCL 1.6.0/3rdParty/FLANN/include;C:/Program Files (x86)/PCL 1.6.0/3rdParty/Qhull/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Midl>
+      <AdditionalIncludeDirectories>C:/Program Files (x86)/PCL 1.6.0/3rdParty/VTK/include/vtk-5.8;C:/Program Files (x86)/PCL 1.6.0/include/pcl-1.6;C:/Program Files (x86)/PCL 1.6.0/3rdParty/Eigen/include;C:/Program Files (x86)/PCL 1.6.0/3rdParty/Boost/include;C:/Program Files (x86)/OpenNI/Include;C:/Program Files (x86)/PCL 1.6.0/3rdParty/FLANN/include;C:/Program Files (x86)/PCL 1.6.0/3rdParty/Qhull/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">
+    <Midl>
+      <AdditionalIncludeDirectories>C:/Program Files (x86)/PCL 1.6.0/3rdParty/VTK/include/vtk-5.8;C:/Program Files (x86)/PCL 1.6.0/include/pcl-1.6;C:/Program Files (x86)/PCL 1.6.0/3rdParty/Eigen/include;C:/Program Files (x86)/PCL 1.6.0/3rdParty/Boost/include;C:/Program Files (x86)/OpenNI/Include;C:/Program Files (x86)/PCL 1.6.0/3rdParty/FLANN/include;C:/Program Files (x86)/PCL 1.6.0/3rdParty/Qhull/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">
+    <Midl>
+      <AdditionalIncludeDirectories>C:/Program Files (x86)/PCL 1.6.0/3rdParty/VTK/include/vtk-5.8;C:/Program Files (x86)/PCL 1.6.0/include/pcl-1.6;C:/Program Files (x86)/PCL 1.6.0/3rdParty/Eigen/include;C:/Program Files (x86)/PCL 1.6.0/3rdParty/Boost/include;C:/Program Files (x86)/OpenNI/Include;C:/Program Files (x86)/PCL 1.6.0/3rdParty/FLANN/include;C:/Program Files (x86)/PCL 1.6.0/3rdParty/Qhull/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="CMakeLists.txt">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Building Custom Rule Y:/Documents/FileBase12/3rd Year/Group Project(SLAM)/QuadCopter/PCL/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">setlocal
+"C:\Program Files (x86)\CMake 2.8\bin\cmake.exe" "-HY:/Documents/FileBase12/3rd Year/Group Project(SLAM)/QuadCopter/PCL" "-BY:/Documents/FileBase12/3rd Year/Group Project(SLAM)/QuadCopter/PCL" --check-stamp-file "Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Y:/Documents/FileBase12/3rd Year/Group Project(SLAM)/QuadCopter/PCL/CMakeLists.txt;Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeLists.txt;Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\2.8.11.1\CMakeSystem.cmake;Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\2.8.11.1\CMakeCCompiler.cmake;Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\2.8.11.1\CMakeCXXCompiler.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeGenericSystem.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\Platform\WindowsPaths.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeCInformation.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC.cmake;Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\2.8.11.1\CMakeRCCompiler.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeRCInformation.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeCXXInformation.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files (x86)\PCL 1.6.0\cmake\PCLConfigVersion.cmake;C:\Program Files (x86)\PCL 1.6.0\cmake\PCLConfig.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindPkgConfig.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindPackageMessage.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeParseArguments.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindPackageMessage.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeParseArguments.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindBoost.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindVTK.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfigVersion.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfig.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfigQt.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKTargets.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKTargets-debug.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKTargets-release.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\UseVTK.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeImportBuildSettings.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\CMake\vtkMakeInstantiator.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindVTK.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfigVersion.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfig.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfigQt.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\UseVTK.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindVTK.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfigVersion.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfig.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfigQt.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\UseVTK.cmake;Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\generate.stamp</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Building Custom Rule Y:/Documents/FileBase12/3rd Year/Group Project(SLAM)/QuadCopter/PCL/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">setlocal
+"C:\Program Files (x86)\CMake 2.8\bin\cmake.exe" "-HY:/Documents/FileBase12/3rd Year/Group Project(SLAM)/QuadCopter/PCL" "-BY:/Documents/FileBase12/3rd Year/Group Project(SLAM)/QuadCopter/PCL" --check-stamp-file "Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Y:/Documents/FileBase12/3rd Year/Group Project(SLAM)/QuadCopter/PCL/CMakeLists.txt;Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeLists.txt;Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\2.8.11.1\CMakeSystem.cmake;Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\2.8.11.1\CMakeCCompiler.cmake;Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\2.8.11.1\CMakeCXXCompiler.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeGenericSystem.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\Platform\WindowsPaths.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeCInformation.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC.cmake;Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\2.8.11.1\CMakeRCCompiler.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeRCInformation.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeCXXInformation.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files (x86)\PCL 1.6.0\cmake\PCLConfigVersion.cmake;C:\Program Files (x86)\PCL 1.6.0\cmake\PCLConfig.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindPkgConfig.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindPackageMessage.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeParseArguments.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindPackageMessage.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeParseArguments.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindBoost.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindVTK.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfigVersion.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfig.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfigQt.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKTargets.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKTargets-debug.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKTargets-release.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\UseVTK.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeImportBuildSettings.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\CMake\vtkMakeInstantiator.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindVTK.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfigVersion.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfig.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfigQt.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\UseVTK.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindVTK.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfigVersion.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfig.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfigQt.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\UseVTK.cmake;Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\generate.stamp</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">Building Custom Rule Y:/Documents/FileBase12/3rd Year/Group Project(SLAM)/QuadCopter/PCL/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">setlocal
+"C:\Program Files (x86)\CMake 2.8\bin\cmake.exe" "-HY:/Documents/FileBase12/3rd Year/Group Project(SLAM)/QuadCopter/PCL" "-BY:/Documents/FileBase12/3rd Year/Group Project(SLAM)/QuadCopter/PCL" --check-stamp-file "Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">Y:/Documents/FileBase12/3rd Year/Group Project(SLAM)/QuadCopter/PCL/CMakeLists.txt;Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeLists.txt;Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\2.8.11.1\CMakeSystem.cmake;Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\2.8.11.1\CMakeCCompiler.cmake;Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\2.8.11.1\CMakeCXXCompiler.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeGenericSystem.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\Platform\WindowsPaths.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeCInformation.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC.cmake;Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\2.8.11.1\CMakeRCCompiler.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeRCInformation.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeCXXInformation.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files (x86)\PCL 1.6.0\cmake\PCLConfigVersion.cmake;C:\Program Files (x86)\PCL 1.6.0\cmake\PCLConfig.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindPkgConfig.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindPackageMessage.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeParseArguments.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindPackageMessage.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeParseArguments.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindBoost.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindVTK.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfigVersion.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfig.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfigQt.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKTargets.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKTargets-debug.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKTargets-release.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\UseVTK.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeImportBuildSettings.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\CMake\vtkMakeInstantiator.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindVTK.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfigVersion.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfig.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfigQt.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\UseVTK.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindVTK.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfigVersion.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfig.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfigQt.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\UseVTK.cmake;Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\generate.stamp</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Building Custom Rule Y:/Documents/FileBase12/3rd Year/Group Project(SLAM)/QuadCopter/PCL/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">setlocal
+"C:\Program Files (x86)\CMake 2.8\bin\cmake.exe" "-HY:/Documents/FileBase12/3rd Year/Group Project(SLAM)/QuadCopter/PCL" "-BY:/Documents/FileBase12/3rd Year/Group Project(SLAM)/QuadCopter/PCL" --check-stamp-file "Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\generate.stamp"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Y:/Documents/FileBase12/3rd Year/Group Project(SLAM)/QuadCopter/PCL/CMakeLists.txt;Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeLists.txt;Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\2.8.11.1\CMakeSystem.cmake;Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\2.8.11.1\CMakeCCompiler.cmake;Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\2.8.11.1\CMakeCXXCompiler.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeGenericSystem.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\Platform\WindowsPaths.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeCInformation.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC.cmake;Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\2.8.11.1\CMakeRCCompiler.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeRCInformation.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeCXXInformation.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\Platform\Windows-MSVC.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files (x86)\PCL 1.6.0\cmake\PCLConfigVersion.cmake;C:\Program Files (x86)\PCL 1.6.0\cmake\PCLConfig.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindPkgConfig.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindPackageMessage.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeParseArguments.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindPackageMessage.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeParseArguments.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindBoost.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindVTK.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfigVersion.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfig.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfigQt.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKTargets.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKTargets-debug.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKTargets-release.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\UseVTK.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\CMakeImportBuildSettings.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\CMake\vtkMakeInstantiator.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindVTK.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfigVersion.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfig.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfigQt.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\UseVTK.cmake;C:\Program Files (x86)\CMake 2.8\share\cmake-2.8\Modules\FindVTK.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfigVersion.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfig.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\VTKConfigQt.cmake;C:\Program Files (x86)\PCL 1.6.0\3rdParty\VTK\lib\vtk-5.8\UseVTK.cmake;Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\generate.stamp</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="CMakeFiles\636ac1c51ae19676da0e5cd8b8f5cd04\ALL_BUILD.rule">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Build all projects</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">setlocal
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Y:/Documents/FileBase12/3rd Year/Group Project(SLAM)/QuadCopter/PCL/CMakeFiles/636ac1c51ae19676da0e5cd8b8f5cd04/ALL_BUILD.rule;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\ALL_BUILD</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Build all projects</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">setlocal
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Y:/Documents/FileBase12/3rd Year/Group Project(SLAM)/QuadCopter/PCL/CMakeFiles/636ac1c51ae19676da0e5cd8b8f5cd04/ALL_BUILD.rule;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\ALL_BUILD</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">Build all projects</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">setlocal
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">Y:/Documents/FileBase12/3rd Year/Group Project(SLAM)/QuadCopter/PCL/CMakeFiles/636ac1c51ae19676da0e5cd8b8f5cd04/ALL_BUILD.rule;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\ALL_BUILD</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Build all projects</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">setlocal
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Y:/Documents/FileBase12/3rd Year/Group Project(SLAM)/QuadCopter/PCL/CMakeFiles/636ac1c51ae19676da0e5cd8b8f5cd04/ALL_BUILD.rule;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|Win32'">Y:\Documents\FileBase12\3rd Year\Group Project(SLAM)\QuadCopter\PCL\CMakeFiles\ALL_BUILD</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="CMakeFiles\ALL_BUILD" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="Y:/Documents/FileBase12/3rd Year/Group Project(SLAM)/QuadCopter/PCL/ZERO_CHECK.vcxproj">
+      <Project>8628949C-CC4B-4987-A1F9-B94C283CD607</Project>
+    </ProjectReference>
+    <ProjectReference Include="Y:/Documents/FileBase12/3rd Year/Group Project(SLAM)/QuadCopter/PCL/pcd_write_test.vcxproj">
+      <Project>698A6D2B-7D0D-4400-BA84-8D2BBBC89B83</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
