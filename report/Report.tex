@@ -349,7 +349,7 @@ In order to avoid large computation times on the embedded device it is important
 \section{Feature Extraction} % (fold)
 \label{sec:feature_extraction}
 
-To obtain consistent and robust computer vision the open source PCL was used as a foundation on which our vision algorithms were implemented. By leveraging the both well featured and documented PCL allowed us to rapidly develop and test our algorithms in real time. Among other features, the PCL library provided an interface to the Xtion hardware (RGB-D camera), exposing the data captures known as point clouds at speeds of up to 30 frames per second.
+The feature extraction pipeline aims to identify and classify planar surfaces within the data coming from a forward facing depth camera, the reasoning for extracting planes is given in section \ref{sub:implementation_overview}. The input data is depth values for 160x120 pixel frames at 30 fps, which is turned into a point cloud using the Point Cloud Library (PCL). Local surface normals are found at each point, which are used for clustering the data into planar patches with a flood fill algorithm. The details of each stage in the feature extraction are presented in this section. 
 
 \subsection{Normal Estimation} % (fold)
 \label{sub:normal_estimation}
@@ -368,7 +368,7 @@ A much referenced and popular algorithm for density based clustering is density 
 	\begin{center}
 		\includegraphics[width=0.6\textwidth]{2000px-DBSCAN-Illustration.png}
 	\end{center}
-	\caption{DBScan clustering, starting from point within cluster A, and terminating at B and C, which do not contain enough points within their radius to be considered densely connected. N is never touched by this iteration of the algorithm as regions A, B and C are outside distance $\epsilon$.}
+	\caption{DBScan clustering algorithm illustration. Starting from a point within cluster A, and terminating at B and C, which do not contain enough points within their radius to be considered densely connected. N is never touched by this iteration of the algorithm as regions A, B and C are outside distance $\epsilon$.}
 	\label{fig:dbscan}
 
 \end{figure}
