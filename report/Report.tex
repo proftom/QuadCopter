@@ -636,6 +636,7 @@ For each measurement, such as a observed plane equation or a sonar altitude read
 This will be two distinct functions for sonar and plane measurement.
 We compute the difference between this expected measurement, and the actual measurement, which we define as $z_k$. We also use the covariance associated with the measurment error $R$ to compute the covariance matrix associated with $z_k$ using a linear approximation of the measurement model $h$ denoted as $H$. This update equations are presented below:
 \begin{align}
+	\label{eqn:measurement_model}
 	z_k &= y_k - h(\hat{x}_{k|k-1}, \mathbb{E}[v_k]) \\
 	S_k &= \operatorname{cov}(z_k) \notag \\
 		&\approx H_k P_{k|k-1} H_k^\top + R_k
@@ -805,6 +806,7 @@ The state vector as defined in Equation~(\ref{eqn:state}) consists of the follow
 
 The derivative of the state vector is computed in order to propagate the state over time.
 \begin{align}
+	\label{eqn:xdotDef}
 	\dot{r} &= v
 	&
 	\dot{v} &= R_{eb}(q) a
@@ -821,16 +823,23 @@ The derivative of the state vector is computed in order to propagate the state o
 where $a$ and $\omega$ are the true body frame accelerations and angular rates, respectively.
 $R_{eb}$ is the body to earth rotation matrix and $\Xi$ is the matrix that maps the body frame angular rates to the rate of change of quaternion. Both of these matrices are a function of the current craft orientation, that is, a function of $q$, and are defined below in Equations~(\ref{eqn:Xi}) and (\ref{eqn:Omega}).
 
-We also have that
+The system model $f$, described in Equation~(\ref{eqn:system}) and (\ref{eqn:predictx}), operates in discrete time, but we have established our model in continuous time. As such, we perform a first order approximation to the continuous time system:
+\begin{align}
+	f &= x + \Delta T \dot{x}
+	\label{eqn:descrete_f}
+\end{align}
+
+Defining the model further, we have that
 \begin{align}
 	\omega &= \omega_m + w_\omega - b_\omega &
 	a &= a_m + w_a - b_a + g_b
 \end{align}
 where $a_m$ and $\omega_m$ are the measured accelerations and angular velocities in the body frame, respectively, and $g_b$ is the acceleration due to gravity in the body frame.
 
-Defined in Equation~(\ref{eqn:proc_noise_def}) is the process noise vector. The first two components are comprised of the additive noise in the measurement obtained from the gyro and accelerometer, respectively.
+Defined in Equation~(\ref{eqn:proc_noise_def}) is the process noise vector. The first two components are comprised of the additive noise in the measurement obtained from the gyro and accelerometer, respectively. This noise is modelled by simply measuring several minutes of output from the sensors and using the sample covariance matrix as the covariance that describes this additive nosie.
 
-To derive a close enough estimate of this noise, we computed the variance of a sample from the sensors at a stationary position[Insert link to code].
+The inertial sensors have an undefined zero-bias point. This means that the measurements have a bias that varies between chips, and over different temperatures and supply voltages. This semi-random variation of the bias point is modelled as a random walk. That is, we model this variation as a bias state that is pertrubed by an additive noise term.
+To measure this term, we computed the descrete time derivative of the output of the sensor during the same stationary test, and low-pass filtered the result. The time constant of the low pass filter, 5 seconds, was selected heuristically to represent a probable timebase over which temparature variations would start to play a significant role. The sample covariance matrix of the resultant metric is used to characterise the bias drift random varianble.
 \begin{align}
 	\label{eqn:proc_noise_def}
 	w &= 
@@ -872,11 +881,9 @@ To derive a close enough estimate of this noise, we computed the variance of a s
 	% \right]
 \end{align}
 
-$f$ in equation (\ref{eqn:system}) and (\ref{eqn:predictx}) operates in discrete time, but we have established our model in continuous time. As such, we perform a first order approximation to the continuous time system:
-\begin{align}
-	f &= x + \Delta T \dot{x}
-	\label{eqn:descrete_f}
-\end{align}
+The derivation of the rate of change of the quaternion with respect to angular velocity in the body frame, shown in Equations~(\ref{eqn:Xi}) through (\ref{eqn:lastQuatInt}) can be found in \cite{MARSlab} (see equation 108)
+Note that they use the convention $q = q_4 + q_1i + q_2j + q_3k$, while we use the convention shown in Equation~(\ref{eqn:quaternion_components}), which is the same convention used by MATLAB's Aerospace Blockset \cite{MATLABAerospace}, and the OpenPilot implementation \cite{OpenPilotPaper}.
+
 
 \begin{align}
 	\label{eqn:Xi}
@@ -906,16 +913,11 @@ $f$ in equation (\ref{eqn:system}) and (\ref{eqn:predictx}) operates in discrete
 
 \begin{align}
 	\dot{q} 	&= \frac{1}{2} \Omega(\omega) q \\
+	\label{eqn:lastQuatInt}
 				&= \frac{1}{2} \Xi(q) \omega
 \end{align}
 
-The derivation of the rate of change of the quaternion with respect to angular velocity in the body frame can be found in \cite{MARSlab} (see equation 108). Note that they use the convention q = q4 + q1i + q2j + q3k, while we use the convention q0 + q1i + q2j + q3k, which is the same convention used by MATLAB's Aerospace Blockset \cite{MATLABAerospace}, and the OpenPilot implementation \cite{OpenPilotPaper}.
-\begin{align}
-	q &= q_0 + q_1i + q_2j + q_3k
-\end{align}
-
-Rbe (rotation of body with respect to earth)
-rotmatrix here.
+The derivation of the quaternion derived rotation matrix is also shown in \cite{MARSlab} (see equation 91) and is defined as follows
 \begin{align}
 	R_{be}(q) &=
 	\left[
@@ -927,19 +929,17 @@ rotmatrix here.
 	\right]
 \end{align}
 
-The derivation of the quaternion derived rotation matrix is also shown in \cite{MARSlab} (see equation 91)
-
-as a rotation matrix is orthogonal, we have that
+Furthermore, as a rotation matrix is orthogonal, we have that
 \begin{align}
 	R_{eb} &= R_{be}^\top
 \end{align}
 
-Linearisation: Jacobians
-Descritised system $f$ as shown in Equation~(\ref{eqn:descrete_f}).
+As the state transition model $f$ operates in descrete time, and more directly, because we have performed the descritisation shown in Equation~(\ref{eqn:descrete_f}), we derive the state transition Jacobian matrix, mentioned in Equation~(\ref{}) as follows
 \begin{align}
 	F &= \frac{\partial f}{\partial x} \notag \\
 	&=
-	I + \frac{\partial \dot{x}}{\partial x} \Delta T \notag \\
+	\label{eqn:descrete_F}
+	I + \frac{\partial \dot{x}}{\partial x} \Delta T
 	% &= 
 	% I_{16+4n \times 16+4n} +
 	% \left[
@@ -954,8 +954,10 @@ Descritised system $f$ as shown in Equation~(\ref{eqn:descrete_f}).
 	% \right] 
 	% \Delta T
 	% \\
-	&=
-	I_{16+4n \times 16+4n} +
+\end{align}
+Directly computing the Jacobian of the continuous time model from Equation~(\ref{eqn:xdotDef}), and assuming that the features of the map do not move, yields the following
+\begin{align}
+	F = I_{16+4n \times 16+4n} +
 	%\left[
 	%\begin{matrix}
 	%	I_{16 \times 16} 	& 0_{16 \times 4n} \\
@@ -987,10 +989,10 @@ where
 		F_{vq3} 	& F_{vq2} 	& -F_{vq1} 	& -F_{vq0}
 	\end{matrix}
 	\right]
-\end{align}
-where
-\begin{align}
-	F_{vq(0\cdots3)} &= \Xi(q) a
+%\end{align}
+%where
+%\begin{align}
+	& F_{vq(0\cdots3)} &= \Xi(q) a
 \end{align}
 % that is
 % \begin{align}
@@ -1000,8 +1002,6 @@ where
 % 	F_{vq2} &= q_3 a_x + q_0 a_y - q_1 a_z \notag	\\
 % 	F_{vq3} &= -q_2 a_x + q_1 a_y + q_0 a_z
 % \end{align}
-
-
 %\begin{align}
 %	&= 2
 %	\left[
@@ -1012,8 +1012,7 @@ where
 %	\end{matrix}
 %	\right]
 %\end{align}
-
-and further
+and
 \begin{align}
 	F_{vb_a} &= -R_{eb}(q)
 %\end{align}
@@ -1027,15 +1026,16 @@ and further
 	F_{qb_\omega} &= -\frac{1}{2} \Xi(q)
 \end{align}
 
-
-
-We also have the Noise TODO describe (only 16x16 etc)
+The process noise model is defined as follows
 \begin{align}
 	G &= \frac{\partial f}{\partial w} \notag \\
 	&=
-	\frac{\partial \dot{x}}{\partial w} \Delta T \notag \\
-	&=
-	\left[
+	\frac{\partial \dot{x}}{\partial w} \Delta T
+\end{align}
+
+By considering the way that the noiseis modelled, and assuming that the process noise only affects the craft, we derive the following
+\begin{align}
+	G = \left[
 	\begin{matrix}
 		\cdot 			& \cdot 	& \cdot 		& \cdot \\
 		\cdot 			& G_{vw_a} 	& \cdot 		& \cdot \\
@@ -1046,7 +1046,7 @@ We also have the Noise TODO describe (only 16x16 etc)
 	\right]
 	\Delta T
 \end{align}
-where
+where $\cdot$ represents null entries, and where
 \begin{align}
 	G_{vw_a} &= R_{eb}(q)
 %\end{align}
@@ -1061,7 +1061,7 @@ where
 %	G_{b_a w_{ba}} &= I_{3x3}
 \end{align}
 
-We use a sparse matrix optimisation that is based on the fact that the plane map features do not move, as illustrated in \cite{Sola2013}.
+Having derived $F$ and $G$, we can use a sparse matrix optimisation that is based on the fact that the plane map features do not move. This tequnique, specific to EKF-SLAM, is developed in detail in \cite{Sola2013}.
 This means that when calculating equation~(\ref{eqn:predictP}), we can use the sparsity of $F$ to simplify the calculation as follows:
 \begin{align}
 	F_r &= F_{(0-15,0-15)} \notag \\
@@ -1075,7 +1075,7 @@ This means that when calculating equation~(\ref{eqn:predictP}), we can use the s
 \end{align}
 where the parts of P are defined in equation~(\ref{eqn:Pparts}).
 
-We also need to evaluate the error in plane observation and thus we need a function that transforms the plane in our state to the body frame. This is our inverse observation model, h.
+The forward observation model $h$, as required by Equation~(\ref{eqn:measurement_model}), is derived below. This function defines the measurement as a function of the state. That is, using this function we can compute the expected plane measurement given our current state estimate.
 \begin{align}
 	T_h &= 
 	\left[
@@ -1087,8 +1087,10 @@ We also need to evaluate the error in plane observation and thus we need a funct
 	\\
 	h &= T_h \pi
 \end{align}
-We also need to define H, the Jacobian of the h matrix w.r.t the state. The $H$ matrix is only a function of the robot's state and the particular plane observation in question and thus is composed of only two sections, one relating to the state, and one relating to the plane itself. As only the associated plane is relevant, only the part of the H matrix that pertains to this specific plane in the state is populated, and the other entries are set to zero.
+
+We also need to define $H$, the Jacobian of $h$ w.r.t the state. The $H$ matrix is only a function of the robot's state and the particular plane observation in question and thus is composed of only two sections, one relating to the state, and one relating to the plane itself. As only the associated plane is relevant, only the part of the H matrix that pertains to this specific plane in the state is populated, and the other entries are set to zero.
 In the implementation, we take advantage of this sparsity and compute matrix multiplication terms only related to the populated columns, as shown in \cite{Sola2013}.
+For clairity, $H$ is built up using several submatricies as follows:
 \begin{align}
 	\tilde{q} &= 
 	\left[
@@ -1102,7 +1104,6 @@ In the implementation, we take advantage of this sparsity and compute matrix mul
 	&
 	H_{Nq(0\cdots3)} &= \Xi(\tilde{q}) N_p
 \end{align}
-
 \begin{align}
 	H_{Nq} &= 2
 	\left[
@@ -1113,7 +1114,6 @@ In the implementation, we take advantage of this sparsity and compute matrix mul
 	\end{matrix}
 	\right]
 \end{align}
-
 \begin{align}
 	\label{eqn:H}
 	H &=
@@ -1141,27 +1141,31 @@ In the implementation, we take advantage of this sparsity and compute matrix mul
 	\end{matrix}
 	\right]
 \end{align}
+where $\cdots$ represents appropriately sized zero matricies.
 
 % subsection system_model (end)
 
-
 \begin{figure}[tb]
 	\begin{center}
-		\includegraphics[width = \textwidth]{malhala_hist_100bins_10000datapoints_notmoving22}
+		\includegraphics[height = 0.3\textwidth]{malhala_hist_100bins_10000datapoints_notmoving22}
 	\end{center}
 	\caption{Histogram showing the mahalanobis distance from the discovered planes to the reference planes in a stationary test with 10,000 data points.}
 	\label{fig:mahaldisthist}
 \end{figure}
 
+\subsection{Landmark Association} % (fold)
+\label{sub:landmark_association}
+We use the statistic measurement called the mahalanobis distance to evaluate how closely a newly observed plane is related to the ones in the state map. In general the mahalanobis distance is a normalised measure that is used to identify and gauge similarity of an unknown sample to a known data set. Using this measure, we leverage the stochastic properties of our system to reduce modelling inaccuracies as opposed to using Euler distance. We use a distance threshold/ validation date such that 99\% of true measurements are accepted. For our 4 dimensional plane measurement, this evaluates to:
+\verb"d = chi2inv(0.99,4) = 13.2767" which is the MATLAB command for the inverse chi squared distribution with 4 degrees of freedom and evaluated at 0.99. In order to perform association, the procedure is we find the mahalanobis distance between our new observation and all the planes in the map, keeping the minimum. If this minimum is less than the threshold, then the data is associated, if not it is discarded as an outlier.
+
 % subsection landmark_association (end)
 
 \subsection{Landmark Initialization} % (fold)
 \label{sub:landmark_initialization}
-
-Cool stuff from \cite{Sola2013}
+The ability to observe new planes as the craft explores its environment is crucial for it to keep track of its location. By re-observing these new features, the craft is able to compute corrections in its location. When the craft sees a new plane, it add this to its internal state transforming the plane equations in the body frame to the world frame and then storing this and its associated covariance information. It uses an inverse observation model, e which describes how we can derive the current state from an observed plane equation y. Mathematically we have,
 
 \begin{align}
-	y_i = 
+	y_{k} = y|_{x(k)} =  
 	\left[
 	\begin{matrix}
 		\hat{N}_x \\
@@ -1181,18 +1185,19 @@ Cool stuff from \cite{Sola2013}
 	\end{matrix}
 	\right]
 \end{align}
+$T_e$ defines the transformation matrix from the body frame to the earth frame. The new plane numbered j is defined below, 
 
 \begin{align}
-	\pi_i	&= e(y_i,x) \notag \\
-			&= T_e y_i
+	\pi_j	&= e(y_k,x) \notag \\
+			&= T_e y_k
 \end{align}
-
+The new state at time k now becomes, 
 \begin{align}
-	x &\leftarrow
+	x_{k} &\leftarrow
 	\left[
 	\begin{matrix}
-		x \\
-		\pi_i
+		x_{k} \\
+		\pi_j
 	\end{matrix}
 	\right]
 \end{align}
@@ -1249,11 +1254,6 @@ where
 \end{align}
 
 % subsection landmark_initialization (end)
-
-\subsection{Landmark Association} % (fold)
-\label{sub:landmark_association}
-We use the statistic measurement called the mahalanobis distance to evaluate how closely a newly observed plane is related to the ones in the state map. In general the mahalanobis distance is a normalised measure that is used to identify and gauge similarity of an unknown sample to a known data set. Using this measure, we leverage the stochastic properties of our system to reduce modelling inaccuracies as opposed to using Euler distance. We use a distance threshold/ validation date such that 99\% of true measurements are accepted. For our 4 dimensional plane measurement, this evaluates to:
-\verb"d = chi2inv(0.99,4) = 13.2767" which is the MATLAB command for the inverse chi squared distribution with 4 degrees of freedom and evaluated at 0.99. In order to perform association, the procedure is we find the mahalanobis distance between our new observation and all the planes in the map, keeping the minimum. If this minimum is less than the threshold, then the data is associated, if not it is discarded as an outlier.
 
 \subsection{Optimisation} % (fold)
 \label{sub:optimisation}
@@ -1371,29 +1371,28 @@ In the second test, we moved the setup by hand in a pseudo straight line of leng
 	\label{fig:moving_trajectory}
 \end{figure}
 
-To test the system, a yaw control loop was built where the system uses the estimated state to control the quad copter's yaw such that the depth camera (and hence frame of the craft) is always pointing towards a set point in the global coordinate system. The system was tested under lab conditions, where two intersecting planes were constructed to be used as a features for the system to localise against. Before flight the system was initialised to a known location, with the planes well within the depth camera's field of view. The quad copter was controlled remotely, and flown into a stable position out of ground effect before manually switching control of the yaw component to the automated control loop. So that the system doesn't lose visibility of the planes, the chosen point to track was the corner between the two constructed planes and the floor. 
+To test the system on the quadcopter, it was decided to automate the yaw control. A yaw control loop was built where the system uses the estimated state to control the quad copter's yaw such that the depth camera (and hence frame of the craft) is always pointing towards a set point in the global coordinate system. The system was tested under lab conditions, where two intersecting planes were constructed to be used as a features for the system to localise against. Before flight the system was initialised to a known location, with the planes well within the depth camera's field of view. The quad copter was controlled remotely, and flown into a stable position out of ground effect before manually switching control of the yaw component to the automated control loop. So that the system doesn't lose visibility of the planes, the chosen point to track was the corner between the two constructed planes and the floor. 
 
 %sentences 2 and 3 could be redundant
-With the yaw control loop activated, it is obvious that the craft attempts to correct for yaw. However, the craft is required to be flown at a slow speed with gradual changes in position. Sudden movements or high speeds cause the craft to veer off in the direction of correction. Despite modifying the control loop parameters, rapid movement of the craft while in flight results in the system over compensating for yaw, over rotating the craft and then losing visibility. When visibility of both planes is lost for a short period of time, the Kalman filter relies more heavily upon the inertial sensors which are simply not accurate enough to obtain a good state estimate. Hence, the system ends up predicting an incorrect state, incorrectly attempts to correct the yaw and has to be grounded to prevent collisions. 
+With the yaw control loop activated, it is obvious that the craft attempts to correct for yaw. However, the craft is required to be flown at a slow speed with gradual changes in position. Sudden movements or high speeds cause the craft to veer off in the direction of correction. Despite modifying the control loop parameters, rapid movement of the craft while in flight results in the system over compensating for yaw, over rotating the craft and then losing visibility. When visibility of both planes is lost for a short period of time, the Kalman filter relies more heavily upon the inertial sensors which are simply not accurate enough to obtain a good state estimate. Hence, the system ends up predicting an incorrect state, incorrectly attempts to correct the yaw and has to be grounded to prevent a collision. 
 
 
 \section{Conclusion}
- 
-The system correctly estimates the indoor state of a small aerial vehicle using an inexpensive and readily available depth camera coupled with an embedded platform. The state includes information about the quad copter such as position within the global coordinate system, velocity. By using a Kalman filter which combines inertial sensors and vision landmarks, an accuracy to within 10mm was achieved up to a distance of 4 meters. The Kalman filter showed strong resilience to noise ........
+An off the shelf depth camera designed to track body movements (and hence had no need for precise distance measurements) was successfully calibrated using a custom calibration method. After this the point clouds generated gave accurate values and a distortion free image. This was instrumental for the detection of planes to work reliably. 
+
+Selection of an appropriate computing platform was preformed, and showed that support for the ARM application processors and the software tools that we were using was not mature, and implementation was not tenable in the time frame. The final implementation used an x86 mini-itx board, which worked successfully but was sub optimal for weight and for connectivity to custom peripherals (specifically SPI).
+
+A system was developed that correctly estimates the indoor state of a small aerial vehicle using an inexpensive and readily available depth camera coupled with an embedded platform. The state includes information about the quad copter such as position within the global coordinate system, velocity and attitude of the craft (yaw, pitch and roll). By using a Kalman filter which combines inertial sensors with a vision landmark map, an accuracy to within 10mm was achieved up to a distance of 4 meters. The vision system performed consistently well with minimal tuning and when paired with the Kalman filter, provided robust state estimation.
+
 
 REGISTRATION
 
-It has been hypothesized that the reason for the over correction in yaw at higher speeds is due to latency in the communication between the x86 platform and the R10 quad copter flight controller hardware. The flight controller board, which is situated on the quad copter provides basic maneuverability and stability functions, along with the inertial sensors.  
+When mounted on an airframe the implementation successfully controled the yaw of the craft successfully, though the response was slow due to over correction. It has been hypothesised that the reason for the over correction in yaw at higher speeds is due to latency in the communication between the x86 platform and the R10 quad copter flight controller hardware. The slow communication was due to having to buffer the communication to the control board as there was not an SPI port available on the x86 board.
 
-The flight controller only supports quad copter maneuverability control over a SPI bus, while the x86 board, which ran the vision and Kalman filter had no such interface. To enable communication between the two pieces of hardware, a small embedded processor known as an MBed was used. This processor ran a software SPI to USB bridge, allowing the x86 to connect to the flight controller through a USB port. The communication buffers in this bridge, the flight controller and the USB controller of the x86 board would amount to a considerable delay. From observing filmed footage of the craft in flight running the yaw control loop, the estimate for the latency between an the flight controller measuring the IMU sensors and the measurement being available for computation in the Linux environment is about half a second. This figure has not yet been confirmed or fully investigated, but would explain why the system cannot track the corner point at high speeds.
+% The flight controller board only supports quad copter maneuverability control over a SPI bus, while the x86 board, which ran the vision and Kalman filter had no such interface. To enable communication between the two pieces of hardware, a small embedded processor known as an MBed was used. This processor ran a software SPI to USB bridge, allowing the x86 to connect to the flight controller through a USB port. The communication buffers in this bridge, the flight controller and the USB controller of the x86 board would amount to a considerable delay. From observing filmed footage of the craft in flight running the yaw control loop, the estimate for the latency between an the flight controller measuring the inertial sensors and the measurement being available for computation in the Linux environment is about half a second. This figure has not yet been confirmed or fully investigated, but would explain why the system cannot track the corner point at high speeds.
 
-Solutions to this problem are to use a platform with an dedicate SPI bus. Is possible, decreasing the buffer size..
-
-Can accurately detect and ignore noise. The tailored vision algorithms worker particularly well, having very good resilience to noise. 
-
- 
-
-Due to delay in the hardware connecting the embedded platform to the 
+%Ryan would want to look at this
+% An immediate solution to this problem is to use a platform with a dedicated SPI bus or install a fast peripheral SPI expansion card. If possible, decreasing the buffer size of both SPI and USB will reduce latency. Additionally, by using an RGB-D camera with a wider field of view should allow the system to maintain vision for longer. Further, using a smaller convolution kernel for normal estimation would allow more of the RGB-D image to be utilised. Another possibility is to use more accurate gyroscopes and accelerometers as when vision is lost, the system would take longer to lose state.   
 
 \section{Further Work}
 Although much work was done on trying to implement our system on an ARM application processor during the course of this project, significant problems surrounding compatibility with OpenNI (the frame work linking the Xtion depth camera with PCL). This is currently in version 1.6. Version 2.0 will be released soon and is intended to increase compatibility with arm platforms. This will allow a much lighter setup with more options of development boards with low level outputs, which would also solve some of the latency issues that we had. 
@@ -1405,7 +1404,7 @@ There is also hope in the near future for consumer grade time of flight RGB-D ca
 
 
 
-
+\clearpage
 
 \nocite{*}
 
