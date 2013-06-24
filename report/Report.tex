@@ -1203,7 +1203,7 @@ The new state at time k now becomes,
 	\end{matrix}
 	\right]
 \end{align}
-To update the P or state covariance matrix, we have to compute the jacobian of e w.r.t the state denoted as $E_x$ and the jacobiain w.r.t the newly observed plane denoted as $E_y$.
+To update the P or state covariance matrix, we have to compute the jacobian of e w.r.t the state denoted as $E_x$ and the jacobiain w.r.t the newly observed plane denoted as $E_y$. Mathematically we have, 
 \begin{align}
 	E_y &= \frac{\partial e}{\partial y} \notag \\
 		&= T_e \\
@@ -1242,7 +1242,8 @@ where
 \begin{align}
 	E_{Nq(0\cdots3)} &= \Xi(q) \hat{N}
 \end{align}
-
+TODO(define Enq and N hat)
+The updated P matrix is defined as: 
 \begin{align}
 	P_{\pi \pi} &= E_x P_{(0-15,0-15)} E_x^\top + E_y R E_y^\top \notag \\
 	P_{x \pi} 	&= E_x P_{(0-15,all)} \notag \\
