@@ -1155,6 +1155,13 @@ where $\cdots$ represents appropriately sized zero matricies.
 	\label{fig:mahaldisthist}
 \end{figure}
 
+\subsection{Landmark Association} % (fold)
+\label{sub:landmark_association}
+We use the statistic measurement called the mahalanobis distance to evaluate how closely a newly observed plane is related to the ones in the state map. In general the mahalanobis distance is a normalised measure that is used to identify and gauge similarity of an unknown sample to a known data set. Using this measure, we leverage the stochastic properties of our system to reduce modelling inaccuracies as opposed to using Euler distance. We use a distance threshold/ validation date such that 99\% of true measurements are accepted. For our 4 dimensional plane measurement, this evaluates to:
+\verb"d = chi2inv(0.99,4) = 13.2767" which is the MATLAB command for the inverse chi squared distribution with 4 degrees of freedom and evaluated at 0.99. In order to perform association, the procedure is we find the mahalanobis distance between our new observation and all the planes in the map, keeping the minimum. If this minimum is less than the threshold, then the data is associated, if not it is discarded as an outlier.
+
+% subsection landmark_association (end)
+
 \subsection{Landmark Initialization} % (fold)
 \label{sub:landmark_initialization}
 The ability to observe new planes as the craft explores its environment is crucial for it to keep track of its location. By re-observing these new features, the craft is able to compute corrections in its location. When the craft sees a new plane, it add this to its internal state transforming the plane equations in the body frame to the world frame and then storing this and its associated covariance information. It uses an inverse observation model, e which describes how we can derive the current state from an observed plane equation y. Mathematically we have,
@@ -1249,13 +1256,6 @@ where
 \end{align}
 
 % subsection landmark_initialization (end)
-
-\subsection{Landmark Association} % (fold)
-\label{sub:landmark_association}
-We use the statistic measurement called the mahalanobis distance to evaluate how closely a newly observed plane is related to the ones in the state map. In general the mahalanobis distance is a normalised measure that is used to identify and gauge similarity of an unknown sample to a known data set. Using this measure, we leverage the stochastic properties of our system to reduce modelling inaccuracies as opposed to using Euler distance. We use a distance threshold/ validation date such that 99\% of true measurements are accepted. For our 4 dimensional plane measurement, this evaluates to:
-\verb"d = chi2inv(0.99,4) = 13.2767" which is the MATLAB command for the inverse chi squared distribution with 4 degrees of freedom and evaluated at 0.99. In order to perform association, the procedure is we find the mahalanobis distance between our new observation and all the planes in the map, keeping the minimum. If this minimum is less than the threshold, then the data is associated, if not it is discarded as an outlier.
-
-% subsection landmark_association (end)
 
 \subsection{Optimisation} % (fold)
 \label{sub:optimisation}
