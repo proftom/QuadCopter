@@ -1272,19 +1272,21 @@ Using the optimizations described in \cite{Sola2013} we use these matrices to in
 	\right]
 \end{align}
 
+It is important to note that we do not do any de-noising checks on the new planes that are being registered in our plane map. 
+
 % subsection landmark_initialization (end)
 
 \subsection{Optimisations} % (fold)
 \label{sub:optimisations}
 
-SerialUpdate: \cite{OpenPilotPaper} and chapter 4.2.2 of \cite{KFBookSerialupdate}, and also mentioned in \cite{Sola2013}
+A widely used technique, called serial updating, can be used to speed up the computation of the Kalman filter update equations when there are many uncorrelated measurements. This is described in \cite{OpenPilotPaper} and chapter 4.2.2 of \cite{KFBookSerialupdate}, and also mentioned in \cite{Sola2013}.
 The referenced papers perform an optimization which assumes an entirely uncorrelated measurement noise covariance matrix. That is the $R$ matrix is purely diagonal.
-We, on the other hand, use a measurement model that includes the measurement of planes. These measurements consist of the estimated plane equation in hessian normal form. As the plane is in a three dimensional space, and thus the measurement error will have three degrees of freedom, and this form has four dimensions, the covariance matrix cannot be uncorrelated.
-That is, as the hessian normal form uses a unit vector, the length of this vector is bound to unity. As such, the probability distribution of the error of the components of this normal vector cannot be spherical.
-In fact, after linearisation, this distribution is projected onto a plane tangential to the actual distribution. 
-%TODO: insert picture of distrubution projected onto plane
+We, on the other hand, use a measurement model that includes the measurement of planes. These measurements consist of the estimated plane equation in Hessian Normal form. As the plane actually lies in three dimensional space, and thus the measurement error will have three degrees of freedom, and the aforementioned representation has four dimensions, the covariance matrix cannot be uncorrelated.
+More specifically, as the Hessian Normal form uses a unit vector, the length of this vector is bound to unity. As such, the probability distribution of the error of the components of this normal vector cannot be spherical.
+In fact, after linearisation, this distribution is projected onto a hyper-plane tangential to the actual distribution.
 
-While we cannot serialise the individual components of a plane measurement, the measurement error between planes are uncorrelated, so we can still make use of the serial update strategy. As such, at each time there is a new frame that has finished feature extraction, we serially apply the measurement updates for each plane, without running the predict loop in-between.
+While we cannot serialise the individual components of a plane measurement, the measurement errors between simultaneous plane measurements are uncorrelated, so we can still make use of a hybrid serial update strategy. That is, at each time there is a new frame that has finished feature extraction, we serially apply the measurement updates for each plane, without running the predict loop in-between.
+Assuming that there are $v$ plane equations at an instance in time
 That means the update stage will only have to invert $v$ matrices of size $4\times4$, instead of inverting a $4v \times 4v$ matrix. 
 As a further optimization, we find that the equation that transforms the state covariance matrix (\ref{eqn:predictP}) forms a separable system. That is, the Jacobian matrix $F$ as defined in (\ref{eqn:F}) does not carry any information regarding the craft to the planes, and vica versa.
 In fact, all terms in $F$ regarding the planes are zero, except the main diagonal, which is unity. This means that not only is it a separable system, but the plane subsystem is fully static.
