@@ -1354,7 +1354,8 @@ In the second test, we moved the setup by hand in a pseudo straight line of leng
 To test the system, a yaw control loop was built where the system uses the estimated state to control the quad copter's yaw such that the depth camera (and hence frame of the craft) is always pointing towards a set point in the global coordinate system. The system was tested under lab conditions, where 2 intersecting planes were constructed to be used as a features for the system to localise against. Before flight the system was initialised to a known location, with the planes well within the depth camera's field of view. The quad copter was controlled remotely, and flown into a stable position out of ground effect before manually switching control of the yaw component to the automated control loop. So that the system doesn't lose visibility of the planes, the chosen point to track was the corner between the 2 constructed planes and the floor. 
 
 
-With the yaw control loop activated, it is obvious that the craft attempts to correct for yaw. However, the craft is required to be flown at a slow speed with gradual changes in both position and speed. Despite modifying the control loop parameters, rapid movement of the craft while in flight results in the system over compensating for yaw, over rotating the craft and then losing visibility. When visibility of both planes is lost for even a short period of time, the kalman filter relies more heavily upon the inertial sensors which are simply not accurate enough to obtain a good state estimate. Hence, the system ends up predicting an incorrect state, attempts to correct the yaw for this and has to be grounded. 
+%sentences 2 and 3 could be redundant
+With the yaw control loop activated, it is obvious that the craft attempts to correct for yaw. However, the craft is required to be flown at a slow speed with gradual changes in position. Sudden movements or high speeds cause the craft to veer off in the direction of correction. Despite modifying the control loop parameters, rapid movement of the craft while in flight results in the system over compensating for yaw, over rotating the craft and then losing visibility. When visibility of both planes is lost for a short period of time, the Kalman filter relies more heavily upon the inertial sensors which are simply not accurate enough to obtain a good state estimate. Hence, the system ends up predicting an incorrect state, incorrectly attempts to correct the yaw and has to be grounded to prevent collisions. 
 
 
 
@@ -1363,12 +1364,21 @@ With the yaw control loop activated, it is obvious that the craft attempts to co
 \section{Conclusion}
  
 The system correctly estimates the indoor state of a small aerial vehicle using an inexpensive and readily available depth camera coupled with an embedded platform. Correct and proper state estimation was achieved using inertial sensors This was achieved The state includes properties such as position, speed, ... 
+When running the system on bench (RGB-D camera with the IMU sensor board) performs well, with a strong resilience to noise.
 
-An 
 
-Many unforeseen technical issues were encounted. 
+It has been hypothesized that the reason for the over correction in yaw at higher speeds is due to the hardware communication delay between the embedded platform and the R10 quad copter flight controller. The flight controller only supported control over a SPI bus, while the x86 board which ran the vision and Kalman filter had no such interface. To enabled communication between the hardware, a small embedded processor known as an MBed was used. This processor ran a software SPI to USB bridge, allowing the x86 to connect to the flight controller through a USB port. This bridge combined with a USB . 
+The total delay or latency between the x86 and 
 
-Can accurately detect and ignore noise. The tailored vision algorithms worker particularly well, having very good resilence to noise. 
+Solutions to this problem are 
+
+
+It is believed that the delay modifications to the firmware were required 
+is not an inherent property of the algorithms used, but rather the 
+
+
+
+Can accurately detect and ignore noise. The tailored vision algorithms worker particularly well, having very good resilience to noise. 
 
 The next chapter of the research and work performed in this document would be to achieve robust 
 
