@@ -807,6 +807,7 @@ The state vector as defined in Equation~(\ref{eqn:state}) consists of the follow
 
 The derivative of the state vector is computed in order to propagate the state over time.
 \begin{align}
+	\label{eqn:xdotDef}
 	\dot{r} &= v
 	&
 	\dot{v} &= R_{eb}(q) a
@@ -823,16 +824,23 @@ The derivative of the state vector is computed in order to propagate the state o
 where $a$ and $\omega$ are the true body frame accelerations and angular rates, respectively.
 $R_{eb}$ is the body to earth rotation matrix and $\Xi$ is the matrix that maps the body frame angular rates to the rate of change of quaternion. Both of these matrices are a function of the current craft orientation, that is, a function of $q$, and are defined below in Equations~(\ref{eqn:Xi}) and (\ref{eqn:Omega}).
 
-We also have that
+The system model $f$, described in Equation~(\ref{eqn:system}) and (\ref{eqn:predictx}), operates in discrete time, but we have established our model in continuous time. As such, we perform a first order approximation to the continuous time system:
+\begin{align}
+	f &= x + \Delta T \dot{x}
+	\label{eqn:descrete_f}
+\end{align}
+
+Defining the model further, we have that
 \begin{align}
 	\omega &= \omega_m + w_\omega - b_\omega &
 	a &= a_m + w_a - b_a + g_b
 \end{align}
 where $a_m$ and $\omega_m$ are the measured accelerations and angular velocities in the body frame, respectively, and $g_b$ is the acceleration due to gravity in the body frame.
 
-Defined in Equation~(\ref{eqn:proc_noise_def}) is the process noise vector. The first two components are comprised of the additive noise in the measurement obtained from the gyro and accelerometer, respectively.
+Defined in Equation~(\ref{eqn:proc_noise_def}) is the process noise vector. The first two components are comprised of the additive noise in the measurement obtained from the gyro and accelerometer, respectively. This noise is modelled by simply measuring several minutes of output from the sensors and using the sample covariance matrix as the covariance that describes this additive nosie.
 
-To derive a close enough estimate of this noise, we computed the variance of a sample from the sensors at a stationary position[Insert link to code].
+The inertial sensors have an undefined zero-bias point. This means that the measurements have a bias that varies between chips, and over different temperatures and supply voltages. This semi-random variation of the bias point is modelled as a random walk. That is, we model this variation as a bias state that is pertrubed by an additive noise term.
+To measure this term, we computed the descrete time derivative of the output of the sensor during the same stationary test, and low-pass filtered the result. The time constant of the low pass filter, 5 seconds, was selected heuristically to represent a probable timebase over which temparature variations would start to play a significant role. The sample covariance matrix of the resultant metric is used to characterise the bias drift random varianble.
 \begin{align}
 	\label{eqn:proc_noise_def}
 	w &= 
@@ -874,11 +882,9 @@ To derive a close enough estimate of this noise, we computed the variance of a s
 	% \right]
 \end{align}
 
-$f$ in equation (\ref{eqn:system}) and (\ref{eqn:predictx}) operates in discrete time, but we have established our model in continuous time. As such, we perform a first order approximation to the continuous time system:
-\begin{align}
-	f &= x + \Delta T \dot{x}
-	\label{eqn:descrete_f}
-\end{align}
+The derivation of the rate of change of the quaternion with respect to angular velocity in the body frame, shown in Equations~(\ref{eqn:Xi}) through (\ref{eqn:lastQuatInt}) can be found in \cite{MARSlab} (see equation 108)
+Note that they use the convention $q = q_4 + q_1i + q_2j + q_3k$, while we use the convention shown in Equation~(\ref{eqn:quaternion_components}), which is the same convention used by MATLAB's Aerospace Blockset \cite{MATLABAerospace}, and the OpenPilot implementation \cite{OpenPilotPaper}.
+
 
 \begin{align}
 	\label{eqn:Xi}
@@ -908,16 +914,11 @@ $f$ in equation (\ref{eqn:system}) and (\ref{eqn:predictx}) operates in discrete
 
 \begin{align}
 	\dot{q} 	&= \frac{1}{2} \Omega(\omega) q \\
+	\label{eqn:lastQuatInt}
 				&= \frac{1}{2} \Xi(q) \omega
 \end{align}
 
-The derivation of the rate of change of the quaternion with respect to angular velocity in the body frame can be found in \cite{MARSlab} (see equation 108). Note that they use the convention q = q4 + q1i + q2j + q3k, while we use the convention q0 + q1i + q2j + q3k, which is the same convention used by MATLAB's Aerospace Blockset \cite{MATLABAerospace}, and the OpenPilot implementation \cite{OpenPilotPaper}.
-\begin{align}
-	q &= q_0 + q_1i + q_2j + q_3k
-\end{align}
-
-Rbe (rotation of body with respect to earth)
-rotmatrix here.
+The derivation of the quaternion derived rotation matrix is also shown in \cite{MARSlab} (see equation 91) and is defined as follows
 \begin{align}
 	R_{be}(q) &=
 	\left[
@@ -929,19 +930,17 @@ rotmatrix here.
 	\right]
 \end{align}
 
-The derivation of the quaternion derived rotation matrix is also shown in \cite{MARSlab} (see equation 91)
-
-as a rotation matrix is orthogonal, we have that
+Furthermore, as a rotation matrix is orthogonal, we have that
 \begin{align}
 	R_{eb} &= R_{be}^\top
 \end{align}
 
-Linearisation: Jacobians
-Descritised system $f$ as shown in Equation~(\ref{eqn:descrete_f}).
+As the state transition model $f$ operates in descrete time, and more directly, because we have performed the descritisation shown in Equation~(\ref{eqn:descrete_f}), we derive the state transition Jacobian matrix, mentioned in Equation~(\ref{}) as follows
 \begin{align}
 	F &= \frac{\partial f}{\partial x} \notag \\
 	&=
-	I + \frac{\partial \dot{x}}{\partial x} \Delta T \notag \\
+	\label{eqn:descrete_F}
+	I + \frac{\partial \dot{x}}{\partial x} \Delta T
 	% &= 
 	% I_{16+4n \times 16+4n} +
 	% \left[
@@ -956,8 +955,10 @@ Descritised system $f$ as shown in Equation~(\ref{eqn:descrete_f}).
 	% \right] 
 	% \Delta T
 	% \\
-	&=
-	I_{16+4n \times 16+4n} +
+\end{align}
+Directly computing the Jacobian of the continuous time model from Equation~(\ref{eqn:xdotDef}), and assuming that the features of the map do not move, yields the following
+\begin{align}
+	F = I_{16+4n \times 16+4n} +
 	%\left[
 	%\begin{matrix}
 	%	I_{16 \times 16} 	& 0_{16 \times 4n} \\
@@ -989,10 +990,10 @@ where
 		F_{vq3} 	& F_{vq2} 	& -F_{vq1} 	& -F_{vq0}
 	\end{matrix}
 	\right]
-\end{align}
-where
-\begin{align}
-	F_{vq(0\cdots3)} &= \Xi(q) a
+%\end{align}
+%where
+%\begin{align}
+	& F_{vq(0\cdots3)} &= \Xi(q) a
 \end{align}
 % that is
 % \begin{align}
@@ -1002,8 +1003,6 @@ where
 % 	F_{vq2} &= q_3 a_x + q_0 a_y - q_1 a_z \notag	\\
 % 	F_{vq3} &= -q_2 a_x + q_1 a_y + q_0 a_z
 % \end{align}
-
-
 %\begin{align}
 %	&= 2
 %	\left[
@@ -1014,8 +1013,7 @@ where
 %	\end{matrix}
 %	\right]
 %\end{align}
-
-and further
+and
 \begin{align}
 	F_{vb_a} &= -R_{eb}(q)
 %\end{align}
@@ -1029,15 +1027,16 @@ and further
 	F_{qb_\omega} &= -\frac{1}{2} \Xi(q)
 \end{align}
 
-
-
-We also have the Noise TODO describe (only 16x16 etc)
+The process noise model is defined as follows
 \begin{align}
 	G &= \frac{\partial f}{\partial w} \notag \\
 	&=
-	\frac{\partial \dot{x}}{\partial w} \Delta T \notag \\
-	&=
-	\left[
+	\frac{\partial \dot{x}}{\partial w} \Delta T
+\end{align}
+
+By considering the way that the noiseis modelled, and assuming that the process noise only affects the craft, we derive the following
+\begin{align}
+	G = \left[
 	\begin{matrix}
 		\cdot 			& \cdot 	& \cdot 		& \cdot \\
 		\cdot 			& G_{vw_a} 	& \cdot 		& \cdot \\
@@ -1063,7 +1062,7 @@ where
 %	G_{b_a w_{ba}} &= I_{3x3}
 \end{align}
 
-We use a sparse matrix optimisation that is based on the fact that the plane map features do not move, as illustrated in \cite{Sola2013}.
+As mentioned above, we use a sparse matrix optimisation that is based on the fact that the plane map features do not move. This tequnique, specific to EKF-SLAM, is developed in detail in \cite{Sola2013}.
 This means that when calculating equation~(\ref{eqn:predictP}), we can use the sparsity of $F$ to simplify the calculation as follows:
 \begin{align}
 	F_r &= F_{(0-15,0-15)} \notag \\
