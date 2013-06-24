@@ -103,8 +103,6 @@ columns=flexible
 This report investigates the design of indoor state estimation techniques, and demonstrates one particular implementation using a depth camera mounted to a quadcopter frame. The approach consists of collecting data from the environment and detecting planes within it. Using these in combination with an extended Kalman filter we estimate the location of the frame. We combine more traditional sensors such as an accelerometer and gyro to complete the localisation system. We investigate the hardware necessary to process point clouds in real time, whilst being light enough to fly.  
 \tableofcontents
 
-%todo: kill acronyms
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Acronyms} % (fold)
 \label{sec:acronyms}
@@ -198,7 +196,8 @@ The aircraft configuration of choice is a quadcopter, due to its ability to navi
 \section{Implementation Overview}
 \label{sub:implementation_overview}
 
-%todo!!!: the below is not too bad, include it somewhere?
+% dropped below:
+
 
 
 %todo
@@ -221,6 +220,7 @@ patches thrown into the kalman filter, and associated based on mahalanobis dista
 include the fact that dbscan was toyed with at the start?
 
 % Our state estimator involves a moving agent such as a quadcopter which deploys one sensor to gather information about its surroundings. This is called an exteroceptive sensor and in our case, we use a depth camera. We also incorporate extra sensors to measure the agent's own movement. These are called preprioceptive sensors and we used an accelerometer and a gyroscope. The state evaluation process involves the following steps:
+
 
 % \textbf{The agent moves, reaching a new point of view in the room} As a result of unavoidable noise
 % and errors, this movement increases the uncertainty on the robot's localization.
@@ -258,7 +258,7 @@ The project aims to implement the estimation algorithm on on-board processing, t
 
 In conventional processor applications, of importance is optimising the computational performance against cost and power usage. For an embedded system that is mounted on a quadcopter however, power usage of the chip is not a concern as it is insignificant compared to the usage of the MAV itself. Therefore, for implementing this project we desire the best processing power per pound for the target workload. In this metric, no distinct advantage can be given to either of the two main standard processor architecture families (x86 and ARM) and the evaluation needs to be done on a chip-by-chip basis. 
 
-In addition to the above, the choise of the instruction set architecture is influenced by the architecture's operating system support and the ability to interface with other system components that could be incorporated into the system (e.g. coprocessors). The target operating system for this project is a lightweight distribution based on the Linux kernel. This is due to the Linux kernel being free, open source and being easily configurable, with the ability to compile in only the needed functionality and put options in loadable kernel modules. This results in an embedded operating system with minimal memory and processing footprint, as well as small disk usage which can be limited in embedded systems. For the specific libraries and frameworks used in implementing the estimation software (PCL and OpenNI), x86-Linux variants were found to have more mature support than ARM-Linux at the time of writing.
+In addition to the above, the choice of the instruction set architecture is influenced by the architecture's operating system support and the ability to interface with other system components that could be incorporated into the system (e.g. coprocessors). The target operating system for this project is a lightweight distribution based on the Linux kernel. This is due to the Linux kernel being free, open source and being easily configurable, with the ability to compile in only the needed functionality and put options in loadable kernel modules. This results in an embedded operating system with minimal memory and processing footprint, as well as small disk usage which can be limited in embedded systems. For the specific libraries and frameworks used in implementing the estimation software (PCL and OpenNI), x86-Linux variants were found to have more mature support than ARM-Linux at the time of writing.
 
 For low volume production, it is not always worth investing the engineering time in designing a custom hardware platform, sourcing the components and manufacturing. Instead, small form factor boards can be readily purchased at acceptable prices. For example: \$90 Odroid-U2 development board with a quad core ARM Cortex-A9 @1.7 GHz processor with a Mali-400 quad core GPU in a 60x60x60 mm package.
 
@@ -274,9 +274,8 @@ However, in practice it was found that porting third party libraries used in the
 
 For the above reasons, the project was implemented on Intel Atom D2550 (Dual Core @1.86 GHz) processor running x86-Linux. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%throw in fpga as additional possibilities?, zynq7 style?, fixed point scaling etc
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%extra possibility: throw in fpga as additional possibilities?, zynq7 style?, fixed point scaling etc
+
 
 \subsection{Sensor Calibration} % (fold)
 
@@ -285,7 +284,7 @@ The depth data obtained by the RGB-D camera of choice has two distinct adverse p
 Additionally, it is important to note that transforming per-pixel depth data to a xyz point cloud is based on the cone projection model of the sensor. Therefore an error in the depth measurement for a pixel will also introduce error in the corresponding point's x and y coordinates within the xyz space.
 %todo: paint a quick and dirty explanation picture?
 
-As mentioned above, the factory calibration of the RGB-D camera's depth sensor is unsatisfactory for the target application. Straight walls as seen by the sensor at distances of more than 2m quickly become warped (see Figure~\ref{fig:uncal5m2}). Such depth data quality would make robust feature extraction infeasible at distances of interest.
+As mentioned above, the factory calibration of the RGB-D camera's depth sensor is unsatisfactory for the target application. Straight walls as seen by the sensor at distances of more than 2m quickly become warped (see example in Figure~\ref{fig:uncal5m2}). Such depth data quality would make robust feature extraction infeasible at distances of interest.
 
 
 \begin{figure}[H]
@@ -296,7 +295,7 @@ As mentioned above, the factory calibration of the RGB-D camera's depth sensor i
 \label{fig:uncal5m2}
 \end{figure}
 
-Figure~\ref{fig:avDist2} shows the average measurement across all of the frame for a range of distances. It can be seen that the depth data is not just warped per pixel, but also wrong on average. At 4m the average distance measured was 3.32m, which represents a 17\% error. The maximum per-pixel error being 0.941m at 4m, which corresponds to 23.5\% error. 
+Figure~\ref{fig:avDist2} shows the average depth across a frame capture for a planar surface as measured at a range of distances. It can be seen that the depth data is not just warped per pixel, but also wrong on average. For example, at 4m the average distance measured was 3.32m, which represents a 17\% error. The maximum per-pixel error being 0.941m at 4m, which corresponds to 23.5\% error. 
 
 \begin{figure}[htb]
 	\begin{center}
@@ -379,7 +378,9 @@ To obtain consistent and robust computer vision the open source PCL was used as 
 \label{sub:normal_estimation}
 
 
+
 The first feature employed from the PCL was normal estimation. Once the RGB-D camera passes the raw point cloud data to the PCL, an integral image kernel is run over the RGB-D data, obtaining an estimate of the surface normals in the field of view. By using this integral normal estimation noisy and sporadic normal estimations are smoothed out, which are present if normal estimates are taken for just a single point. However, by using a kernel an initial amount of information is required, and hence, for pixels (points) situated near the edges of the image there are no available normal estimations as there are no neighbouring points available in each direction to estimate the normal. Further another caveat of using this technique is the loss of high frequency normal information, such as sharp corners or edges, due to averaging (loss of high frequency information). This property is discussed further in section 6.5. 
+
 
 \subsection{Density Based Scan} % (fold)
 \label{sub:density_based_scan}
@@ -590,8 +591,8 @@ The EKF provides a near-optimal estimate of the system's state by linearising it
 % 			if deltaT is small
 
 Our system model can be described as a six DoF rigid body system with Newtonian mechanics. We do not model the aerodynamics of the craft and thus must rely on inertial sensors that gives information on the evolution of the system \cite{OpenPilotPaper}. The alternative would be to model the aerodynamics of the craft and the forces acting on the craft. Our approach allows us to apply our model to any system that uses the sensors because we are not concerned about the particular physiology of the agent but rather that its sensors can describe its state.
-This has the advantage that modelling errors are minimised, and the time required for system identification is reduced.
-Complex phenomena such as the turbulence caused by the thrust channelled around in the confined space would be close to impossible to model.
+This has the advantage that modeling errors are minimised, and the time required for system identification is reduced.
+Complex phenomena such as the turbulence caused by the thrust channeled around in the confined space would be close to impossible to model.
 
 \subsection{Filter Equations} % (fold)
 \label{sub:filter_equations}
@@ -604,7 +605,7 @@ The filter is based on the following discrete time update model
 \end{align}
 where $x_k$ is the state vector at time $k$, $f$ is the state transition function, $u$ is the control input vector at time $k$, $w_k$ is the process noise vector at time $k$, $y_k$ is the measurement vector at time $k$, $h$ is the function that maps the state space to the observed space, and $v_k$ is the measurement noise vector.
 
-For compartibility with the Kalman filter, we assumed the noise in the system to be Gaussian white noise as follows
+For compatibility with the Kalman filter, we assumed the noise in the system to be Gaussian white noise as follows
 \begin{align}
 	w_k &\sim N(0,Q_k) \notag \\
 	v_k &\sim N(0,R_k) \notag \\
