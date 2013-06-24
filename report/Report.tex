@@ -1318,11 +1318,11 @@ Variable & Case\#1 (factor = 100) & Case\#2 (factor = 10000)  \\ [0.5ex] % inser
 \end{tabular}
 \label{table:firstTest} % is used to refer this table in the text
 \end{table}
-In the second test, we check that it is not biased by computing the normalised innovation squared
+In the second test, we check that the innovation is not biased by computing the normalised innovation squared
 \begin{equation}
 	q_{k} = z_{k}^{T} S_(k)^{-1} z_{k}
 \end{equation}
-for a sequence of i trials. If the filter's assumptions are met then $q_{k}$ are each $\chi^{2}$ in 4 degrees of freedom. To test for that it is not biased, we can use the mean of the sequence,
+for a sequence of i trials. If the filter's assumptions are met then $q_{k}$ are each $\chi^{2}$ in 4 degrees of freedom. To test for unbiasness, we can use the mean of the sequence,
 \begin{equation}
 	\bar{q} = \frac{1}{N}\sum_{k=1}^N {q_k}
 \end{equation}
