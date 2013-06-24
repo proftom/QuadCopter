@@ -207,9 +207,9 @@ Shen et al. \cite{Shen2012} use a quadcopter airframe and a RGB-D camera combine
 
 % The tasks can be group into two main categories feature extraction and extended Kalman filter implementation.
 
-The primary sensor for the implementation is consumer grade depth camera, in this case the Xtion pro. This camera will view the environment and output a point cloud, which is a quantised representation of the space in 3D, these are captured at 30 frames per second with a resolution of 160x120. Then using the Point Cloud Library (PCL) all large planes are extracted by, first, finding local normals at each point are computed using integral images \cite{Holz2011} and then clustering them using a custom Flood Fill algorithm.  The use of integral images lets us remove the high frequency noise from the depth camera in a computationally efficient manner. At this stage there is a point cloud in xyz space with a local normal vector $(N_x, N_y, N_z)$ at each point. 
+The primary sensor for the implementation is consumer grade depth camera, in this case the Xtion pro. This camera will view the environment and output a point cloud, which is a quantised representation of the space in 3D, these are captured at 30 frames per second with a resolution of 160x120. Then using the Point Cloud Library (PCL) all large planes are extracted by, first, finding local normals at each point are computed using integral images \cite{Holz2011} and then clustering them using a custom flood fill algorithm.  The use of integral images lets us remove the high frequency noise from the depth camera in a computationally efficient manner. At this stage there is a point cloud in xyz space with a local normal vector $(N_x, N_y, N_z)$ at each point. 
 
-The custom Flood Fill algorithm starts with a set of randomised seed points within the CCD pixel space (as each pixel corresponds to a point in xyz space). For each seed, the fill incrementally grows a cluster by visiting neighbours along the CCD (i.e. xy) space. The condition for adding a point to the cluster is derived from how similar the local normal is at that point to that of the initial seed. Clusters are then rejected if they do not meet the depth-dependent minimum parameter, the clusters passing this test are considered further as planar patches. The feature extraction pipeline also calculates the uncertainties associated with the discovered planes, passing that information to the EKF. An alternative clustering approach, based on the DBScan algorithm was also evaluated and is discussed in the relevant section. These planes and the data from the accelerometer, gyro and sonar sensor are sent to the Extended Kalman Filter (EKF). 
+The custom flood fill algorithm starts with a set of randomised seed points within the CCD pixel space (as each pixel corresponds to a point in xyz space). For each seed, the fill incrementally grows a cluster by visiting neighbours along the CCD (i.e. xy) space. The condition for adding a point to the cluster is derived from how similar the local normal is at that point to that of the initial seed. Clusters are then rejected if they do not meet the depth-dependent minimum parameter, the clusters passing this test are considered further as planar patches. The feature extraction pipeline also calculates the uncertainties associated with the discovered planes, passing that information to the EKF. An alternative clustering approach, based on the DBScan algorithm was also evaluated and is discussed in the relevant section. These planes and the data from the accelerometer, gyro and sonar sensor are sent to the Extended Kalman Filter (EKF). 
 
 %The localisation scheme used is based on a feature tracking Extended Kalman Filter (EKF).The filter fuses all the sensors sensors: accelerometer; gyroscope; downward facing sonar and  with which in turns allows the quadrotor to localise itself within the environment. The features tracked are planar surfaces within the environment, which are obtained from depth data of a consumer RGB-D camera.The depth camera of choise is the Asus Xtion Pro as it is considerably lighter than the copeting products, while maintaining a similar price point. Due to the relatively narrow field of view (58$^{\circ}$ horizontal, 45$^{\circ}$ vertical), the floor and the ceiling is expected to often be out of view, resulting in reduced observability in the elevation direction. The depth camera is complemented with a downward facing sonar sensor to address this issue. Planes are tracked as they can represent walls, floors and ceiling, which are abundant in man-made environments, are static and easily reobservable. Furthermore, this abstraction drastically reduces both the computational and space complexity of the filter. 
 
@@ -486,9 +486,9 @@ The downsides to the DBScan approach is the computational and space complexities
 
 \subsection{The Flood Fill Algorithm}
 \label{sub:flood_fill_algo}
-The flood fill algorithm is analogous to a paint bucket function in a graphical editing package. The algorithm begins by randomly selecting a seed plane from the plane cloud (that is we randomly select a point and corresponding normal from the RGB-D camera sensor output), and proceed to grow a cluster out from this seed in all directions until the local surface plane equation parameters at those points $(N_A, N_B, N_C, D)$ differ by more than a value $\epsilon$ from the original seed. This forms a connected region, which represents a planar patch. Algorithm~\ref{alg:flood_fill} lists how given a seed point, a region fill is peformed.
+The flood fill algorithm is analogous to a paint bucket function in a graphical editing package. The algorithm begins by randomly selecting a seed plane from the plane cloud (that is we randomly select a point and corresponding normal from the RGB-D camera sensor output), and proceed to grow a cluster out from this seed in all directions until the local surface plane equation parameters at those points $(N_A, N_B, N_C, D)$ differ by more than a value $\epsilon$ from the original seed. This forms a connected region, which represents a planar patch. Algorithm~\ref{alg:flood_fill} lists how, given a seed point, a region fill is peformed.
 
-The fill is then performed again, selecting a new random seed point from a point that has not been already included in a previous fill region. The algorithm will repeat until a certain portion of the image is filled (called $\sigma$) or there have been more than $\gamma$ seed points tried on the frame. The flood fill algorithm works iteratively with a linear complexity of $O(n)$. 
+The fill is then performed again, selecting a new random seed point from a point that has not been already included in a previous fill region. The algorithm will repeat until a certain portion of the image is filled (called $\sigma$) or there have been more than $\gamma$ seed points tried on the frame. The flood fill algorithm works iteratively with a linear complexity of $O(n)$. An example of the clustering as done by the flood fill is shown in Figure~\ref{fig:flood_fill}.
 
 
 \subsection{Complications and Caveats in Segmentation} % (fold)
@@ -496,7 +496,7 @@ The fill is then performed again, selecting a new random seed point from a point
 
 % subsection complications_in_the_segmentation_algorithm (end)
 
-Complications arose when performing the flooding. As explained before, the projected grid from the RGB-D camera opens in a conic fashion. This means that objects closer the RGB-D camera will be showered in points, while those further away will contain far fewer points. This drop off happens at a quadratic rate, meaning the error in distance also occurs at a quadratic rate. To deal with this, the condition on the D parameter for which a point to be considered within the region was modified. As depth increases we open the parameter quadratically by projecting the z component of the plane normal onto the quadratic point z component. We do this for both the seed point and the point being queried, taking their absolute values and sum. We then multiply this value by an adjusted epsilon value ($\epsilon_{depth}$). 
+As explained before, the projected grid from the RGB-D camera opens in a conic fashion. This means that objects closer the RGB-D camera will be showered in points, while those further away will contain far fewer points. This drop off happens at a quadratic rate, meaning the error in distance also occurs at a quadratic rate. To deal with this, the condition on the D parameter for which a point to be considered within the region was modified. As depth increases we open the parameter quadratically by projecting the z component of the plane normal onto the quadratic point z component. We do this for both the seed point and the point being queried, taking their absolute values and sum. We then multiply this value by an adjusted epsilon value ($\epsilon_{depth}$). 
 
 
 The conditions (which all must be satisfied) for accepting a point into the current fill region becomes:
@@ -507,13 +507,13 @@ The conditions (which all must be satisfied) for accepting a point into the curr
 |P_{seed|D}-P_{D}| &< (|N_{seed|z} \times P^{2}_{seed|z}| + |N_{z} \times P^{2}_{z}|) \times \epsilon_{depth}
 \end{align}
 where as before the last equation was the same as the previous three, except changed to the D parameter.
-Note that P is the point which is under test (to investigate whether it should exist in the flood region), while $P_{seed}$ is the seed point at which was first chosen to characterise the Flood Fill region. 
+Note that P is the point which is under test (to investigate whether it should exist in the flood region), while $P_{seed}$ is the seed point at which was first chosen to characterise the flood fill region. 
 
-Unforeseen consequences arose from the Flood Fill algorithm where the algorithm randomly selects a seed point near a vertex. The problem is that in order to get realistic normal components, the integral image normal estimation performs an averaging operation over normals in a kernel space of 40x40 normals. This means that high frequency information is lost, as shown in Figure~\ref{fig:spurious_plane_normals}. Hence, when the flood fill algorithm is filling out, spurious long thin planes may be generated along edges, giving rise to a false positive. 
+Problems arose when the flood fill algorithm randomly selected a seed point near an edge. The problem is that in order to get realistic normal components, the integral image normal estimation performs an averaging operation over normals in a kernel space of 40x40 normals. This means that high frequency information is lost, as shown in Figure~\ref{fig:spurious_plane_normals}. Hence, when the flood fill algorithm is filling out, spurious long thin planes may be generated along edges, giving rise to a false positive. 
 
-In an effort to deal with this caveat, introducing an additional step between the Flood Fill and the DBScan which detects for false positives was undertaken. By computing the covariance matrix in xyz space for each point in a cluster, then finding the eigenvalues of this matrix calculates the PCA of each plane allowing us the investigate the dimensionality of each plane by checking the ratio of Eigen values generated. If there is much disparity, it can be assumed that a plane has been encountered fitting to the caveat described above and hence the plane is removed from the set of planes generated by the Flood Fill algorithm. 
+In an effort to deal with this caveat, introducing an additional step between the flood fill and the DBScan which detects for false positives was undertaken. By computing the covariance matrix in xyz space for each point in a cluster, then finding the eigenvalues of this matrix calculates the PCA of each plane allowing us the investigate the dimensionality of each plane by checking the ratio of Eigen values generated. The dimensionality can show when a cluster is elongated in space and is therefore most likely to be a spurious smoothed edge tiling.
 
-The PCA was never implemented as it was found that by increasing the minimum number of points required for a fill region to be classified as a plane fixed the issue sufficiently for the purpose of this project. Additionally, it was decided to remove the DBScan algorithm altogether as it was realised that although planes occasionally become segmented using the Flood Fill, in practice running DBScan after Flood Fill made no measurable performance difference to the Kalman filter.
+The PCA was never implemented as it was found that by increasing the minimum number of points required for a fill region to be classified as a plane fixed the issue sufficiently for experimental data.
 
 
 
@@ -521,17 +521,17 @@ The PCA was never implemented as it was found that by increasing the minimum num
 
 \begin{figure}[p]
 	\centering     %%% not \center
-	\subfloat[Box before applying Flood Fill algorithm]{
+	\subfloat[No clustering]{
 		\label{fig:6box_before}
 		\includegraphics[width=0.4\textwidth]{6box_before.PNG}
 	}
 	\;
-	\subfloat[Box after applying Flood Fill algorithm]{
+	\subfloat[Plane clustering]{
 		\label{fig:6box_after}
 		\includegraphics[width=0.4\textwidth]{6box_afterward.PNG}
 	}
 
-	\caption{Plane finding using Flood Fill $\epsilon=0.2, \gamma=50, \sigma=0.8$}
+	\caption{Plane finding using DBScan}
 	\label{fig:box_normal_clustering}
 \end{figure}
 
@@ -550,7 +550,7 @@ The PCA was never implemented as it was found that by increasing the minimum num
 	% 	\includegraphics[width=0.4\textwidth]{6table_dbscan.png}
 
 	% }
-	\caption{Plane finding using Flood Fill, $\epsilon=0.2, \gamma=50, \sigma=0.8$}
+	\caption{Plane clustering using flood fill, $\epsilon=0.2, \gamma=50, \sigma=0.8$}
 	\label{fig:flood_fill}
 
 \end{figure}
@@ -1404,16 +1404,17 @@ With the yaw control loop activated, it is obvious that the craft attempts to co
 
 
 \section{Conclusion}
-An off the shelf depth camera designed to track body movements (and hence had no need for precise distance measurements) was successfully calibrated using a custom calibration method. After this the point clouds generated gave accurate values and a distortion free image. This was instrumental for the detection of planes to work reliably. 
+An off-the-shelf depth camera designed to track body movements (and hence had no need for precise distance measurements) was calibrated using a custom calibration method. After this the point clouds generated gave accurate values and a distortion free image. This was instrumental for the detection of planes to work reliably. 
 
-Selection of an appropriate computing platform was preformed, and showed that support for the ARM application processors and the software tools that we were using was not mature, and implementation was not tenable in the time frame. The final implementation used an x86 mini-itx board, which worked successfully but was sub optimal for weight and for connectivity to custom peripherals (specifically SPI).
+Selection of an appropriate computing platform was preformed, and showed that support for the ARM application processors and the software tools that we were using was not mature, and implementation was not tenable in the time frame. The final implementation used an x86 mini-ITX board, which worked successfully but was suboptimal for weight and for connectivity to custom peripherals (specifically SPI).
 
 A system was developed that correctly estimates the indoor state of a small aerial vehicle using an inexpensive and readily available depth camera coupled with an embedded platform. The state includes information about the quad copter such as position within the global coordinate system, velocity and attitude of the craft (yaw, pitch and roll). By using a Kalman filter which combines inertial sensors with a vision landmark map, an accuracy to within 10mm was achieved up to a distance of 4 meters. The vision system performed consistently well with minimal tuning and when paired with the Kalman filter, provided robust state estimation.
 
 
 An extension of this system was also designed such that new planes could be added to the internal plane map. The implementation was not completed, though all of the theoretical work has been presented in this report.
 
-When mounted on an airframe the implementation successfully controlled the yaw of the craft successfully, though the response was slow due to over correction. It has been hypothesised that the reason for the over correction in yaw at higher speeds is due to latency in the communication between the x86 platform and the R10 quad copter flight controller hardware. The slow communication was due to having to buffer the communication to the control board as there was not an SPI port available on the x86 board.
+When mounted on an airframe the implementation successfully controlled the yaw of the craft successfully, though the response was slow due to over correction. It has been hypothesised that the reason for the over correction in yaw at higher speeds is due to latency in the communication between the x86 platform and the R10 quad copter flight controller hardware. The slow communication was due to serial links through the SPI bridge as the x86 platform had no SPI port.
+
 
 % The flight controller board only supports quad copter maneuverability control over a SPI bus, while the x86 board, which ran the vision and Kalman filter had no such interface. To enable communication between the two pieces of hardware, a small embedded processor known as an MBed was used. This processor ran a software SPI to USB bridge, allowing the x86 to connect to the flight controller through a USB port. The communication buffers in this bridge, the flight controller and the USB controller of the x86 board would amount to a considerable delay. From observing filmed footage of the craft in flight running the yaw control loop, the estimate for the latency between an the flight controller measuring the inertial sensors and the measurement being available for computation in the Linux environment is about half a second. This figure has not yet been confirmed or fully investigated, but would explain why the system cannot track the corner point at high speeds.
 
