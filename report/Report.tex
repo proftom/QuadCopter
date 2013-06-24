@@ -370,7 +370,7 @@ The downside of low pass filtering is illustrated in Figure~\ref{fig:spurious_pl
 		\includegraphics[width=0.4\textwidth]{6spuriousplanes_normals_2.PNG}
 	}
 
-	\caption{Effects of the low pass filtering by the normal estimation kernel}
+	\caption{Effects of the low pass filtering by the normal estimation kernel. White lines represent local surface normals.}
 	\label{fig:spurious_plane_normals}
 \end{figure}
 
@@ -432,16 +432,19 @@ One popular algorithm for density based clustering is density based scan (DBScan
 
 Four parameters are required to uniquely characterize planes, in this case we use the Hessian plane form with parameters $(N_A, N_B, N_C, D)$. Hence our DBScan implementation operates in this four dimensional space, with the normal components coming from the normal estimator and the $D$ components mathematically derived from xyz and N spaces. An example of the clustering is shown in Figure~\ref{fig:box_normal_clustering}.
 
-\subsection{DBScan Optimisations} % (fold)
-\label{sub:dbscan_optimisations}
+The downsides to the DBScan approach is the computational and space complexities. With $n$ being the number of points per frame, there is an O(n) preprocessing step to find $D$ components, followed by $O(n^2)$ clustering without accelerating data structures, or $O(n \cdot log(n))$ with. Therefore the decision was made to instead implement a faster flood fill algorithm and leave the coplanar patch merging to the EKF's feature association stage.
 
-% subsection dbscan_optimisations (end)
+% \subsection{DBScan Optimisations} % (fold)
+% \label{sub:dbscan_optimisations}
 
-Modifications to the DBScan algorithm were made to decrease the running time. By using tag fields to set whether points had already been visited or were already part of a cluster (a point can belong to one cluster only), the region query was prevented from being performed on points already part of a cluster. Further a custom conditional insertion procedure to insert into a list-like data structure without duplication was created, decreasing the complexity of insertion from $O(m \cdot log(n))$ (if using the standard template library set object) to $O(m)$.
+% % subsection dbscan_optimisations (end)
 
-The DBScan algorithm completes in $O(n^2)$ if the region query completes in $O(n)$, and $O(n \cdot log(n))$ if the region query completes within $O(log(n))$. Our implementation lay somewhere between the two, having a complexity dependent on run time, where a field of view containing more planar features took closer to the upper boundary. This is because captures with large or many planar features cause the region query procedure to be invoked more often, shifting the runtime complexity towards $O(n^2)$.
+% Modifications to the DBScan algorithm were made to decrease the running time. By keeping an open and a closed node sets (a point can belong to one cluster only), thus removing redundant duplicate lookups from the region query. Further a custom conditional insertion procedure to insert into a list-like data structure without duplication was created, decreasing the complexity of insertion from $O(m \cdot log(n))$ (if using the standard template library set object) to $O(m)$.
 
-To combat against the possibility of slow run-time performance, it was decided to use a 2 step algorithm. A simple Flood Fill algorithm fills the initial field of view captured from the depth camera by flooding (clustering) connected points which have the same plane equation (remember the xyz-Normal point cloud is converted to a plane cloud once the vision module receives a frame from the RGB-D camera). The Flood Fill will generate a new set of planes, typically of a plane count less than 10. This will then be passed to the DBScan algorithm for the second step of the two step algorithm. Where as the Flood Fill algorithm moved only between neighbouring points, the DBScan looks over the whole image space to find points within tolerance $\epsilon$ of the seed point plane equation. Planes which are partially obscured or divided  will still be recognised as a single plane in DBScan. This is not the case in Flood Fill, and hence why a 2 step algorithm is employed. The Flood Fill rapidly finds planes and the slower DBScan corrects for any planes that have been segmented. Using the analogy of a graphical editing package, if the Flood Fill is the paint bucket tool, the DBScan is the patching tool.
+% The DBScan algorithm completes in $O(n^2)$ if the region query completes in $O(n)$, and $O(n \cdot log(n))$ if the region query completes within $O(log(n))$. Our implementation lay somewhere between the two, having a complexity dependent on run time, where a field of view containing more planar features took closer to the upper boundary. This is because captures with large or many planar features cause the region query procedure to be invoked more often, shifting the runtime complexity towards $O(n^2)$.
+
+% we considered doing the below but realised that kalman can do stitching in plane association 
+%To combat against the possibility of slow run-time performance, it was decided to use a 2 step algorithm. A simple Flood Fill algorithm fills the initial field of view captured from the depth camera by flooding (clustering) connected points which have the same plane equation (remember the xyz-Normal point cloud is converted to a plane cloud once the vision module receives a frame from the RGB-D camera). The Flood Fill will generate a new set of planes, typically of a plane count less than 10. This will then be passed to the DBScan algorithm for the second step of the two step algorithm. Where as the Flood Fill algorithm moved only between neighbouring points, the DBScan looks over the whole image space to find points within tolerance $\epsilon$ of the seed point plane equation. Planes which are partially obscured or divided  will still be recognised as a single plane in DBScan. This is not the case in Flood Fill, and hence why a 2 step algorithm is employed. The Flood Fill rapidly finds planes and the slower DBScan corrects for any planes that have been segmented. Using the analogy of a graphical editing package, if the Flood Fill is the paint bucket tool, the DBScan is the patching tool.
 
 \begin{algorithm}[tbp]
 	\SetAlgoLined
@@ -475,7 +478,7 @@ To combat against the possibility of slow run-time performance, it was decided t
 	\label{alg:flood_fill}
 \end{algorithm}
 
-This design leads to increased throughput as the Flood Fill deals with the raw data from CCD space, converting 19200 points to only a few planes. The DBScan, having complexity towards a greedy $O(n^{2})$, only works on the plane set generated by the Flood Fill algorithm, meaning the near-quadratic complexity does not dominate run time as there are much less planes than there are points.
+%This design leads to increased throughput as the Flood Fill deals with the raw data from CCD space, converting 19200 points to only a few planes. The DBScan, having complexity towards a greedy $O(n^{2})$, only works on the plane set generated by the Flood Fill algorithm, meaning the near-quadratic complexity does not dominate run time as there are much less planes than there are points.
 
 \subsection{The Flood Fill Algorithm}
 \label{sub:flood_fill_algo}
