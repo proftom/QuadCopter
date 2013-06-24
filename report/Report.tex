@@ -102,6 +102,7 @@ columns=flexible
 
 \abstract{
 This report investigates the design of indoor state estimation techniques, and demonstrates one particular implementation using a depth camera mounted to a quadcopter frame. The approach consists of collecting data from the environment and detecting planes within it. Using these in combination with an extended Kalman filter we estimate the location of the frame. We combine more traditional sensors such as an accelerometer and gyro to complete the localisation system. We investigate the hardware necessary to process point clouds in real time. Further to this we propose a calibration algorithm for the Xtion Pro depth camera and demonstrate its success.   
+}
 \tableofcontents
 
 
@@ -515,41 +516,42 @@ The PCA was never implemented as it was found that by increasing the minimum num
 
 
 
-% \begin{figure}[p]
-% 	\centering
-% 	\subfloat[ in normal space. A total of 4 planes were found:, the floor, the white boards and two back walls] 
-% 	{
-% 		\label{fig:dbscan_planes}
-% 		\includegraphics[width=0.4\textwidth]{6normal_boards.png}
-% 	}
-% 	\;
-% 	\subfloat[of a laboratory in xyz space. Each white board is considered a separate cluster. Distant objects coloured in blue.] {
-% 		\label{fig:table_dbscan}
-% 		\includegraphics[width=0.4\textwidth]{6table_dbscan.png}
-
-% 	}
-% 	\caption{Images}
-% 	\label{fig:DBSCAN_LAB}
-
-% \end{figure}
 
 \begin{figure}[p]
 	\centering     %%% not \center
-	\subfloat[Box before applying DBScan algorithm in normal space]{
+	\subfloat[Box before applying Flood Fill algorithm]{
 		\label{fig:6box_before}
 		\includegraphics[width=0.4\textwidth]{6box_before.PNG}
 	}
 	\;
-	\subfloat[Box after applying DBScan algorithm in normal space]{
+	\subfloat[Box after applying Flood Fill algorithm]{
 		\label{fig:6box_after}
-		\includegraphics[width=0.4\textwidth]{6box_after.PNG}
+		\includegraphics[width=0.4\textwidth]{6box_afterward.PNG}
 	}
 
-	\caption{Cluster using DBScan in normal space}
+	\caption{Plane finding using Flood Fill $\epsilon=0.2, \gamma=50, \sigma=0.8$}
 	\label{fig:box_normal_clustering}
 \end{figure}
 
+\begin{figure}[p]
+	\centering
+	\label{fig:dbscan_planes}
+ 	\includegraphics[width=0.8\textwidth]{floodFill.png}
+	% \subfloat[Result of Flood Fill, $\epsilon=0.2, \gamma=50, \sigma=0.8$] 
+	% {
+	% 	\label{fig:dbscan_planes}
+	% 	\includegraphics[width=0.4\textwidth]{floodFill.png}
+	% }
+	% \;
+	% \subfloat[of a laboratory in xyz space. Each white board is considered a separate cluster. Distant objects coloured in blue.] {
+	% 	\label{fig:table_dbscan}
+	% 	\includegraphics[width=0.4\textwidth]{6table_dbscan.png}
 
+	% }
+	\caption{Plane finding using Flood Fill, $\epsilon=0.2, \gamma=50, \sigma=0.8$}
+	\label{fig:flood_fill}
+
+\end{figure}
 
 
 \clearpage
@@ -1403,9 +1405,9 @@ Selection of an appropriate computing platform was preformed, and showed that su
 A system was developed that correctly estimates the indoor state of a small aerial vehicle using an inexpensive and readily available depth camera coupled with an embedded platform. The state includes information about the quad copter such as position within the global coordinate system, velocity and attitude of the craft (yaw, pitch and roll). By using a Kalman filter which combines inertial sensors with a vision landmark map, an accuracy to within 10mm was achieved up to a distance of 4 meters. The vision system performed consistently well with minimal tuning and when paired with the Kalman filter, provided robust state estimation.
 
 
-REGISTRATION
+An extension of this system was also designed such that new planes could be added to the internal plane map. The implementation was not completed, though all of the theoretical work has been presented in this report.
 
-When mounted on an airframe the implementation successfully controled the yaw of the craft successfully, though the response was slow due to over correction. It has been hypothesised that the reason for the over correction in yaw at higher speeds is due to latency in the communication between the x86 platform and the R10 quad copter flight controller hardware. The slow communication was due to having to buffer the communication to the control board as there was not an SPI port available on the x86 board.
+When mounted on an airframe the implementation successfully controlled the yaw of the craft successfully, though the response was slow due to over correction. It has been hypothesised that the reason for the over correction in yaw at higher speeds is due to latency in the communication between the x86 platform and the R10 quad copter flight controller hardware. The slow communication was due to having to buffer the communication to the control board as there was not an SPI port available on the x86 board.
 
 % The flight controller board only supports quad copter maneuverability control over a SPI bus, while the x86 board, which ran the vision and Kalman filter had no such interface. To enable communication between the two pieces of hardware, a small embedded processor known as an MBed was used. This processor ran a software SPI to USB bridge, allowing the x86 to connect to the flight controller through a USB port. The communication buffers in this bridge, the flight controller and the USB controller of the x86 board would amount to a considerable delay. From observing filmed footage of the craft in flight running the yaw control loop, the estimate for the latency between an the flight controller measuring the inertial sensors and the measurement being available for computation in the Linux environment is about half a second. This figure has not yet been confirmed or fully investigated, but would explain why the system cannot track the corner point at high speeds.
 
@@ -1413,13 +1415,11 @@ When mounted on an airframe the implementation successfully controled the yaw of
 % An immediate solution to this problem is to use a platform with a dedicated SPI bus or install a fast peripheral SPI expansion card. If possible, decreasing the buffer size of both SPI and USB will reduce latency. Additionally, by using an RGB-D camera with a wider field of view should allow the system to maintain vision for longer. Further, using a smaller convolution kernel for normal estimation would allow more of the RGB-D image to be utilised. Another possibility is to use more accurate gyroscopes and accelerometers as when vision is lost, the system would take longer to lose state.   
 
 \section{Further Work}
-Although much work was done on trying to implement our system on an ARM application processor during the course of this project, significant problems surrounding compatibility with OpenNI (the frame work linking the Xtion depth camera with PCL). This is currently in version 1.6. Version 2.0 will be released soon and is intended to increase compatibility with arm platforms. This will allow a much lighter setup with more options of development boards with low level outputs, which would also solve some of the latency issues that we had. 
+Although many man hours were spent trying to implement our system on an embedded ARM platform during the course of this project, significant problems surrounding compatibility between PCL and OpenNI (the frame work linking the Xtion depth camera with PCL) were encountered. At the time of writing the current PCL version is 1.6 with a version 2.0 release pending. This new version is intended to increase compatibility with ARM platforms, allowing for lighter platforms with wider choice of development platforms with low level peripheral outputs, solving some of the latency issues that were encountered in this project. 
 
-The algorithms described in this document would work much better if the inertial sensors were of high quality, as at the moment their noise causes the state estimate to diverge soon after observability of the planes is lost. Implementations utilising high quality sensors would yield more interesting results, as they could lose sight of previously registered planes and register new ones with an acceptable variance in their location to make full SLAM a possibility. 
+The system described in this document would have a greater performance if the inertial sensors were of higher quality. Currently their noise causes the state estimate to diverge soon after observability of the planes is lost. Implementations utilising high quality sensors would yield more interesting results, as the system could lose sight of previously registered planes and register new ones (within an acceptable variance in their location) to make full SLAM a possibility. 
 
-There is also hope in the near future for consumer grade time of flight RGB-D camera to be widely available, due to these being used in the XBox One console. These will have less quantisation noise, and a much wider field of view. This would solve a number of issues that we had regarding losing sight of known planes before observing new ones to register, as well as removing much of the noise from the raw depth data. 
-
-
+There is also hope in the near future for consumer grade time of flight RGB-D cameras to become both widely available and affordable. This is principally due to their inclusion in the upcoming Microsoft XBox One game console. The key benefits of these cameras over standard RGB-D cameras will be less quantisation noise, and a much wider field of view. This would solve a number of issues that were encountered regarding losing sight of known planes before having an opportunity to observe and register new planes landmarks. 
 
 
 \clearpage
