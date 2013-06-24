@@ -150,7 +150,9 @@ int kalman(QCVision& vision) {
 			vision.m_mutexLockPlanes.unlock();
 			processObservation(true); //timeSteps > startupConvergeTimesteps);
 			Vector3f currpos = state.segment(0,3);
-			cout << "state at time t = " << timeSteps << endl<< currpos(0) << " " << currpos(1) << " " << currpos(2) << endl<<endl;
+			cout.flush();
+			printf("\r");
+			cout << "t: " << timeSteps << " " << currpos(0) << " " << currpos(1) << " " << currpos(2) << " "; // << endl<<endl;
 			//cout << "numplanes: " << landmarks.size() << endl;
 
 		} else {
@@ -459,7 +461,7 @@ association_struct dataAssociation(const planeStruct& planeData) {
 		diff = inP - transPlane*landmarks[index];
 		dist = diff.transpose() *  S.inverse() * diff;
 
-		cout << "dist " << dist << endl;
+		//cout << "dist " << dist << endl;
 
 		if (dist < 0)
 		{
@@ -713,23 +715,33 @@ void controlCraft(){
 	// const float D = 0.1;
 
 
-	//2s response
-	// const float P = 0.0072;
-	// const float I = 6.26e-5;
-	// const float D = 0.2;
+	//2s response mod
+	const float P = 0.014;
+	const float I = 6.26e-5;
+	const float D = 0.2;
 
 	//1s resp
-	const float P = 0.029;
-	const float I = 0.00051;
-	const float D = 0.41;
+	//const float P = 0.029;
+	//const float I = 0.00051;
+	//const float D = 0.41;
+
+	//4s resp
+	// const float P = 0.0018;
+	// const float I = 8.16e-6;
+	// const float D = 0.1;
 
 
-	Vector2f horizSetpoint(-1.2950182, 1.2415010);
+	Vector2f horizSetpoint(-1.96, 1.85);
 	Vector2f currPos(state.segment<2>(0));
 	Vector2f posErr = horizSetpoint - currPos;
 
 	Vector2f setpointVel(0,0);
-	Vector2f currVel(state.segment<2>(3));
+	//Vector2f currVel(state.segment<2>(3));
+
+	static Vector2f lastPos = currPos;
+	Vector2f currVel = (currPos - lastPos)/Sampling_Time;
+	lastPos = currPos;
+
 	Vector2f velErr = setpointVel - currVel;
 
 	//rotate the error into the crafts frame, then project only the x and y axies onto the horizontal plane
@@ -752,7 +764,7 @@ void controlCraft(){
 
 	//yaw section
 
-	const float Pyaw = 2.5;
+	const float Pyaw = 1.0;
 	const float Iyaw = 0.2;
 
 	float setpointYawAngle = atan2(-currPos(1), -currPos(0));
@@ -773,8 +785,8 @@ void controlCraft(){
 	
 	host_attitude_packet_t outpacket;
 	outpacket.sync_byte = 0xbe;
-	outpacket.roll = min(max(attitudeXY(1), -0.03f), 0.03f);
-	outpacket.pitch = min(max(-attitudeXY(0), -0.03f), 0.03f);
+	outpacket.roll = min(max(attitudeXY(1), -0.1f), 0.1f);
+	outpacket.pitch = min(max(-attitudeXY(0), -0.1f), 0.1f);
 	outpacket.yaw_rate = min(max(yawrate/400, -1.0f/400.0f), 1.0f/400.0f);
 
 	//cout << "sizeof attitude " << sizeof(outpacket) << endl;
@@ -784,7 +796,8 @@ void controlCraft(){
 	if(!--seq){
 		seq = 32;
 		//cout << "Setpointyaw: " << setpointYawAngle << "  currYawAngle: " << currYawAngle << endl << endl;
-		cout << "--------------------------------Control: " << outpacket.roll  << "  " << outpacket.pitch << "  " << outpacket.yaw_rate << endl << endl;
+		printf("\r\nC: p %1.3f r %1.3f y %1.3f\r\n\r\n", outpacket.pitch, outpacket.roll, outpacket.yaw_rate);
+		//cout << endl << "C: p " << outpacket.pitch  << " r " << outpacket.roll << " y " << outpacket.yaw_rate << endl << endl;
 	}
 	
 
