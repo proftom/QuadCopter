@@ -354,9 +354,9 @@ Two clustering algorithms were designed, implemented and evaluated: a density ba
 \subsection{Normal Estimation} % (fold)
 \label{sub:normal_estimation}
 
-As the depth sensor is a consumer grade RGB-D camera, operated at over double the quoted distance, the depth data is significantly noisy. A naive local surface normal kernel would take several nearest neighbours to a point and construct its local normal. However, with the high frequency noise level seen in the sensor readings, this method would produce effectively random normals. Instead, we use a technique called integral image convolution \cite{Holz2011} to combine normal estimation with low pass filtering. This is done through a data structure called an integral image (also known as a summed area table), which is computationally efficient and allows the normal estimator to run in real time. 
+As the depth sensor is a consumer grade RGB-D camera operated at over double the quoted distance, the depth data is significantly noisy. A naive local surface normal kernel would take several nearest neighbours to a point and construct its local normal. However, with the high frequency noise level seen in the sensor readings, this method would produce effectively random normals. Instead, we use a technique called integral image convolution \cite{Holz2011} to combine normal estimation with low pass filtering. This is done through a data structure called an integral image (also known as a summed area table), which is computationally efficient and allows the normal estimator to run in real time. 
 
-The downside of low pass filtering is illustrated in Figure~\ref{fig:spurious_plane_normals}, which shows that intersections of planes (which are common indoors) are smoothed and instead look like curved surfaces. This can cause clustering algorithms to either follow the smooth curve and classify everything as one cluster, or instead break the curve into many planar strips. This problem was one of the main concerns and is discussed further in the clustering algorithms' sections. Additionally, the kernel nature of the normal estimator effectively reduces the depth sensor's field of view as it cannot operate on points near edges. Furthermore, the sensor cannot return data around sharp depth discontinuities due to parallax. This means that the kernel operator is also unable to operate within very small clusters of points. The kernel's size used in this prototype was the experimentally best tradeoff between low pass filtering of noise, corruption of edges and reduction of the sensor's field of view.
+The downside of low pass filtering is illustrated in Figure~\ref{fig:spurious_plane_normals}, which shows that intersections of planes (which are common indoors) are smoothed and instead look like curved surfaces. This can cause clustering algorithms to either follow the smooth curve and classify everything as one cluster, or instead break the curve into many planar strips. This problem was one of the main concerns and is discussed further in the clustering algorithms' sections. Additionally, the kernel nature of the normal estimator effectively reduces the depth sensor's field of view as it cannot operate on points near edges. Furthermore, the sensor cannot return data around sharp depth discontinuities due to parallax. This means that the kernel operator is also unable to operate within very small clusters of points. The convolution kernel's size used in this prototype was the experimentally best tradeoff between low pass filtering of noise, corruption of edges and reduction of the sensor's field of view.
 
 \begin{figure}[p]
 	\centering     %%% not \center
@@ -672,9 +672,7 @@ which is the gain that yields the MMSE estimates when used \cite{BerkelyCourse}.
 		\includegraphics[width=0.8\textwidth]{coordinatesystem.png}
 	\end{center}
 	\caption{Coordinate system and plane equation representations. The craft is depicted as a circle in the bottom centre of the diagram. The position of the craft is represented using the position vector $r$ in the world coordinate system, and the local coordinate axes in the body frame are depicted on the craft.
-	A plane is represented by its normal vector, $N$ and its distance from the origin, $D$, in the world coordinate system. When observed by the craft, the plane is seen as the normal vector in the body coordinate system and the distance $D'$. It is clear from the figure that the difference between $D$ and $D'$ is the projection of $r$ along $N$.}
-	\label{fig:coordinatesystem}
-\end{figure}
+	A plane is represented by its normal vector, $N$ and its distance from the origin, $D$, in the world coordinate system. When observed by the craft, the plane is seen as the normal vector in the body coordinate system and the distance $D'$. It is clear from the figure that the difference between $D$ and $D'$ is the projection of $r$ along $N$.} \label{fig:coordinatesystem} \end{figure}
 
 In order to evaluate the equations from the previous section, we need to establish a model of the system. The state vector is segmented into two parts, the robot state and the map state. Each consists of several components, as listed below:
 \begin{align}
@@ -717,13 +715,13 @@ In order to evaluate the equations from the previous section, we need to establi
 	\right]
 \end{align}
 
-where $x_r$ represents the state of the craft, $x_m$ represents the state of the feature map, $r$ is the position of the craft in the inertial frame, $v$ is the velocity in the inertial frame, $q$ is the quaternion that represents the attitude of the craft: a rotation from the inertial frame to the body frame, $b_\omega$ and $b_a$ represent the gyro and accelerometer bias, respectively. $\pi_0 \hdots \pi_{n-1}$ are the equations of the planes currently stored in the map. The axes conventions are: $x$ points along North, $y$ along East, and $z$ points down. Angular rates are defined as right hand rotations along each of these axies, and the following quaternion convention:
+where $x_r$ represents the state of the craft, $x_m$ represents the state of the feature map, $r$ is the position of the craft in the inertial frame, $v$ is the velocity in the inertial frame, $q$ is the quaternion that represents the attitude of the craft: a rotation from the inertial frame to the body frame, $b_\omega$ and $b_a$ represent the gyro and accelerometer bias, respectively. $\pi_0 \hdots \pi_{n-1}$ are the equations of the planes currently stored in the map. The axes conventions are: $x$ points along North, $y$ along East, and $z$ points down. Angular rates are defined as right hand rotations along each of these axes, and the following quaternion convention:
 \begin{align}
 	\label{eqn:quaternion_components}
 	q = q_0 + q_1i + q_2j + q_3k
 \end{align}
 
-We segment the $P$ matrix into blocks consisting of submatricies to do with either the robot or to do with the map, or to do with the cross-covariance of the two. We can extend this subdivision so that it considers each plane separately, as suggested by \cite{Sola2013}.
+We segment the $P$ matrix into blocks consisting of sub-matrices to do with either the robot or to do with the map, or to do with the cross-covariance of the two. We can extend this subdivision so that it considers each plane separately, as suggested by \cite{Sola2013}.
 This will be useful when computing Equation~(\ref{eqn:H}).
 \begin{align}
 	P &=
@@ -836,10 +834,10 @@ Defining the model further, we have that
 \end{align}
 where $a_m$ and $\omega_m$ are the measured accelerations and angular velocities in the body frame, respectively, and $g_b$ is the acceleration due to gravity in the body frame.
 
-Defined in Equation~(\ref{eqn:proc_noise_def}) is the process noise vector. The first two components are comprised of the additive noise in the measurement obtained from the gyro and accelerometer, respectively. This noise is modelled by simply measuring several minutes of output from the sensors and using the sample covariance matrix as the covariance that describes this additive nosie.
+Defined in Equation~(\ref{eqn:proc_noise_def}) is the process noise vector. The first two components are comprised of the additive noise in the measurement obtained from the gyro and accelerometer, respectively. This noise is modelled by simply measuring several minutes of output from the sensors and using the sample covariance matrix as the covariance that describes this additive noise.
 
-The inertial sensors have an undefined zero-bias point. This means that the measurements have a bias that varies between chips, and over different temperatures and supply voltages. This semi-random variation of the bias point is modelled as a random walk. That is, we model this variation as a bias state that is pertrubed by an additive noise term.
-To measure this term, we computed the descrete time derivative of the output of the sensor during the same stationary test, and low-pass filtered the result. The time constant of the low pass filter, 5 seconds, was selected heuristically to represent a probable timebase over which temparature variations would start to play a significant role. The sample covariance matrix of the resultant metric is used to characterise the bias drift random varianble.
+The inertial sensors have an undefined zero-bias point. This means that the measurements have a bias that varies between chips, and over different temperatures and supply voltages. This semi-random variation of the bias point is modelled as a random walk. That is, we model this variation as a bias state that is perturbed by an additive noise term.
+To measure this term, we computed the discrete time derivative of the output of the sensor during the same stationary test, and low-pass filtered the result. The time constant of the low pass filter, 5 seconds, was selected heuristically to represent a probable timebase over which temperature variations would start to play a significant role. The sample covariance matrix of the resultant metric is used to characterise the bias drift random variable.
 \begin{align}
 	\label{eqn:proc_noise_def}
 	w &= 
@@ -934,7 +932,7 @@ Furthermore, as a rotation matrix is orthogonal, we have that
 	R_{eb} &= R_{be}^\top
 \end{align}
 
-As the state transition model $f$ operates in descrete time, and more directly, because we have performed the descritisation shown in Equation~(\ref{eqn:descrete_f}), we derive the state transition Jacobian matrix, mentioned in Equation~(\ref{}) as follows
+As the state transition model $f$ operates in discrete time, and more directly, because we have performed the discritisation shown in Equation~(\ref{eqn:descrete_f}), we derive the state transition Jacobian matrix, mentioned in Equation~(\ref{eqn:predictP}) as follows
 \begin{align}
 	F &= \frac{\partial f}{\partial x} \notag \\
 	&=
@@ -1033,7 +1031,7 @@ The process noise model is defined as follows
 	\frac{\partial \dot{x}}{\partial w} \Delta T
 \end{align}
 
-By considering the way that the noiseis modelled, and assuming that the process noise only affects the craft, we derive the following
+By considering the way that the noise is modelled, and assuming that the process noise only affects the craft, we derive the following
 \begin{align}
 	G = \left[
 	\begin{matrix}
@@ -1061,7 +1059,7 @@ where $\cdot$ represents null entries, and where
 %	G_{b_a w_{ba}} &= I_{3x3}
 \end{align}
 
-Having derived $F$ and $G$, we can use a sparse matrix optimisation that is based on the fact that the plane map features do not move. This tequnique, specific to EKF-SLAM, is developed in detail in \cite{Sola2013}.
+Having derived $F$ and $G$, we can use a sparse matrix optimisation that is based on the fact that the plane map features do not move. This technique, specific to EKF-SLAM, is developed in detail in \cite{Sola2013}.
 This means that when calculating equation~(\ref{eqn:predictP}), we can use the sparsity of $F$ to simplify the calculation as follows:
 \begin{align}
 	F_r &= F_{(0-15,0-15)} \notag \\
@@ -1075,7 +1073,7 @@ This means that when calculating equation~(\ref{eqn:predictP}), we can use the s
 \end{align}
 where the parts of P are defined in equation~(\ref{eqn:Pparts}).
 
-The forward observation model $h$, as required by Equation~(\ref{eqn:measurement_model}), is derived below. This function defines the measurement as a function of the state. That is, using this function we can compute the expected plane measurement given our current state estimate.
+The forward observation model $h$ for the plane observation, as required by Equation~(\ref{eqn:measurement_model}), is derived below. Using this function we can compute the expected plane measurement given our current state estimate.
 \begin{align}
 	T_h &= 
 	\left[
@@ -1143,6 +1141,16 @@ For clairity, $H$ is built up using several submatricies as follows:
 \end{align}
 where $\cdots$ represents appropriately sized zero matricies.
 
+Furthermore, we have a sonar sensor that measures the altitude of the craft with respect to the ground below it. For our purposes we assume that the floor is flat and has zero elevation. As such, we simply define it's measurement model as follows
+\begin{align}
+	h &= -z \notag \\
+	H &= \left[
+	\begin{matrix}
+		0 & 0 & -1 & 0 & \cdots & 0
+	\end{matrix}
+	\right]
+\end{align}
+
 % subsection system_model (end)
 
 \begin{figure}[tb]
@@ -1155,7 +1163,18 @@ where $\cdots$ represents appropriately sized zero matricies.
 
 \subsection{Landmark Association} % (fold)
 \label{sub:landmark_association}
-We use the statistic measurement called the mahalanobis distance to evaluate how closely a newly observed plane is related to the ones in the state map. In general the mahalanobis distance is a normalised measure that is used to identify and gauge similarity of an unknown sample to a known data set. Using this measure, we leverage the stochastic properties of our system to reduce modelling inaccuracies as opposed to using Euler distance. We use a distance threshold/ validation date such that 99\% of true measurements are accepted. For our 4 dimensional plane measurement, this evaluates to:
+When a new plane measruement is generated by the depth camera and the vision system, we need to decide whether this plane exists in the map or not. To do this we use the statistical measure called the squared Mahalanobis distance to evaluate how closely a newly observed plane is related to the ones in the state map. This measure is best described as a normalised distance that is used to gauge similarity of a new sample to a distribution with a known covariance matrix. The measure is formally defined as
+
+%\begin{aligned}
+	%d = 
+%\end{aligned}
+
+We do 
+
+When making the decision on whete
+
+We use a threshold on this distance such that 99\% of true measurements are accepted. For our 4 dimensional plane measurement, this evaluates to:
+
 \verb"d = chi2inv(0.99,4) = 13.2767" which is the MATLAB command for the inverse chi squared distribution with 4 degrees of freedom and evaluated at 0.99. In order to perform association, the procedure is we find the mahalanobis distance between our new observation and all the planes in the map, keeping the minimum. If this minimum is less than the threshold, then the data is associated, if not it is discarded as an outlier.
 
 % subsection landmark_association (end)

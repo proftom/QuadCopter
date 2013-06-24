@@ -537,7 +537,7 @@ void writeErrorToFile(const Vector4f& error, const Matrix4f& errCov) {
 	file.close();
 }
 void updateSonar(){
-	float y = sonarAlt - state(2);
+	float y = -sonarAlt - state(2);
 	float s = P(2,2) + sonarVariance;
 
 	newsonar = false;
