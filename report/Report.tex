@@ -379,7 +379,6 @@ The downside of low pass filtering is illustrated in Figure~\ref{fig:spurious_pl
 
 
 One popular algorithm for density based clustering is density based scan (DBScan), which can find arbitrarily shaped clusters, needs no apriori cluster count information and a has a notion of noise. The basic idea is to take an initial point and find all other neighbouring points within a certain neighbourhood (of a distance $\epsilon$). If enough are found (decided by a threshold value $\gamma$), then these neighbouring points are iteratively expanded upon, again checking if the minimum number of neighbouring points ($\gamma$) is sufficient to be considered within the same cluster. Figure~\ref{fig:dbscan} demonstrates a pass of the algorithm starting from a point within region A and clustering outward until the density of connected points becomes too small. Listing~\ref{alg:dbscan} details the full algorithm to find all densely connected regions within an image space.
-%todo: is dbscan explanation sufficient? is "densely connected" understandable from context?
 
 \begin{figure}[bt]
 	\begin{center}
@@ -431,9 +430,7 @@ One popular algorithm for density based clustering is density based scan (DBScan
 	\label{alg:dbscan}
 \end{algorithm}
 
-This was then progressed to performing the region query in normal space, meaning planes with a similar normal equation would appear in the same cluster, shown in Figure~\ref{fig:dbscan_planes}
-
-Four parameters are required to uniquely characterize planes, a convenient representation is the Hessian plane equation with parameters $(N_A, N_B, N_C, D)$  so finally the normal space was combined with distance space (z) for the region query criteria conditions. To make things easier, as soon as an RGB-D camera capture becomes available, the data cloud is converted to a plane cloud (a large list containing the 4 plane parameters).
+Four parameters are required to uniquely characterize planes, in this case we use the Hessian plane form with parameters $(N_A, N_B, N_C, D)$. Hence our DBScan implementation operates in this four dimensional space, with the normal components coming from the normal estimator and the $D$ components mathematically derived from xyz and N spaces. An example of the clustering is shown in Figure~\ref{fig:box_normal_clustering}.
 
 \subsection{DBScan Optimisations} % (fold)
 \label{sub:dbscan_optimisations}
@@ -514,23 +511,23 @@ The PCA was never implemented as it was found that by increasing the minimum num
 
 
 
-\begin{figure}[p]
-	\centering
-	\subfloat[ in normal space. A total of 4 planes were found:, the floor, the white boards and two back walls] 
-	{
-		\label{fig:dbscan_planes}
-		\includegraphics[width=0.4\textwidth]{6normal_boards.png}
-	}
-	\;
-	\subfloat[of a laboratory in xyz space. Each white board is considered a separate cluster. Distant objects coloured in blue.] {
-		\label{fig:table_dbscan}
-		\includegraphics[width=0.4\textwidth]{6table_dbscan.png}
+% \begin{figure}[p]
+% 	\centering
+% 	\subfloat[ in normal space. A total of 4 planes were found:, the floor, the white boards and two back walls] 
+% 	{
+% 		\label{fig:dbscan_planes}
+% 		\includegraphics[width=0.4\textwidth]{6normal_boards.png}
+% 	}
+% 	\;
+% 	\subfloat[of a laboratory in xyz space. Each white board is considered a separate cluster. Distant objects coloured in blue.] {
+% 		\label{fig:table_dbscan}
+% 		\includegraphics[width=0.4\textwidth]{6table_dbscan.png}
 
-	}
-	\caption{Images}
-	\label{fig:DBSCAN_LAB}
+% 	}
+% 	\caption{Images}
+% 	\label{fig:DBSCAN_LAB}
 
-\end{figure}
+% \end{figure}
 
 \begin{figure}[p]
 	\centering     %%% not \center
