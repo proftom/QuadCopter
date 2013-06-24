@@ -83,7 +83,7 @@ columns=flexible
 %\renewcommand{\cftsecpagefont}{\rmfamily\mdseries\upshape} % No bold!
 \usepackage{hyperref} % use hyperlinked ToC
 \hypersetup{colorlinks=true, linkcolor=black, citecolor=black, filecolor=black, urlcolor=black}
-\graphicspath{ {ImageLib/}{other_folder/}{third_folder/} }
+\graphicspath{ {ImageLib/} }
 
 \usepackage[printonlyused]{acronym}
 
@@ -646,32 +646,34 @@ and where
 	%V_{k} &= \left . \frac{\partial h}{\partial v} \right \vert _{\hat{x}_{k|k-1}}
 \end{align}
 
-We define the Kalman gain as follows:
-\begin{align}
-	K_k &= P_{k|k-1} H_k^\top S_k^{-1}
-\end{align}
-which is the gain that yields the MMSE estimates when used \cite{BerkelyCourse}. Using this gain, we compute the updated state estimate as follows:
+We compute the updated state estimate, and the corresponding updated state estimate covariance matrix, as follows:
 \begin{align}
 	\hat{x}_{k|k} 	&= \hat{x}_{k|k-1} + K_k z_k \\
 	P_{k|k} 		&\approx (I - K_k H_k) P_{k|k-1}
 \end{align}
+where the optimal Kalman gain $K$ is defined as follows:
+\begin{align}
+	K_k &= P_{k|k-1} H_k^\top S_k^{-1}
+\end{align}
+which is the gain that yields the MMSE estimates when used \cite{BerkelyCourse}.
 
 % subsubsection filter_equations (end)
-\clearpage
 
 \subsection{System Model} % (fold)
 \label{sub:system_model}
 
 \begin{figure}[tb]
 	\begin{center}
-		\includegraphics[width=\textwidth]{coordinatesystem.png}
+		\includegraphics[width=0.8\textwidth]{coordinatesystem.png}
 	\end{center}
-	\caption{The craft is located in the world coordinate system using position vector $r$, and the local coordinate axes in the body frame are depicted on the craft. A plane is represented by its normal vector, $N$ and its distance from the origin, $D$, in the world coordinate system. When observed by the craft, the plane is seen as the normal vector in the body coordinate system and the distance $D'$. It is clear from the figure that the difference between $D$ and $D'$ is the projection of $r$ along $N$.}
+	\caption{Coordinate system and plane equation representations. The craft is depicted as a circle in the bottom centre of the diagram. The position of the craft is represented using the position vector $r$ in the world coordinate system, and the local coordinate axes in the body frame are depicted on the craft.
+	A plane is represented by its normal vector, $N$ and its distance from the origin, $D$, in the world coordinate system. When observed by the craft, the plane is seen as the normal vector in the body coordinate system and the distance $D'$. It is clear from the figure that the difference between $D$ and $D'$ is the projection of $r$ along $N$.}
 	\label{fig:coordinatesystem}
 \end{figure}
 
-In order to evaluate the equations from the previous section, we need to establish a model of the system. This involves establishing that 
+In order to evaluate the equations from the previous section, we need to establish a model of the system. The state vector is segmented into two parts, the robot state and the map state. Each consists of several components, as listed below:
 \begin{align}
+	\label{eqn:state}
 	x &=
 	\left[
 	\begin{matrix}
@@ -710,9 +712,14 @@ In order to evaluate the equations from the previous section, we need to establi
 	\right]
 \end{align}
 
-where $x_r$ represents the state of the craft, $x_m$ represents the state of the feature map, $r$ is the position of the craft in the inertial frame, $v$ is the velocity in the inertial frame, $q$ is the quaternion that represents the attitude of the craft: a rotation from the inertial frame to the body frame, $b_\omega$ and $b_a$ represent the gyro and accelerometer bias, respectively. $\pi_0 \hdots \pi_{n-1}$ are the equations of the planes currently stored in the map.
+where $x_r$ represents the state of the craft, $x_m$ represents the state of the feature map, $r$ is the position of the craft in the inertial frame, $v$ is the velocity in the inertial frame, $q$ is the quaternion that represents the attitude of the craft: a rotation from the inertial frame to the body frame, $b_\omega$ and $b_a$ represent the gyro and accelerometer bias, respectively. $\pi_0 \hdots \pi_{n-1}$ are the equations of the planes currently stored in the map. The axes conventions are: $x$ points along North, $y$ along East, and $z$ points down. Angular rates are defined as right hand rotations along each of these axies, and the following quaternion convention:
+\begin{align}
+	\label{eqn:quaternion_components}
+	q = q_0 + q_1i + q_2j + q_3k
+\end{align}
 
-We also segment the $P$ matrix as suggested by \cite{Sola2013}:
+We segment the $P$ matrix into blocks consisting of submatricies to do with either the robot or to do with the map, or to do with the cross-covariance of the two. We can extend this subdivision so that it considers each plane separately, as suggested by \cite{Sola2013}.
+This will be useful when computing Equation~(\ref{eqn:H}).
 \begin{align}
 	P &=
 	\left[
@@ -733,7 +740,7 @@ We also segment the $P$ matrix as suggested by \cite{Sola2013}:
 	\label{eqn:Pparts}
 \end{align}
 
-The state vector components are each composed as follows
+The state vector as defined in Equation~(\ref{eqn:state}) consists of the following components:
 \begin{align}
 	r &= 
 	\left[
@@ -808,16 +815,20 @@ The derivative of the state vector is computed in order to propagate the state o
 \end{align}
 
 where $a$ and $\omega$ are the true body frame accelerations and angular rates, respectively.
-$R_{eb}$, the body to earth rotation matrix and $\Xi$ is the matrix that maps the body frame angular rates to the rate of change of quaternion. Both matrices are a function of the current quaternion and are defined below.
+$R_{eb}$ is the body to earth rotation matrix and $\Xi$ is the matrix that maps the body frame angular rates to the rate of change of quaternion. Both of these matrices are a function of the current craft orientation, that is, a function of $q$, and are defined below in Equations~(\ref{eqn:Xi}) and (\ref{eqn:Omega}).
 
+We also have that
 \begin{align}
 	\omega &= \omega_m + w_\omega - b_\omega &
 	a &= a_m + w_a - b_a + g_b
 \end{align}
 where $a_m$ and $\omega_m$ are the measured accelerations and angular velocities in the body frame, respectively, and $g_b$ is the acceleration due to gravity in the body frame.
 
-The process noise is defined as defined and it represents the noise in the inertial sensors. To derive a close enough estimate of this noise, we computed the variance of a sample from the sensors at a stationary position[Insert link to code].
+Defined in Equation~(\ref{eqn:proc_noise_def}) is the process noise vector. The first two components are comprised of the additive noise in the measurement obtained from the gyro and accelerometer, respectively.
+
+To derive a close enough estimate of this noise, we computed the variance of a sample from the sensors at a stationary position[Insert link to code].
 \begin{align}
+	\label{eqn:proc_noise_def}
 	w &= 
 	\left[
 	\begin{matrix}
@@ -864,6 +875,7 @@ $f$ in equation (\ref{eqn:system}) and (\ref{eqn:predictx}) operates in discrete
 \end{align}
 
 \begin{align}
+	\label{eqn:Xi}
 	\Xi(q) &=
 	\left[
 	\begin{matrix}
@@ -876,6 +888,7 @@ $f$ in equation (\ref{eqn:system}) and (\ref{eqn:predictx}) operates in discrete
 \end{align}
 
 \begin{align}
+	\label{eqn:Omega}
 	\Omega(\omega) &=
 	\left[
 	\begin{matrix}
@@ -1098,6 +1111,7 @@ In the implementation, we take advantage of this sparsity and compute matrix mul
 \end{align}
 
 \begin{align}
+	\label{eqn:H}
 	H &=
 	\left[
 	\begin{matrix}
