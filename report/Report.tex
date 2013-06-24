@@ -265,7 +265,7 @@ The depth data obtained by the RGB-D camera of choice has two distinct adverse p
 Additionally, it is important to note that transforming per-pixel depth data to a xyz point cloud is based on the cone projection model of the sensor. Therefore an error in the depth measurement for a pixel will also introduce error in the corresponding point's x and y coordinates within the xyz space.
 %todo: paint a quick and dirty explanation picture?
 
-As mentioned above, the factory calibration of the RGB-D camera's depth sensor is unsatisfactory for the target application. Straight walls as seen by the sensor at distances of more than 2m quickly become warped (see Figure~\ref{fig:uncal5m2}). Such depth data quality would make robust feature extraction infeasible at distances of interest.
+As mentioned above, the factory calibration of the RGB-D camera's depth sensor is unsatisfactory for the target application. Straight walls as seen by the sensor at distances of more than 2m quickly become warped (see example in Figure~\ref{fig:uncal5m2}). Such depth data quality would make robust feature extraction infeasible at distances of interest.
 
 
 \begin{figure}[H]
@@ -276,7 +276,7 @@ As mentioned above, the factory calibration of the RGB-D camera's depth sensor i
 \label{fig:uncal5m2}
 \end{figure}
 
-Figure~\ref{fig:avDist2} shows the average measurement across all of the frame for a range of distances. It can be seen that the depth data is not just warped per pixel, but also wrong on average. At 4m the average distance measured was 3.32m, which represents a 17\% error. The maximum per-pixel error being 0.941m at 4m, which corresponds to 23.5\% error. 
+Figure~\ref{fig:avDist2} shows the average depth across a frame capture for a planar surface as measured at a range of distances. It can be seen that the depth data is not just warped per pixel, but also wrong on average. For example, at 4m the average distance measured was 3.32m, which represents a 17\% error. The maximum per-pixel error being 0.941m at 4m, which corresponds to 23.5\% error. 
 
 \begin{figure}[htb]
 	\begin{center}
