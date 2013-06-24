@@ -31,7 +31,7 @@ extern int XtionCovarFudge;
 #include <queue>
 
 #define RESOLUTION_MODE pcl::OpenNIGrabber::OpenNI_QQVGA_30Hz
-#define VIEWER
+//#define VIEWER
 
 #define FPS_CALC(_WHAT_) \
 do \
@@ -122,7 +122,7 @@ class QCVision
 	  boost::mutex::scoped_lock lock (mtx_);
  
       //lock while we set our cloud;
-      FPS_CALC ("computation");
+      //FPS_CALC ("computation");
       // Estimate surface normals
 
 	  // Cloud cld (new Cloud(cloud));
