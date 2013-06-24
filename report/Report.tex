@@ -100,14 +100,14 @@ columns=flexible
 %\center{\textbf{\large{\emph{"...a profound trust in the advances of science."}	}}}
 
 \abstract{
-This report investigates the design of indoor state estimation techniques, and demonstrates one particular implementation using a depth camera mounted to a quadcopter frame. The approach consists of collecting data from the environment and detecting planes within it. Using these in combination with an extended Kalman filter we estimate the location of the frame. We combine more traditional sensors such as an accelerometer and gyro to complete the localisation system. We investigate the hardware necessary to process point clouds in real time, whilst being light enough to fly.  
+This report investigates the design of indoor state estimation techniques, and demonstrates one particular implementation using a depth camera mounted to a quadcopter frame. The approach consists of collecting data from the environment and detecting planes within it. Using these in combination with an extended Kalman filter we estimate the location of the frame. We combine more traditional sensors such as an accelerometer and gyro to complete the localisation system. We investigate the hardware necessary to process point clouds in real time. Further to this we propose a calibration algorithm for the Xtion Pro depth camera and demonstrate its success.   
 \tableofcontents
 
 
 %\section{Acronyms} % (fold)
 %\label{sec:acronyms}
 \begin{acronym}
-	\acro{DBScan}{Density Based Spatial Clusttering of Applications with Noise}
+	\acro{DBScan}{Density Based Spatial Clustering of Applications with Noise}
 	\acro{DoF}{Degrees of Freedom}
 	\acro{EKF}{Extended Kalman Filter}
 	\acro{GPS}{Global Positioning System}
@@ -132,14 +132,17 @@ This report investigates the design of indoor state estimation techniques, and d
 \subsection{Introduction}
 %todo: Ryan: imo rewrite quite a lot of exec sum
 %todo: exec sum should be at the front? separate doc?
-In the present world of increasing machine presence and autonomy, it is important for robots to be able to correctly and accurately estimate their position, velocity and in general their current state at any given time in order to perform tasks with much better accuracy. For our project we focused on determining the indoor state also known as the indoor localisation problem of quadcopters. Quadcopters have become a famous hobbyist platform but more importantly, they can be used in autonomous rescue operations and aerial photography. Our project is in essence a first step towards implementing indoor SLAM. With this in mind, we served as consultants to a start up company called MAVRX who specialises in developing UAVs, supporting electronics and software platforms. Our mission is to enhance MAVRX's interest and research by developing an indoor state estimator that can be used for autonomous quadcopters. They in turn provide us with necessary tools including an R10 quadcopter, wireless remote controller hardware, and code primitives for stabilising and controlling the UAV.
+In the present world of increasing machine presence and autonomy, it is important for robots to be able to correctly and accurately estimate their position, velocity and in general their current state. This project focused on determining the state of flying robots in GPS denied environments, this first step towards implementing indoor SLAM. With this in mind, we served as consultants to a start up company called Mavrx who specialises in developing UAVs, supporting electronics and software platforms. Our mission is to enhance MAVRX's  research by developing an indoor state estimator that can be used for autonomous quadcopters, whist keeping the system portable to other kinds of airframe.
 \subsection{Our Solution}
-While there has been lots of work done in the area of localisation, we propose a unique solution targeting indoor environments which consists of using on-board processing with an inexpensive RGB-D camera as our primary sensor combined with accelerometer and gyroscope sensors capable of working in GPS denied areas. Our approach leverages the powerful yet cheap capabilities of the Xtion Pro camera. A typical solution to localisation involves modeling the motion of the agent as it moves in the environment, extracting features from the environment using sensors and then combining this information to approximate its location within the environment. We decided to track planes (i.e. walls) as our features, extracting plane equations from the Xtion Pro using intelligent vision algorithms with good resistance to noise and bounded-time operation. Moreover, using an RGB-D camera provides a plethora of information and resilience to interference compared to that of sonar or infra-red sensors. For the state estimation engine, we employ the widely popular Kalman filter as it produces optimal solutions in the presence of noise.  
+The proposed solution the indoor localisation problem consists of using the Xtion Pro depth camera to track planar surfaces in the environment for absolute positioning. This type of feature is somewhat simple to extract and robust to changes in view point, further to this walls ceilings and floors all are ubiquitous within man made environments. These planes will be used in conjunction with inertial sensors with an extended Kalman filter to provide an optimal estimation of our state that is resilient to noise. This system was implemented on an Intel Atom x86 board that has a mini-itx form factor.
+
+
+%We propose a solution targeting indoor environments which consists of using on-board processing with an inexpensive RGB-D camera as our primary sensor combined with accelerometer and gyroscope sensors capable of working in GPS denied areas. Our approach leverages the powerful yet cheap capabilities of the Xtion Pro camera. A typical solution to localisation involves modelling the motion of the agent as it moves in the environment, extracting features from the environment using sensors and then combining this information to approximate its location within the environment. We decided to track planes (i.e. walls) as our features, extracting plane equations from the Xtion Pro using intelligent vision algorithms with good resistance to noise and bounded-time operation. Moreover, using an RGB-D camera provides a plethora of information and resilience to interference compared to that of sonar or infra-red sensors. For the state estimation engine, we employ the widely popular Kalman filter as it produces optimal solutions in the presence of noise.  
 \subsection{Results}
-Using vision algorithms, we were able to extract planes as features. Observing three orthogonal planes provides full observability in the x, y and z axes. Using the extended Kalman filter, we were able to show that our system can estimate its position, velocity and attitude in an indoor environment. We had to tune the filter providing empirical values for uncertainties in the Xtion's observation obtained through numerous testing. We confirmed the consistency of our filter by checking for bias in its measurement error and ensuring its bounds is described by its covariance. Our system gave us accurate positioning (within 10mm precision) verified using a measuring tape. 
+Using vision algorithms, we were able to extract planes as features. Observing three orthogonal planes provides full observability in the x, y and z axes. Using the extended Kalman filter, we were able to show that our system can estimate its position, velocity and attitude in an indoor environment. We had to tune the filter providing empirical values for uncertainties in the Xtion's observation obtained through numerous testing. We confirmed the consistency of our filter by checking for bias in its measurement error and ensuring its bounds is described by its covariance. Our system gave us reliable positioning, within 10mm accuracy. Unfortunately due to hardware limitations introducing large amounts of delay into the control loop the system can no longer be stable without large initial oscillations. Further to this the small viewing angle of the Xtion made maintaining a view on an appropriate number of planes difficult and the inertial sensors are high enough quality to maintain an accurate state in between plane observations. 
 
 \subsection{Conclusion}
-Localisation and state estimation is a first step towards full autonomous simultaneous localisation and mapping which combined with the high maneuverability of a quadcopter opens up new domains in robotic applications. We have thus pushed forward a bit the goal of our client company, Mavrx in developing unmanned aerial vehicles. Our project has shown and demonstrated the possibilities of indoor state estimation without GPS data which has commercial benefits in the aerial photography market as well as applications in search and rescue operations. Our system can be applied in the industry where aerial monitoring is essential such as pipeline inspection and area mapping.  
+Localisation and state estimation is a first step towards full autonomous simultaneous localisation and mapping which combined with the high maneuverability of a quadcopter opens up new domains in robotic applications. We have thus pushed forward the goal of our client company, Mavrx, in developing unmanned aerial vehicles. Our project has shown and demonstrated the possibilities of indoor state estimation without GPS data which has commercial benefits in the aerial photography market as well as applications in search and rescue operations. Our system can be applied in the industry where aerial monitoring is essential such as pipeline inspection and area mapping.  
 
 
 \clearpage
@@ -152,25 +155,23 @@ Localisation and state estimation is a first step towards full autonomous simult
 \label{sub:context}
 
 There are often situations where unmanned aerial vehicles (UAVs) are useful, including: search and rescue, infrastructure inspection, videography and military applications such as reconnaissance. These tasks are already performed routinely by UAVs, though usually controlled remotely by a human operator. In some cases the human operator is removed, and Global Positioning System (GPS) is used to close the loop on absolute positioning. This is a functional solution, as it is quite cheap and can work nearly anywhere in the world. However, there are also places where GPS will not work reliably, such as inside a building or between many tall buildings (often called an urban canyon). These environments also would put pressure on the skill of a human operator due to the abundance of obstacles.
-
 Therefore there is increased interest in autonomous micro aerial vehicles (MAVs) that can operate in such GPS denied environments.
 
 % subsection context (end)
 
 \subsection{Project Aim}
 \label{sub:what_are_we_trying_to_achieve}
-This project aims to build a functional prototype of an autonomous micro aerial vehicle that can operate in GPS denied environments, such as indoors and in urban canyons. The aim of the prototype is to be a proof of concept, showing that the above is possible with current technology, using only on-board sensors and computing. 
+This project aims to build a functional prototype of an indoor state estimation algorithm that can operate in GPS denied environments, such as indoors and in urban canyons. The aim of the prototype is to be a proof of concept, showing that the above is possible with current, off the shelf technology. Also the state estimation system will be trialled on a quadcopter airframe to demonstrate its function and investigate its properties and usefulness for micro aerial vehicles. 
 
 \subsection{Who are Mavrx and why are they interested?} % (fold)
 \label{sub:why_are_mavrx_interested_in_this_work_}
 
-Mavrx is a small start-up firm that is aiming to provide autonomous aerial imaging hardware and software for commercial enterprise. Additionally, Mavrx has a daughter firm, UAir, that targets the hobbyist market and which recently succeeded in crowd-funding a cheap quadcopter development platform. They have asked us to help develop a fully autonomous flying platform that will be priced in the consumer range rather than the military/commercial category of existing platforms. 
+Mavrx is a small start-up firm that is aiming to provide autonomous aerial imaging hardware and software for commercial enterprise. Additionally, Mavrx has a daughter firm, UAir, that targets the hobbyist market and which recently succeeded in crowd-funding a cheap quadcopter development platform. They have asked us to help develop a indoor state estimation system, such that a fully autonomous flying platform can be created to operate indoors. The system should be priced in the consumer range rather than the military/commercial category of existing platforms. Mavrx are not particularly interested in in depth pricing or business analysis, so most of the emphasis of this report will be on implementation and testing. 
 
-The main deliverable is a proof of concept model that can be used to attract support and funding, as well as serving as a base for future experimentation. While the product should aim to stay within the pricing constraints, the project group is not tasked with detailed pricing and comparison of components or developing a financial plan.
 
 \subsection{Related research} % (fold)
 \label{sub:related_works}
-The approaches to localisation for UAVs in GPS denied environments fall into three main categories: optical flow tracking \cite{DBLP:conf/icra/GrabeBG12}, time of flight (ToF) laser scanners \cite{Bry2012} and color with depth (RGB-D) cameras \cite{Shen2012}.
+The approaches to localisation for UAVs in GPS denied environments fall into three main categories: optical flow tracking \cite{DBLP:conf/icra/GrabeBG12}, time of flight (ToF) laser scanners \cite{Bry2012} and colour with depth (RGB-D) cameras \cite{Shen2012}.
 
 Grabe et al. \cite{DBLP:conf/icra/GrabeBG12} produced a MAV that uses a downward facing RGB camera on a quadcopter to correct for sensor drift. This approach's highlight is the low cost of hardware, as cheap RGB cameras are now common place in many consumer electronics. In combination with other cheap sensors such as gyroscopes, accelerometers, magnetometers and barometers, a complete navigation solution becomes easily affordable. The downsides of this approach include no easy way to extract absolute data from the system. The concept of an absolute distance must be derived from the inertial sensors at some point, hence the whole system could be susceptible to drift over time. The conclusion of this paper suggests that this system would be well applied as a backup for a more robust tracking system. Therefore we can dismiss the use of optical flow tracking as a primary localisation technique. 
 
@@ -183,14 +184,6 @@ Shen et al. \cite{Shen2012} use a quadcopter airframe and a RGB-D camera combine
 %todo: need to tie this up in a better way
 %todo: given time, add the gaussian pyramid optical slam from IARC 2010(ish) entry.
 
-\subsection{Our Solution} % (fold)
-\label{sub:our_solution}
-
-The intended approach is to use a consumer grade RGB-D camera as the primary sensor, supplemented with accelerometers, gyroscopes and a downward facing sonar sensor. In order to generate the estimate of the robot's state we use an Extended Kalman Filter (EKF) to fuse the data. In order to simplify feature extraction and reduce the computational complexity, features tracked by the filter are planar surfaces. This is due to planes are being easy to characterise from all directions as well as being a consistently available feature in man-made environments. 
-
-The depth camera of choise is the Asus Xtion Pro as it is considerably lighter than the copeting products, while maintaining a similar price point. Due to the relatively narrow field of view (58$^{\circ}$ horizontal, 45$^{\circ}$ vertical), the floor and the ceiling is expected to often be out of view, resulting in reduced observability in the elevation direction. The depth camera is complemented with a downward facing sonar sensor to address this issue.
-
-The aircraft configuration of choice is a quadcopter, due to its ability to navigate environments with limited space and stability. The latter also helps to reduce the amount of motion blur in the depth camera. Finally, it presents a good opportunity to test Mavrx/UAir's R10 quadcopter platform's reliability and robustness.
 
 % % section problem_specification (end)
 \section{Implementation Overview}
@@ -210,7 +203,7 @@ The aircraft configuration of choice is a quadcopter, due to its ability to navi
 
 % The tasks can be group into two main categories feature extraction and extended Kalman filter implementation.
 
-The localisation scheme used is based on a feature tracking Extended Kalman Filter (EKF). The features tracked are planar surfaces within the environment, which are obtained from depth data of a consumer RGB-D camera. Planes are tracked as they can represent walls, floors and ceiling, which are abundant in man-made environments, are static and easily reobservable. Furthermore, this abstraction drastically reduces both the computational and space complexity of the filter. The filter fuses extracted feature information with other sensors: accelerometer, gyroscope and a downward facing sonar, which in turns allows the quadrotor to localise itself within the environment.
+The localisation scheme used is based on a feature tracking Extended Kalman Filter (EKF). The features tracked are planar surfaces within the environment, which are obtained from depth data of a consumer RGB-D camera.The depth camera of choise is the Asus Xtion Pro as it is considerably lighter than the copeting products, while maintaining a similar price point. Due to the relatively narrow field of view (58$^{\circ}$ horizontal, 45$^{\circ}$ vertical), the floor and the ceiling is expected to often be out of view, resulting in reduced observability in the elevation direction. The depth camera is complemented with a downward facing sonar sensor to address this issue. Planes are tracked as they can represent walls, floors and ceiling, which are abundant in man-made environments, are static and easily reobservable. Furthermore, this abstraction drastically reduces both the computational and space complexity of the filter. The filter fuses extracted feature information with other sensors: accelerometer, gyroscope and a downward facing sonar, which in turns allows the quadrotor to localise itself within the environment.
 
 The job of the EKF is to perform an optimal evaluation of the robot's state given the presence of uncertainties in measurements. The EKF is a non-linear extension of the Kalman filter which is itself a linear quadratic estimator capable of giving optimal values of a measurement in the presence of noise. Its results are more accurate than those obtained from single measurements. The EKF operates iteratively producing optimal values around the current mean and covariance. The other alternative to the EKF is the particle filter. The main difference is that the EKF produces optimal results using an approximate mathematical model while the particle filter produces optimal results based on physical models.
 Based on a comparative study \cite{CompareFilters} on the difference between the two approaches, for Gaussian noise model the Kalman filter will always produce a better result in less computation time.
@@ -224,6 +217,8 @@ The above point cloud is then clustered by a custom Flood Fill algorithm. The al
 The incoming plane data invokes an update iteration in the EKF, which tries to associate measured planes to existing features in its state. The association is based on Mahalanobis distance, which is a measurement used in multi-dimensional statistical analysis for classification of samples.
 
 Additionally, the project produced the necessary mathematical derivations and a partial implementation of feature registration. Registration enables the filter to increase the landmark map with previously unobserved features online. This will allow the quadrotor to solve the full simultaneous localisation and mapping (SLAM) problem and operate in environments without any prior knowledge.
+
+The aircraft configuration of choice is a quadcopter for our demonstration platform, due to its ability to navigate environments with limited space and stability. The latter also helps to reduce the amount of motion blur in the depth camera. Finally, it presents a good opportunity to test Mavrx/UAir's R10 quadcopter platform's reliability and robustness.
 
 
 \section{Preliminaries}
@@ -1350,15 +1345,29 @@ In the second test, we moved the setup by hand in a pseudo straight line of leng
 	\label{fig:moving_trajectory}
 \end{figure}
 
+To test the system, a yaw control loop was built where the system uses the estimated state to control the quad copter's yaw such that the depth camera (and hence frame of the craft) is always pointing towards a set point in the global coordinate system. The system was tested under lab conditions, where 2 intersecting planes were constructed to be used as a features for the system to localise against. Before flight the system was initialised to a known location, with the planes well within the depth camera's field of view. The quad copter was controlled remotely, and flown into a stable position out of ground effect before manually switching control of the yaw component to the automated control loop. So that the system doesn't lose visibility of the planes, the chosen point to track was the corner between the 2 constructed planes and the floor. 
+
+
+With the yaw control loop activated, it is obvious that the craft attempts to correct for yaw. However, the craft is required to be flown at a slow speed with gradual changes in both position and speed. Despite modifying the control loop parameters, rapid movement of the craft while in flight results in the system over compensating for yaw, over rotating the craft and then losing visibility. When visibility of both planes is lost for even a short period of time, the kalman filter relies more heavily upon the inertial sensors which are simply not accurate enough to obtain a good state estimate. Hence, the system ends up predicting an incorrect state, attempts to correct the yaw for this and has to be grounded. 
+
+
+
 \clearpage
 
 \section{Conclusion}
+ 
+The system correctly estimates the indoor state of a small aerial vehicle using an inexpensive and readily available depth camera coupled with an embedded platform. Correct and proper state estimation was achieved using inertial sensors This was achieved The state includes properties such as position, speed, ... 
 
-The project was created with the goal to use inexpensive and available hardware to accurately estimate the state of a . 
+An 
+
+Many unforeseen technical issues were encounted. 
 
 Can accurately detect and ignore noise. The tailored vision algorithms worker particularly well, having very good resilence to noise. 
 
 The next chapter of the research and work performed in this document would be to achieve robust 
+
+
+Due to delay in the hardware connecting the embedded platform to the 
 
 \nocite{*}
 
