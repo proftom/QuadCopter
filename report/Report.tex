@@ -638,6 +638,7 @@ For each measurement, such as a observed plane equation or a sonar altitude read
 This will be two distinct functions for sonar and plane measurement.
 We compute the difference between this expected measurement, and the actual measurement, which we define as $z_k$. We also use the covariance associated with the measurment error $R$ to compute the covariance matrix associated with $z_k$ using a linear approximation of the measurement model $h$ denoted as $H$. This update equations are presented below:
 \begin{align}
+	\label{eqn:measurement_model}
 	z_k &= y_k - h(\hat{x}_{k|k-1}, \mathbb{E}[v_k]) \\
 	S_k &= \operatorname{cov}(z_k) \notag \\
 		&\approx H_k P_{k|k-1} H_k^\top + R_k
@@ -1047,7 +1048,7 @@ By considering the way that the noiseis modelled, and assuming that the process 
 	\right]
 	\Delta T
 \end{align}
-where
+where $\cdot$ represents null entries, and where
 \begin{align}
 	G_{vw_a} &= R_{eb}(q)
 %\end{align}
@@ -1062,7 +1063,7 @@ where
 %	G_{b_a w_{ba}} &= I_{3x3}
 \end{align}
 
-As mentioned above, we use a sparse matrix optimisation that is based on the fact that the plane map features do not move. This tequnique, specific to EKF-SLAM, is developed in detail in \cite{Sola2013}.
+Having derived $F$ and $G$, we can use a sparse matrix optimisation that is based on the fact that the plane map features do not move. This tequnique, specific to EKF-SLAM, is developed in detail in \cite{Sola2013}.
 This means that when calculating equation~(\ref{eqn:predictP}), we can use the sparsity of $F$ to simplify the calculation as follows:
 \begin{align}
 	F_r &= F_{(0-15,0-15)} \notag \\
@@ -1076,7 +1077,7 @@ This means that when calculating equation~(\ref{eqn:predictP}), we can use the s
 \end{align}
 where the parts of P are defined in equation~(\ref{eqn:Pparts}).
 
-We also need to evaluate the error in plane observation and thus we need a function that transforms the plane in our state to the body frame. This is our inverse observation model, h.
+The forward observation model $h$, as required by Equation~(\ref{eqn:measurement_model}), is derived below. This function defines the measurement as a function of the state. That is, using this function we can compute the expected plane measurement given our current state estimate.
 \begin{align}
 	T_h &= 
 	\left[
@@ -1088,8 +1089,10 @@ We also need to evaluate the error in plane observation and thus we need a funct
 	\\
 	h &= T_h \pi
 \end{align}
-We also need to define H, the Jacobian of the h matrix w.r.t the state. The $H$ matrix is only a function of the robot's state and the particular plane observation in question and thus is composed of only two sections, one relating to the state, and one relating to the plane itself. As only the associated plane is relevant, only the part of the H matrix that pertains to this specific plane in the state is populated, and the other entries are set to zero.
+
+We also need to define $H$, the Jacobian of $h$ w.r.t the state. The $H$ matrix is only a function of the robot's state and the particular plane observation in question and thus is composed of only two sections, one relating to the state, and one relating to the plane itself. As only the associated plane is relevant, only the part of the H matrix that pertains to this specific plane in the state is populated, and the other entries are set to zero.
 In the implementation, we take advantage of this sparsity and compute matrix multiplication terms only related to the populated columns, as shown in \cite{Sola2013}.
+For clairity, $H$ is built up using several submatricies as follows:
 \begin{align}
 	\tilde{q} &= 
 	\left[
@@ -1103,7 +1106,6 @@ In the implementation, we take advantage of this sparsity and compute matrix mul
 	&
 	H_{Nq(0\cdots3)} &= \Xi(\tilde{q}) N_p
 \end{align}
-
 \begin{align}
 	H_{Nq} &= 2
 	\left[
@@ -1114,7 +1116,6 @@ In the implementation, we take advantage of this sparsity and compute matrix mul
 	\end{matrix}
 	\right]
 \end{align}
-
 \begin{align}
 	\label{eqn:H}
 	H &=
@@ -1142,19 +1143,17 @@ In the implementation, we take advantage of this sparsity and compute matrix mul
 	\end{matrix}
 	\right]
 \end{align}
+where $\cdots$ represents appropriately sized zero matricies.
 
 % subsection system_model (end)
 
-
 \begin{figure}[tb]
 	\begin{center}
-		\includegraphics[width = \textwidth]{malhala_hist_100bins_10000datapoints_notmoving22}
+		\includegraphics[height = 0.3\textwidth]{malhala_hist_100bins_10000datapoints_notmoving22}
 	\end{center}
 	\caption{Histogram showing the mahalanobis distance from the discovered planes to the reference planes in a stationary test with 10,000 data points.}
 	\label{fig:mahaldisthist}
 \end{figure}
-
-% subsection landmark_association (end)
 
 \subsection{Landmark Initialization} % (fold)
 \label{sub:landmark_initialization}
@@ -1255,6 +1254,8 @@ where
 \label{sub:landmark_association}
 We use the statistic measurement called the mahalanobis distance to evaluate how closely a newly observed plane is related to the ones in the state map. In general the mahalanobis distance is a normalised measure that is used to identify and gauge similarity of an unknown sample to a known data set. Using this measure, we leverage the stochastic properties of our system to reduce modelling inaccuracies as opposed to using Euler distance. We use a distance threshold/ validation date such that 99\% of true measurements are accepted. For our 4 dimensional plane measurement, this evaluates to:
 \verb"d = chi2inv(0.99,4) = 13.2767" which is the MATLAB command for the inverse chi squared distribution with 4 degrees of freedom and evaluated at 0.99. In order to perform association, the procedure is we find the mahalanobis distance between our new observation and all the planes in the map, keeping the minimum. If this minimum is less than the threshold, then the data is associated, if not it is discarded as an outlier.
+
+% subsection landmark_association (end)
 
 \subsection{Optimisation} % (fold)
 \label{sub:optimisation}
