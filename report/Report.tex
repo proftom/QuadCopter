@@ -243,7 +243,7 @@ Additionally, we evaluated the possibility of using consumer grade smartphones a
 \begin{itemize}
 	\item the smartphone market is extremely competitive, driving the prices down while improving the processing power to levels compatible with embedded systems usually seen in robotics applications.
 	\item small form factor, lack of need for additional heatsinks.
-	\item smartphones of all price ranges come with additional hardware and sensors that can be useful for the quadcopter platform. Most devices have 9 degree of freedom (DoF) sensors and USB functionality, making it possible to interface with the RGB-D camera. Additonally, the estimation can be improved by using the phone's camera in a downwards looking configuration as an optical flow sensor \cite{DBLP:conf/icra/GrabeBG12}. GPS can be used in semi-indoor environments and urban canyon situations. Wifi can be used to augment the system with wifi-slam \cite{Wifi-slam} for additional localisation information in indoor environments. Furthermore, GPUs found in smartphones are starting to be OpenCL compatible (e.g. Imagination Technologies' powerVR series and newer ARM Mali cores), which can provide easily accessible acceleration for certain parts of the algorithm.
+	\item smartphones of all price ranges come with additional hardware and sensors that can be useful for the quadcopter platform. Most devices have 9 degree of freedom (DoF) sensors and USB functionality, making it possible to interface with the RGB-D camera. Additionally, the estimation can be improved by using the phone's camera in a downwards looking configuration as an optical flow sensor \cite{DBLP:conf/icra/GrabeBG12}. GPS can be used in semi-indoor environments and urban canyon situations. Wifi can be used to augment the system with wifi-slam \cite{Wifi-slam} for additional localisation information in indoor environments. Furthermore, GPUs found in smartphones are starting to be OpenCL compatible (e.g. Imagination Technologies' powerVR series and newer ARM Mali cores), which can provide easily accessible acceleration for certain parts of the algorithm.
 \end{itemize}
 
 However, in practice it was found that porting third party libraries used in the project and drivers for the RGB-D camera sensor, while possible, needed significant investment of engineering time. Additionally, the android platform enforces restricted APIs to underlying hardware resources, so it is not always possible to get the direct hardware control (e.g. for the intertial measurement unit) usually found in embedded Linux systems.
@@ -263,7 +263,7 @@ Additionally, it is important to note that transforming per-pixel depth data to 
 As mentioned above, the factory calibration of the RGB-D camera's depth sensor is unsatisfactory for the target application. Straight walls as seen by the sensor at distances of more than 2m quickly become warped (see example in Figure~\ref{fig:uncal5m2}). Such depth data quality would make robust feature extraction infeasible at distances of interest.
 
 
-\begin{figure}[H]
+\begin{figure}[htb]
 \centering     %%% not \center
 \includegraphics[width=0.8\textwidth]{uncal5m2.PNG}
 %\subfloat[coloured point cloud]{\label{fig:clouduncal5m}\includegraphics[width=60mm]{wallat6m}}
@@ -503,6 +503,7 @@ The PCA was never implemented as it was found that by increasing the minimum num
 		\label{fig:dbscan_planes}
 		\includegraphics[width=0.4\textwidth]{6normal_boards.png}
 	}
+	\;
 	\subfloat[of a laboratory in xyz space. Each white board is considered a separate cluster. Distant objects coloured in blue.] {
 		\label{fig:table_dbscan}
 		\includegraphics[width=0.4\textwidth]{6table_dbscan.png}
@@ -519,6 +520,7 @@ The PCA was never implemented as it was found that by increasing the minimum num
 		\label{fig:6box_before}
 		\includegraphics[width=0.4\textwidth]{6box_before.PNG}
 	}
+	\;
 	\subfloat[Box after applying DBScan algorithm in normal space]{
 		\label{fig:6box_after}
 		\includegraphics[width=0.4\textwidth]{6box_after.PNG}
@@ -1262,9 +1264,9 @@ This makes an enormous difference in the scalability of the Kalman filter approa
 
 \section{Testing and Results} % (fold)
 \label{sub:testing_kalman}
-In our test setup, we based our coordinate system in a vertex of the room as origin defining the x,y and z coordinates to be along the three wall edges connected to the origin vertex. Our test system consist of Thalamus chip containing the inertial sensors and Xtion Pro taped together. To ensure a functional Kalman filter, full observability of system in the x,y and z axis is needed. Thus we decided to observe three orthogonal planes formed by the wall that meet at the origin. We then initialise our state in the filter to be -2,2,2 in the x,y,z space. In practice however, the initial state will be close to but not exactly the same as in the filter. It is left to the Kalman filter to converge to the real state estimate.
+In our test setup, we based our coordinate system in a vertex of the room as origin defining the x,y and z coordinates to be along the three wall edges connected to the origin vertex. Our test system consists of Mavrx's inertial measurement unit containing the inertial sensors and Xtion Pro taped together. To ensure a functional Kalman filter, full observability of system in the x,y and z axis is needed. Thus we decided to observe three orthogonal planes formed by the wall that meet at the origin. We then initialise our state in the filter to be -2,2,2 in the x,y,z space. In practice however, the initial state will be close to but not exactly the same as in the filter. It is left to the Kalman filter to converge to the real state estimate.
 
-To properly running the Kalman filter, we had to tune the observation covariance parameter since the range of values obtained by using the DBscan algorithm was too low (in the order of $10^{-7}$). A larger value would result in the Kalman relying too much on the inertial sensors while a smaller one means we trust the xtion's output more [Fig:~\ref{fig:trustXtion}]. Feature extraction has considerable random noise due to the random initial seed point for the DBscan algorithm. Thus trusting the camera would result in high frequency noise or fluctuations in state estimate. On the other hand, position estimate from the inertial sensors behave like low pass filtered values as it is obtained by double integrating the acceleration. Thus increasing the Xtion's uncertainty results in a lower frequency in estimate which means the filter is slow to respond. We choose an appropriate value such that our filter behaves within an optimal region based on three test as discussed in \cite{KalmanTuning} . We focus our analysis on position estimate alone because since it depends on speed and attitude change, a good position estimate is sufficient to validate our algorithm implying the other estimates are correct. 
+To properly run the Kalman filter, we had to tune the observation covariance parameter since the range of values obtained by using the DBscan algorithm was too low (in the order of $10^{-7}$). A larger value would result in the Kalman relying too much on the inertial sensors while a smaller one means we trust the depth camera's output more [Fig:~\ref{fig:trustXtion}]. Feature extraction has considerable random noise due to the random initial seed point for the DBscan algorithm. Thus trusting the camera would result in high frequency noise or fluctuations in state estimate. On the other hand, position estimates from the inertial sensors behave like low pass filtered values as it is obtained by double integrating the acceleration. Thus increasing the depth camera's uncertainty results in a lower frequency in estimate which means the filter is slow to respond. We choose an appropriate value such that our filter behaves within an optimal region based on three test as discussed in \cite{KalmanTuning} . We focus our analysis on position estimate alone because since it depends on speed and attitude change, a good position estimate is sufficient to validate our algorithm implying the other estimates are correct. 
 
 First we checked for consistency in the Kalman filter by verifying that most(ideally \textgreater 95\%) of error magnitude in the observation measurements are bounded to $\pm\sqrt{2\sigma}$. [Show results].After increasing the Xtion's uncertainty by a factor of 100, the results suggest that 100 is indeed too small. A factor of 10000 gives better results.
 
