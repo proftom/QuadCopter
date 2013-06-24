@@ -378,8 +378,8 @@ The downside of low pass filtering is illustrated in Figure~\ref{fig:spurious_pl
 \label{sub:density_based_scan}
 
 
-A much referenced and popular algorithm for density based clustering is density based scan (DBScan), having excellent noise immunity. The basic idea is to take an initial point and find all other neighbouring points within a certain neighbourhood or radius (of a distance epsilon). If enough are found (decided by a threshold value $\gamma$), then these neighbouring points are iteratively expanded upon, again checking if the minimum number of neighbouring points ($\gamma$) is sufficient to be considered within the same cluster. Figure~\ref{fig:dbscan} demonstrates a pass of the algorithm starting from a point within region A and clustering outward until the density of connected points becomes to small. Listing~\ref{alg:dbscan} details the full algorithm to find all densely connected regions within an image space. The $\gamma$ threshold was derived empirically, typically having a numerical figure equatable to 10mm.  
-
+One popular algorithm for density based clustering is density based scan (DBScan), which can find arbitrarily shaped clusters, needs no apriori cluster count information and a has a notion of noise. The basic idea is to take an initial point and find all other neighbouring points within a certain neighbourhood (of a distance $\epsilon$). If enough are found (decided by a threshold value $\gamma$), then these neighbouring points are iteratively expanded upon, again checking if the minimum number of neighbouring points ($\gamma$) is sufficient to be considered within the same cluster. Figure~\ref{fig:dbscan} demonstrates a pass of the algorithm starting from a point within region A and clustering outward until the density of connected points becomes too small. Listing~\ref{alg:dbscan} details the full algorithm to find all densely connected regions within an image space.
+%todo: is dbscan explanation sufficient? is "densely connected" understandable from context?
 
 \begin{figure}[bt]
 	\begin{center}
@@ -431,11 +431,9 @@ A much referenced and popular algorithm for density based clustering is density 
 	\label{alg:dbscan}
 \end{algorithm}
 
-To begin, a basic naïve implementation was built which iteratively looped through each point in the cloud, discovering all further points in x, y, z space that are within a certain distance  $(\epsilon)$. This procedure is listed as region query in algorithm~\ref{alg:dbscan}. This was then progressed to performing the region query in normal space, meaning planes with a similar normal equation would appear in the same cluster, shown in Figure~\ref{fig:dbscan_planes}
+This was then progressed to performing the region query in normal space, meaning planes with a similar normal equation would appear in the same cluster, shown in Figure~\ref{fig:dbscan_planes}
 
-
-
-Four parameters are required to uniquely characterize planes $(N_A, N_B, N_C, D)$ so finally the normal space was combined with distance space (z) for the region query criteria conditions. To make things easier, as soon as an RGB-D camera capture becomes available, the data cloud is converted to a plane cloud (a large list containing the 4 plane parameters).
+Four parameters are required to uniquely characterize planes, a convenient representation is the Hessian plane equation with parameters $(N_A, N_B, N_C, D)$  so finally the normal space was combined with distance space (z) for the region query criteria conditions. To make things easier, as soon as an RGB-D camera capture becomes available, the data cloud is converted to a plane cloud (a large list containing the 4 plane parameters).
 
 \subsection{DBScan Optimisations} % (fold)
 \label{sub:dbscan_optimisations}
@@ -638,6 +636,7 @@ For each measurement, such as a observed plane equation or a sonar altitude read
 This will be two distinct functions for sonar and plane measurement.
 We compute the difference between this expected measurement, and the actual measurement, which we define as $z_k$. We also use the covariance associated with the measurment error $R$ to compute the covariance matrix associated with $z_k$ using a linear approximation of the measurement model $h$ denoted as $H$. This update equations are presented below:
 \begin{align}
+	\label{eqn:measurement_model}
 	z_k &= y_k - h(\hat{x}_{k|k-1}, \mathbb{E}[v_k]) \\
 	S_k &= \operatorname{cov}(z_k) \notag \\
 		&\approx H_k P_{k|k-1} H_k^\top + R_k
@@ -1047,7 +1046,7 @@ By considering the way that the noiseis modelled, and assuming that the process 
 	\right]
 	\Delta T
 \end{align}
-where
+where $\cdot$ represents null entries, and where
 \begin{align}
 	G_{vw_a} &= R_{eb}(q)
 %\end{align}
@@ -1062,7 +1061,7 @@ where
 %	G_{b_a w_{ba}} &= I_{3x3}
 \end{align}
 
-As mentioned above, we use a sparse matrix optimisation that is based on the fact that the plane map features do not move. This tequnique, specific to EKF-SLAM, is developed in detail in \cite{Sola2013}.
+Having derived $F$ and $G$, we can use a sparse matrix optimisation that is based on the fact that the plane map features do not move. This tequnique, specific to EKF-SLAM, is developed in detail in \cite{Sola2013}.
 This means that when calculating equation~(\ref{eqn:predictP}), we can use the sparsity of $F$ to simplify the calculation as follows:
 \begin{align}
 	F_r &= F_{(0-15,0-15)} \notag \\
@@ -1076,7 +1075,7 @@ This means that when calculating equation~(\ref{eqn:predictP}), we can use the s
 \end{align}
 where the parts of P are defined in equation~(\ref{eqn:Pparts}).
 
-We also need to evaluate the error in plane observation and thus we need a function that transforms the plane in our state to the body frame. This is our inverse observation model, h.
+The forward observation model $h$, as required by Equation~(\ref{eqn:measurement_model}), is derived below. This function defines the measurement as a function of the state. That is, using this function we can compute the expected plane measurement given our current state estimate.
 \begin{align}
 	T_h &= 
 	\left[
@@ -1088,8 +1087,10 @@ We also need to evaluate the error in plane observation and thus we need a funct
 	\\
 	h &= T_h \pi
 \end{align}
-We also need to define H, the Jacobian of the h matrix w.r.t the state. The $H$ matrix is only a function of the robot's state and the particular plane observation in question and thus is composed of only two sections, one relating to the state, and one relating to the plane itself. As only the associated plane is relevant, only the part of the H matrix that pertains to this specific plane in the state is populated, and the other entries are set to zero.
+
+We also need to define $H$, the Jacobian of $h$ w.r.t the state. The $H$ matrix is only a function of the robot's state and the particular plane observation in question and thus is composed of only two sections, one relating to the state, and one relating to the plane itself. As only the associated plane is relevant, only the part of the H matrix that pertains to this specific plane in the state is populated, and the other entries are set to zero.
 In the implementation, we take advantage of this sparsity and compute matrix multiplication terms only related to the populated columns, as shown in \cite{Sola2013}.
+For clairity, $H$ is built up using several submatricies as follows:
 \begin{align}
 	\tilde{q} &= 
 	\left[
@@ -1103,7 +1104,6 @@ In the implementation, we take advantage of this sparsity and compute matrix mul
 	&
 	H_{Nq(0\cdots3)} &= \Xi(\tilde{q}) N_p
 \end{align}
-
 \begin{align}
 	H_{Nq} &= 2
 	\left[
@@ -1114,7 +1114,6 @@ In the implementation, we take advantage of this sparsity and compute matrix mul
 	\end{matrix}
 	\right]
 \end{align}
-
 \begin{align}
 	\label{eqn:H}
 	H &=
@@ -1142,27 +1141,31 @@ In the implementation, we take advantage of this sparsity and compute matrix mul
 	\end{matrix}
 	\right]
 \end{align}
+where $\cdots$ represents appropriately sized zero matricies.
 
 % subsection system_model (end)
 
-
 \begin{figure}[tb]
 	\begin{center}
-		\includegraphics[width = \textwidth]{malhala_hist_100bins_10000datapoints_notmoving22}
+		\includegraphics[height = 0.3\textwidth]{malhala_hist_100bins_10000datapoints_notmoving22}
 	\end{center}
 	\caption{Histogram showing the mahalanobis distance from the discovered planes to the reference planes in a stationary test with 10,000 data points.}
 	\label{fig:mahaldisthist}
 \end{figure}
 
+\subsection{Landmark Association} % (fold)
+\label{sub:landmark_association}
+We use the statistic measurement called the mahalanobis distance to evaluate how closely a newly observed plane is related to the ones in the state map. In general the mahalanobis distance is a normalised measure that is used to identify and gauge similarity of an unknown sample to a known data set. Using this measure, we leverage the stochastic properties of our system to reduce modelling inaccuracies as opposed to using Euler distance. We use a distance threshold/ validation date such that 99\% of true measurements are accepted. For our 4 dimensional plane measurement, this evaluates to:
+\verb"d = chi2inv(0.99,4) = 13.2767" which is the MATLAB command for the inverse chi squared distribution with 4 degrees of freedom and evaluated at 0.99. In order to perform association, the procedure is we find the mahalanobis distance between our new observation and all the planes in the map, keeping the minimum. If this minimum is less than the threshold, then the data is associated, if not it is discarded as an outlier.
+
 % subsection landmark_association (end)
 
 \subsection{Landmark Initialization} % (fold)
 \label{sub:landmark_initialization}
-
-Cool stuff from \cite{Sola2013}
+The ability to observe new planes as the craft explores its environment is crucial for it to keep track of its location. By re-observing these new features, the craft is able to compute corrections in its location. When the craft sees a new plane, it add this to its internal state transforming the plane equations in the body frame to the world frame and then storing this and its associated covariance information. It uses an inverse observation model, e which describes how we can derive the current state from an observed plane equation y. Mathematically we have,
 
 \begin{align}
-	y_i = 
+	y_{k} = y|_{x(k)} =  
 	\left[
 	\begin{matrix}
 		\hat{N}_x \\
@@ -1182,18 +1185,19 @@ Cool stuff from \cite{Sola2013}
 	\end{matrix}
 	\right]
 \end{align}
+$T_e$ defines the transformation matrix from the body frame to the earth frame. The new plane numbered j is defined below, 
 
 \begin{align}
-	\pi_i	&= e(y_i,x) \notag \\
-			&= T_e y_i
+	\pi_j	&= e(y_k,x) \notag \\
+			&= T_e y_k
 \end{align}
-
+The new state at time k now becomes, 
 \begin{align}
-	x &\leftarrow
+	x_{k} &\leftarrow
 	\left[
 	\begin{matrix}
-		x \\
-		\pi_i
+		x_{k} \\
+		\pi_j
 	\end{matrix}
 	\right]
 \end{align}
@@ -1250,11 +1254,6 @@ where
 \end{align}
 
 % subsection landmark_initialization (end)
-
-\subsection{Landmark Association} % (fold)
-\label{sub:landmark_association}
-We use the statistic measurement called the mahalanobis distance to evaluate how closely a newly observed plane is related to the ones in the state map. In general the mahalanobis distance is a normalised measure that is used to identify and gauge similarity of an unknown sample to a known data set. Using this measure, we leverage the stochastic properties of our system to reduce modelling inaccuracies as opposed to using Euler distance. We use a distance threshold/ validation date such that 99\% of true measurements are accepted. For our 4 dimensional plane measurement, this evaluates to:
-\verb"d = chi2inv(0.99,4) = 13.2767" which is the MATLAB command for the inverse chi squared distribution with 4 degrees of freedom and evaluated at 0.99. In order to perform association, the procedure is we find the mahalanobis distance between our new observation and all the planes in the map, keeping the minimum. If this minimum is less than the threshold, then the data is associated, if not it is discarded as an outlier.
 
 \subsection{Optimisation} % (fold)
 \label{sub:optimisation}
@@ -1379,18 +1378,21 @@ With the yaw control loop activated, it is obvious that the craft attempts to co
 
 
 \section{Conclusion}
- 
-The system correctly estimates the indoor state of a small aerial vehicle using an inexpensive and readily available depth camera coupled with an embedded platform. The state includes information about the quad copter such as position within the global coordinate system, velocity. By using a Kalman filter which combines inertial sensors with a vision landmark map, an accuracy to within 10mm was achieved up to a distance of 4 meters. The vision system performed consistently well with minimal tuning and when paired with the Kalman filter, provided robust state estimation.
+An off the shelf depth camera designed to track body movements (and hence had no need for precise distance measurements) was successfully calibrated using a custom calibration method. After this the point clouds generated gave accurate values and a distortion free image. This was instrumental for the detection of planes to work reliably. 
+
+Selection of an appropriate computing platform was preformed, and showed that support for the ARM application processors and the software tools that we were using was not mature, and implementation was not tenable in the time frame. The final implementation used an x86 mini-itx board, which worked successfully but was sub optimal for weight and for connectivity to custom peripherals (specifically SPI).
+
+A system was developed that correctly estimates the indoor state of a small aerial vehicle using an inexpensive and readily available depth camera coupled with an embedded platform. The state includes information about the quad copter such as position within the global coordinate system, velocity and attitude of the craft (yaw, pitch and roll). By using a Kalman filter which combines inertial sensors with a vision landmark map, an accuracy to within 10mm was achieved up to a distance of 4 meters. The vision system performed consistently well with minimal tuning and when paired with the Kalman filter, provided robust state estimation.
 
 
 REGISTRATION
 
-It has been hypothesised that the reason for the over correction in yaw at higher speeds is due to latency in the communication between the x86 platform and the R10 quad copter flight controller hardware. The flight controller board, which is situated on the quad copter provides basic maneuverability and stability functions, along with housing the inertial sensors.  
+When mounted on an airframe the implementation successfully controled the yaw of the craft successfully, though the response was slow due to over correction. It has been hypothesised that the reason for the over correction in yaw at higher speeds is due to latency in the communication between the x86 platform and the R10 quad copter flight controller hardware. The slow communication was due to having to buffer the communication to the control board as there was not an SPI port available on the x86 board.
 
-The flight controller board only supports quad copter maneuverability control over a SPI bus, while the x86 board, which ran the vision and Kalman filter had no such interface. To enable communication between the two pieces of hardware, a small embedded processor known as an MBed was used. This processor ran a software SPI to USB bridge, allowing the x86 to connect to the flight controller through a USB port. The communication buffers in this bridge, the flight controller and the USB controller of the x86 board would amount to a considerable delay. From observing filmed footage of the craft in flight running the yaw control loop, the estimate for the latency between an the flight controller measuring the inertial sensors and the measurement being available for computation in the Linux environment is about half a second. This figure has not yet been confirmed or fully investigated, but would explain why the system cannot track the corner point at high speeds.
+% The flight controller board only supports quad copter maneuverability control over a SPI bus, while the x86 board, which ran the vision and Kalman filter had no such interface. To enable communication between the two pieces of hardware, a small embedded processor known as an MBed was used. This processor ran a software SPI to USB bridge, allowing the x86 to connect to the flight controller through a USB port. The communication buffers in this bridge, the flight controller and the USB controller of the x86 board would amount to a considerable delay. From observing filmed footage of the craft in flight running the yaw control loop, the estimate for the latency between an the flight controller measuring the inertial sensors and the measurement being available for computation in the Linux environment is about half a second. This figure has not yet been confirmed or fully investigated, but would explain why the system cannot track the corner point at high speeds.
 
 %Ryan would want to look at this
-An immediate solution to this problem is to use a platform with a dedicated SPI bus or install a fast peripheral SPI expansion card. If possible, decreasing the buffer size of both SPI and USB will reduce latency. Additionally, by using an RGB-D camera with a wider field of view should allow the system to maintain vision for longer. Further, using a smaller convolution kernel for normal estimation would allow more of the RGB-D image to be utilised. Another possibility is to use more accurate gyroscopes and accelerometers as when vision is lost, the system would take longer to lose state.   
+% An immediate solution to this problem is to use a platform with a dedicated SPI bus or install a fast peripheral SPI expansion card. If possible, decreasing the buffer size of both SPI and USB will reduce latency. Additionally, by using an RGB-D camera with a wider field of view should allow the system to maintain vision for longer. Further, using a smaller convolution kernel for normal estimation would allow more of the RGB-D image to be utilised. Another possibility is to use more accurate gyroscopes and accelerometers as when vision is lost, the system would take longer to lose state.   
 
 \section{Further Work}
 Although many man hours were spent trying to implement our system on an embedded ARM platform during the course of this project, significant problems surrounding compatibility between PCL and OpenNI (the frame work linking the Xtion depth camera with PCL) . This is currently in version 1.6. Version 2.0 will be released soon and is intended to increase compatibility with arm platforms. This will allow a much lighter setup with more options of development boards with low level outputs, which would also solve some of the latency issues that we had. 
