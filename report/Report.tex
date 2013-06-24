@@ -91,7 +91,8 @@ columns=flexible
 
 
 \title{Third Year Group Project \\ State Estimation for Indoor Environments}
-\author{Oskar Weigl, Ryan Savitski, Thomas Morrison, Chinemelu Ezeh, Joshua Elsdon}
+\author{By Oskar Weigl ID:ow610, Ryan Savitski ID:rs5010, Thomas Morrison ID:tm1810, \\
+		Chinemelu Ezeh ID:cee110, Joshua Elsdon ID:je310}
 \begin{document}
 \maketitle
 \center{\textbf{\large{\emph{"I think we will have it flying by tonight..."}	}}}
@@ -482,9 +483,9 @@ The downsides to the DBScan approach is the computational and space complexities
 
 \subsection{The Flood Fill Algorithm}
 \label{sub:flood_fill_algo}
-As mentioned, the Flood Fill algorithm is analogous to a paint bucket function in a graphical editing package. The algorithm begins by randomly selecting a seed plane from the plane cloud (that is we randomly select a point and corresponding normal from the RGB-D camera sensor output), and proceed to fill out from this seed in all directions until the planes parameters $(N_A, N_B, N_C, D)$ differ by more than a value $\epsilon$ from the original seed plane. This forms a connected region, which represents a plane. Algorithm~\ref{alg:flood_fill} lists how given a seed point, a region fill is generated.
+The flood fill algorithm is analogous to a paint bucket function in a graphical editing package. The algorithm begins by randomly selecting a seed plane from the plane cloud (that is we randomly select a point and corresponding normal from the RGB-D camera sensor output), and proceed to grow a cluster out from this seed in all directions until the local surface plane equation parameters at those points $(N_A, N_B, N_C, D)$ differ by more than a value $\epsilon$ from the original seed. This forms a connected region, which represents a planar patch. Algorithm~\ref{alg:flood_fill} lists how given a seed point, a region fill is peformed.
 
-Once a single fill has terminated and more than a certain threshold of the image has either been filled (call it $\sigma$, i.e. 90\%) then the algorithm terminates. If this threshold has not been satisfied then begin a new fill, selecting a new random seed point from a point that has not been already included in a previous fill region. The algorithm will repeat until $\sigma$ is satisfied or it has attempted to flood fill the plane cloud for more than a certain number of times (call it $\gamma$, i.e. 50). The Flood Fill algorithm works iteratively using only a simple queue structure and list keep track if points have been explored yet in the context of the current fill or already added to a previous fill (plane) respectively, resulting in a linear complexity of $O(n)$. 
+The fill is then performed again, selecting a new random seed point from a point that has not been already included in a previous fill region. The algorithm will repeat until a certain portion of the image is filled (called $\sigma$) or there have been more than $\gamma$ seed points tried on the frame. The flood fill algorithm works iteratively with a linear complexity of $O(n)$. 
 
 
 \subsection{Complications and Caveats in Segmentation} % (fold)
