@@ -556,12 +556,12 @@ The PCA was never implemented as it was found that by increasing the minimum num
 \section{Extended Kalman Filter} % (fold)
 \label{sec:ekf}
 
-To estimate the state of the system we employ the EKF which is the non-linear version of the regular Kalman Filter: the optimal state estimation filter for linear systems \cite{todo} with Gaussian noise.
-When supplied with an accurate system model, and its statistical properties, the Kalman Filter provides the state estimate with the minimum mean-squared error \cite{todo}.
+To estimate the state of the system we employ the EKF which is the non-linear version of the regular Kalman Filter: the optimal state estimation filter for linear systems \cite{Stengel} with Gaussian noise.
+When supplied with an accurate system model, and its statistical properties, the Kalman Filter provides the state estimate with the minimum mean-squared error \cite{oxford}.
 The extended version of the filter provides a near-optimal estimate of the system's state by linearising it around the current state estimate.
 The reason why we need the non-linear version of the filter is due to the fact that the model includes rotations, which are non-linear in nature.
 Furthermore, as our system has very many sources of noise for each modelled noise variable, we can assume from the central limit theorem that the noise is approximately Gaussian.
-In practice, the assumption of approximately Gaussian noise works well in practice, and is used in many navigation applications \cite{todo}.
+In practice, the assumption of approximately Gaussian noise works well in practice, and is used in many navigation applications \cite{Stengel}.
 
 % We use a kalman filter... the optimal state estimator
 % non linear due to rotations -- ekf
