@@ -1345,7 +1345,7 @@ In the second test, we moved the setup by hand in a pseudo straight line of leng
 	\label{fig:moving_trajectory}
 \end{figure}
 
-To test the system, a yaw control loop was built where the system uses the estimated state to control the quad copter's yaw such that the depth camera (and hence frame of the craft) is always pointing towards a set point in the global coordinate system. The system was tested under lab conditions, where 2 intersecting planes were constructed to be used as a features for the system to localise against. Before flight the system was initialised to a known location, with the planes well within the depth camera's field of view. The quad copter was controlled remotely, and flown into a stable position out of ground effect before manually switching control of the yaw component to the automated control loop. So that the system doesn't lose visibility of the planes, the chosen point to track was the corner between the 2 constructed planes and the floor. 
+To test the system, a yaw control loop was built where the system uses the estimated state to control the quad copter's yaw such that the depth camera (and hence frame of the craft) is always pointing towards a set point in the global coordinate system. The system was tested under lab conditions, where two intersecting planes were constructed to be used as a features for the system to localise against. Before flight the system was initialised to a known location, with the planes well within the depth camera's field of view. The quad copter was controlled remotely, and flown into a stable position out of ground effect before manually switching control of the yaw component to the automated control loop. So that the system doesn't lose visibility of the planes, the chosen point to track was the corner between the two constructed planes and the floor. 
 
 
 %sentences 2 and 3 could be redundant
@@ -1357,27 +1357,24 @@ With the yaw control loop activated, it is obvious that the craft attempts to co
 
 \section{Conclusion}
  
-The system correctly estimates the indoor state of a small aerial vehicle using an inexpensive and readily available depth camera coupled with an embedded platform. Correct and proper state estimation was achieved using inertial sensors This was achieved The state includes properties such as position, speed, ... 
-When running the system on bench (RGB-D camera with the IMU sensor board) performs well, with a strong resilience to noise.
+The system correctly estimates the indoor state of a small aerial vehicle using an inexpensive and readily available depth camera coupled with an embedded platform. The state includes information about the quad copter such as position within the global coordinate system, velocity. By using a Kalman filter which combines inertial sensors and vision landmarks, an accuracy to within 10mm was achieved up to a distance of 4 meters. The Kalman filter showed strong resilience to noise ........
 
+REGISTRATION
 
-It has been hypothesized that the reason for the over correction in yaw at higher speeds is due to the hardware communication delay between the embedded platform and the R10 quad copter flight controller. The flight controller only supported control over a SPI bus, while the x86 board which ran the vision and Kalman filter had no such interface. To enabled communication between the hardware, a small embedded processor known as an MBed was used. This processor ran a software SPI to USB bridge, allowing the x86 to connect to the flight controller through a USB port. This bridge combined with a USB . 
-The total delay or latency between the x86 and 
+It has been hypothesized that the reason for the over correction in yaw at higher speeds is due to latency in the communication between the x86 platform and the R10 quad copter flight controller hardware. The flight controller board, which is situated on the quad copter provides basic maneuverability and stability functions, along with the inertial sensors.  
 
-Solutions to this problem are 
+The flight controller only supports quad copter maneuverability control over a SPI bus, while the x86 board, which ran the vision and Kalman filter had no such interface. To enable communication between the two pieces of hardware, a small embedded processor known as an MBed was used. This processor ran a software SPI to USB bridge, allowing the x86 to connect to the flight controller through a USB port. The communication buffers in this bridge, the flight controller and the USB controller of the x86 board would amount to a considerable delay. From observing filmed footage of the craft in flight running the yaw control loop, the estimate for the latency between an the flight controller measuring the IMU sensors and the measurement being available for computation in the Linux environment is about half a second. This figure has not yet been confirmed or fully investigated, but would explain why the system cannot track the corner point at high speeds.
 
-
-It is believed that the delay modifications to the firmware were required 
-is not an inherent property of the algorithms used, but rather the 
-
-
+Solutions to this problem are to use a platform with an dedicate SPI bus. Is possible, decreasing the buffer size..
 
 Can accurately detect and ignore noise. The tailored vision algorithms worker particularly well, having very good resilience to noise. 
 
-The next chapter of the research and work performed in this document would be to achieve robust 
-
+ 
 
 Due to delay in the hardware connecting the embedded platform to the 
+
+\section{Further Work}
+The next chapter of work performed in this document would be to achieve robust registration engine some shit like that or something
 
 \nocite{*}
 
