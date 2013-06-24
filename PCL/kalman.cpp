@@ -27,7 +27,7 @@ typedef Matrix< float , 16 , 1> Vector16f;
 #define STATENUM 16
 #define Sampling_Time 0.01	// unit is seconds.
 //#define distThreshold 5000
-int distThreshold = 35;
+int distThreshold = 4500;
 #define startupConvergeTimesteps 1000
 //#define XtionCovarFudge 100
 int XtionCovarFudge = 10000;
@@ -150,7 +150,9 @@ int kalman(QCVision& vision) {
 			vision.m_mutexLockPlanes.unlock();
 			processObservation(true); //timeSteps > startupConvergeTimesteps);
 			Vector3f currpos = state.segment(0,3);
-			cout << "state at time t = " << timeSteps << endl<< currpos(0) << " " << currpos(1) << " " << currpos(2) << endl<<endl;
+			cout.flush();
+			printf("\r");
+			cout << "t: " << timeSteps << " " << currpos(0) << " " << currpos(1) << " " << currpos(2) << " "; // << endl<<endl;
 			//cout << "numplanes: " << landmarks.size() << endl;
 
 		} else {
@@ -182,8 +184,8 @@ void initialisation () { //Incomplete.
 	planeCloud_t << 0,1,0,0;
 	landmarks.push_back(planeCloud_t);
 	//planeCloud_t << 0,0,1,0;
-	//planeCloud_t << 0,0,-1,0;
-	//landmarks.push_back(planeCloud_t);
+	planeCloud_t << 0,0,-1,0;
+	landmarks.push_back(planeCloud_t);
 
 	//initialise landmarks and P
 	Matrix3f block1 = Matrix3f::Identity();
@@ -239,10 +241,30 @@ void state_prediction () {
 	xdelta(1) = state(4);
 	xdelta(2) = state(5);
 
+	/*
+	//limit acc impulse which may be unbounded due to comms errors
+	float accLimParts[3];
+	for (int i = 0; i < 2; ++i)
+	{
+		accLimParts[i] = min(max(acc(i), -10.0f), 10.0f);
+	}
+	accLimParts[2] = min(max(acc(2), -10.0f - 9.816f), 10.0f - 9.816f);
+	Vector3f accLim(accLimParts[0], accLimParts[1], accLimParts[2]);
+	*/
+
 	//Velocity
 	//initialize the DCM using quaternions from state.
 	xdelta.segment(3,3) << DCM.transpose() *  acc;
 	xdelta(5) += 9.816;
+
+	/*
+	float gyroLimParts[3];
+	for (int i = 0; i < 3; ++i)
+	{
+		gyroLimParts[i] = min(max(gyro(i), -10.0f), 10.0f);
+	}
+	Vector3f gyroLim(gyroLimParts[0], gyroLimParts[1], gyroLimParts[2]);
+	*/
 
 	//Quaternions
 	/*
@@ -418,7 +440,9 @@ MatrixXf H_fn(int planeId) {
 association_struct dataAssociation(const planeStruct& planeData) {
 
 	Matrix4f transPlane;
-	transPlane << DCM, Vector3f::Zero(), state.segment(0,3).transpose(), 1;
+	float xtionXdisplace = 0.15;
+	Vector3f xtionTotalDisplace = state.segment(0,3) + xtionXdisplace * DCM.transpose().col(0);
+	transPlane << DCM, Vector3f::Zero(), xtionTotalDisplace.transpose(), 1;
 
 	Vector4f inP(planeData.plane);
 	Matrix4f inC(planeData.cov);
@@ -436,6 +460,13 @@ association_struct dataAssociation(const planeStruct& planeData) {
 		S = H * P * H.transpose() + inC;
 		diff = inP - transPlane*landmarks[index];
 		dist = diff.transpose() *  S.inverse() * diff;
+
+		//cout << "dist " << dist << endl;
+
+		if (dist < 0)
+		{
+			dist = -dist;//2e45;
+		}
 		//cout << "dist " << endl << dist << endl << endl;
 
 		if ((first == true) || (dist < data.distance)) {
@@ -488,6 +519,7 @@ void update(const association_struct& data) {
 
 	//P -= kalmanGain * S * kalmanGain.transpose();
 	P = (Matrix<float, 16, 16>::Identity() - kalmanGain * H_opt) * P;
+
 	//writeErrorToFile(diff, S);
 //	cout << "change " << change << endl << endl;
 //	cout << "P: " << P << endl << endl;
@@ -507,11 +539,18 @@ void writeErrorToFile(const Vector4f& error, const Matrix4f& errCov) {
 void updateSonar(){
 	float y = sonarAlt - state(2);
 	float s = P(2,2) + sonarVariance;
-	VectorXf K = P.col(2) / s;
-	state += K*y;
-	//P -= K*s*K.transpose();
-	P -= K*P.row(2);
+
 	newsonar = false;
+
+	if (false)//y*y > 9*s)
+	{
+		cout << "-------------------------------------------------SONAR REJECT" << endl;
+	} else {
+		VectorXf K = P.col(2) / s;
+		state += K*y;
+		//P -= K*s*K.transpose();
+		P -= K*P.row(2);
+	}
 }
 
 
@@ -599,7 +638,7 @@ struct bridge_sensor_packet_t
     float sonar_data;
 };
 
-
+#pragma pack(1)
 struct host_attitude_packet_t
 {
     char sync_byte;
@@ -607,6 +646,8 @@ struct host_attitude_packet_t
     float pitch;
     float roll;
 };
+
+#pragma pack()
 
 bool getNewMeasurementThalamus(){
 	int SPba = SP.BytesAvailable();
@@ -668,16 +709,39 @@ void controlCraft(){
 
 	//Pitch Roll section
 
-	const float P = 0.0072;
+	//2s response mod
+	// const float P = 0.02;
+	// const float I = 6.26e-5;
+	// const float D = 0.1;
+
+
+	//2s response mod
+	const float P = 0.014;
 	const float I = 6.26e-5;
 	const float D = 0.2;
 
-	Vector2f horizSetpoint(-1,3);
+	//1s resp
+	//const float P = 0.029;
+	//const float I = 0.00051;
+	//const float D = 0.41;
+
+	//4s resp
+	// const float P = 0.0018;
+	// const float I = 8.16e-6;
+	// const float D = 0.1;
+
+
+	Vector2f horizSetpoint(-1.96, 1.85);
 	Vector2f currPos(state.segment<2>(0));
 	Vector2f posErr = horizSetpoint - currPos;
 
 	Vector2f setpointVel(0,0);
-	Vector2f currVel(state.segment<2>(3));
+	//Vector2f currVel(state.segment<2>(3));
+
+	static Vector2f lastPos = currPos;
+	Vector2f currVel = (currPos - lastPos)/Sampling_Time;
+	lastPos = currPos;
+
 	Vector2f velErr = setpointVel - currVel;
 
 	//rotate the error into the crafts frame, then project only the x and y axies onto the horizontal plane
@@ -693,14 +757,14 @@ void controlCraft(){
 	Vector2f velErrBody = DCM2D * velErr;
 
 	static Vector2f bias(0,0);
-	bias += I * posErrBody * Sampling_Time;
+	//bias += I * posErrBody * Sampling_Time;
 
 	Vector2f attitudeXY = P*posErrBody + bias + D*velErrBody;
 
 
 	//yaw section
 
-	const float Pyaw = 3.5;
+	const float Pyaw = 1.0;
 	const float Iyaw = 0.2;
 
 	float setpointYawAngle = atan2(-currPos(1), -currPos(0));
@@ -712,7 +776,7 @@ void controlCraft(){
 	while (YawAngleErr < -PI) YawAngleErr += TWO_PI;
 
 	static float yawbias = 0;
-	yawbias += Iyaw * YawAngleErr * Sampling_Time;
+	//yawbias += Iyaw * YawAngleErr * Sampling_Time;
 
 	float yawrate = Pyaw * YawAngleErr + yawbias;
 
@@ -721,18 +785,21 @@ void controlCraft(){
 	
 	host_attitude_packet_t outpacket;
 	outpacket.sync_byte = 0xbe;
-	outpacket.roll = attitudeXY(1);
-	outpacket.pitch = -attitudeXY(0);
-	outpacket.yaw_rate = yawrate;
+	outpacket.roll = min(max(attitudeXY(1), -0.1f), 0.1f);
+	outpacket.pitch = min(max(-attitudeXY(0), -0.1f), 0.1f);
+	outpacket.yaw_rate = min(max(yawrate/400, -1.0f/400.0f), 1.0f/400.0f);
 
-	/*
+	//cout << "sizeof attitude " << sizeof(outpacket) << endl;
+	//while(1);
+	
 	static int seq = 1;
 	if(!--seq){
 		seq = 32;
-		cout << "Setpointyaw: " << setpointYawAngle << "  currYawAngle: " << currYawAngle << endl << endl;
-		cout << "---------------------------------------------------------Control: " << outpacket.roll  << "  " << outpacket.pitch << "  " << outpacket.yaw_rate << endl << endl;
+		//cout << "Setpointyaw: " << setpointYawAngle << "  currYawAngle: " << currYawAngle << endl << endl;
+		printf("\r\nC: p %1.3f r %1.3f y %1.3f\r\n\r\n", outpacket.pitch, outpacket.roll, outpacket.yaw_rate);
+		//cout << endl << "C: p " << outpacket.pitch  << " r " << outpacket.roll << " y " << outpacket.yaw_rate << endl << endl;
 	}
-	*/
+	
 
 	SP.WriteData((char*)&outpacket, sizeof(outpacket));
 
