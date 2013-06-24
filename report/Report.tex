@@ -669,9 +669,7 @@ which is the gain that yields the MMSE estimates when used \cite{BerkelyCourse}.
 		\includegraphics[width=0.8\textwidth]{coordinatesystem.png}
 	\end{center}
 	\caption{Coordinate system and plane equation representations. The craft is depicted as a circle in the bottom centre of the diagram. The position of the craft is represented using the position vector $r$ in the world coordinate system, and the local coordinate axes in the body frame are depicted on the craft.
-	A plane is represented by its normal vector, $N$ and its distance from the origin, $D$, in the world coordinate system. When observed by the craft, the plane is seen as the normal vector in the body coordinate system and the distance $D'$. It is clear from the figure that the difference between $D$ and $D'$ is the projection of $r$ along $N$.}
-	\label{fig:coordinatesystem}
-\end{figure}
+	A plane is represented by its normal vector, $N$ and its distance from the origin, $D$, in the world coordinate system. When observed by the craft, the plane is seen as the normal vector in the body coordinate system and the distance $D'$. It is clear from the figure that the difference between $D$ and $D'$ is the projection of $r$ along $N$.} \label{fig:coordinatesystem} \end{figure}
 
 In order to evaluate the equations from the previous section, we need to establish a model of the system. The state vector is segmented into two parts, the robot state and the map state. Each consists of several components, as listed below:
 \begin{align}
@@ -714,13 +712,13 @@ In order to evaluate the equations from the previous section, we need to establi
 	\right]
 \end{align}
 
-where $x_r$ represents the state of the craft, $x_m$ represents the state of the feature map, $r$ is the position of the craft in the inertial frame, $v$ is the velocity in the inertial frame, $q$ is the quaternion that represents the attitude of the craft: a rotation from the inertial frame to the body frame, $b_\omega$ and $b_a$ represent the gyro and accelerometer bias, respectively. $\pi_0 \hdots \pi_{n-1}$ are the equations of the planes currently stored in the map. The axes conventions are: $x$ points along North, $y$ along East, and $z$ points down. Angular rates are defined as right hand rotations along each of these axies, and the following quaternion convention:
+where $x_r$ represents the state of the craft, $x_m$ represents the state of the feature map, $r$ is the position of the craft in the inertial frame, $v$ is the velocity in the inertial frame, $q$ is the quaternion that represents the attitude of the craft: a rotation from the inertial frame to the body frame, $b_\omega$ and $b_a$ represent the gyro and accelerometer bias, respectively. $\pi_0 \hdots \pi_{n-1}$ are the equations of the planes currently stored in the map. The axes conventions are: $x$ points along North, $y$ along East, and $z$ points down. Angular rates are defined as right hand rotations along each of these axes, and the following quaternion convention:
 \begin{align}
 	\label{eqn:quaternion_components}
 	q = q_0 + q_1i + q_2j + q_3k
 \end{align}
 
-We segment the $P$ matrix into blocks consisting of submatricies to do with either the robot or to do with the map, or to do with the cross-covariance of the two. We can extend this subdivision so that it considers each plane separately, as suggested by \cite{Sola2013}.
+We segment the $P$ matrix into blocks consisting of sub-matrices to do with either the robot or to do with the map, or to do with the cross-covariance of the two. We can extend this subdivision so that it considers each plane separately, as suggested by \cite{Sola2013}.
 This will be useful when computing Equation~(\ref{eqn:H}).
 \begin{align}
 	P &=
@@ -833,10 +831,10 @@ Defining the model further, we have that
 \end{align}
 where $a_m$ and $\omega_m$ are the measured accelerations and angular velocities in the body frame, respectively, and $g_b$ is the acceleration due to gravity in the body frame.
 
-Defined in Equation~(\ref{eqn:proc_noise_def}) is the process noise vector. The first two components are comprised of the additive noise in the measurement obtained from the gyro and accelerometer, respectively. This noise is modelled by simply measuring several minutes of output from the sensors and using the sample covariance matrix as the covariance that describes this additive nosie.
+Defined in Equation~(\ref{eqn:proc_noise_def}) is the process noise vector. The first two components are comprised of the additive noise in the measurement obtained from the gyro and accelerometer, respectively. This noise is modelled by simply measuring several minutes of output from the sensors and using the sample covariance matrix as the covariance that describes this additive noise.
 
-The inertial sensors have an undefined zero-bias point. This means that the measurements have a bias that varies between chips, and over different temperatures and supply voltages. This semi-random variation of the bias point is modelled as a random walk. That is, we model this variation as a bias state that is pertrubed by an additive noise term.
-To measure this term, we computed the descrete time derivative of the output of the sensor during the same stationary test, and low-pass filtered the result. The time constant of the low pass filter, 5 seconds, was selected heuristically to represent a probable timebase over which temparature variations would start to play a significant role. The sample covariance matrix of the resultant metric is used to characterise the bias drift random varianble.
+The inertial sensors have an undefined zero-bias point. This means that the measurements have a bias that varies between chips, and over different temperatures and supply voltages. This semi-random variation of the bias point is modelled as a random walk. That is, we model this variation as a bias state that is perturbed by an additive noise term.
+To measure this term, we computed the discrete time derivative of the output of the sensor during the same stationary test, and low-pass filtered the result. The time constant of the low pass filter, 5 seconds, was selected heuristically to represent a probable timebase over which temperature variations would start to play a significant role. The sample covariance matrix of the resultant metric is used to characterise the bias drift random variable.
 \begin{align}
 	\label{eqn:proc_noise_def}
 	w &= 
