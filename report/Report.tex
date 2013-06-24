@@ -1298,7 +1298,7 @@ This makes an enormous difference in the scalability of the kalman filter approa
 \label{sub:testing_kalman}
 In our test setup, we based our coordinate system in a vertex of the room as origin defining the x,y and z coordinates to be along the three wall edges connected to the origin vertex. Our test system consist of Thalamus chip containing the inertial sensors and Xtion Pro taped together. To ensure a functional kalman filter, full observability of system in the x,y and z axis is needed. Thus we decided to observe three orthogonal planes formed by the wall that meet at the origin. We then initialise our state in the filter to be -2,2,2 in the x,y,z space. In practice however, the initial state will be close to but not exactly the same as in the filter. It is left to the kalman filter to converge to the real state estimate.
 
-To properly running the kalman filter, we had to tune the observation covariance parameter since the range of values obtained by using the DBscan algorithm was too low (in the order of $10^{-7}$). A larger value would result in the kalman relying too much on the inertial sensors while a smaller one means we trust the xtion's output more [Fig:~\ref{fig:trustXtion}]. Feature extraction has considerable random noise due to the random initial seed point for the DBscan algorithm. Thus trusting the camera would result in high frequency noise or fluctuations in state estimate. On the other hand, position estimate from the inertial sensors behave like low pass filtered values as it is obtained by double integrating the acceleration. Thus increasing the Xtion's uncertainty results in a lower frequency in estimate which means the filter is slow to respond. We choose an appropriate value such that our filter behaves within an optimal region based on three test as discussed in \cite{KalmanTuning} . We focus our analysis on position estimate alone because since it depends on speed and attitude change, a good position estimate is sufficient to validate our algorithm implying the other estimates are correct. 
+To ensure a properly running the kalman filter, we had to tune the observation covariance parameter since the range of values obtained by using our custom feature extraction algorithm was too low (in the order of $10^{-7}$). A larger value would result in the kalman relying too much on the inertial sensors while a smaller one means we trust the xtion's output more [Fig:~\ref{fig:trustXtion}]. Feature extraction has considerable random noise due to the random initial seed point for the custom floodfill algorithm. Thus trusting the camera would result in high frequency noise or fluctuations in state estimate. On the other hand, position estimate from the inertial sensors behave like low pass filtered values as it is obtained by double integrating the acceleration. Thus trusting the inertial sensors more by increasing the Xtion's uncertainty results in a lower frequency in estimation. We choose an appropriate value such that our filter behaves within an optimal region based on three test as discussed in \cite{KalmanTuning} . We focus our analysis on position estimate alone because since it depends on speed and attitude change, a good position estimate is sufficient to validate our algorithm implying the other estimates are correct. 
 
 First we checked for consistency in the kalman filter by verifying that most(ideally \textgreater 95\%) of error magnitude in the observation measurements are bounded to $\pm\sqrt{2\sigma}$. [Show results].After increasing the Xtion's uncertainty by a factor of 100, the results suggest that 100 is indeed too small. A factor of 10000 gives better results.
 
@@ -1318,7 +1318,7 @@ Variable & Case\#1 (factor = 100) & Case\#2 (factor = 10000)  \\ [0.5ex] % inser
 \end{tabular}
 \label{table:firstTest} % is used to refer this table in the text
 \end{table}
-In the second test, we check that the innovation is not biased by computing the normalised innovation squared
+In the second check, we check that the innovation is not biased by computing the normalised innovation squared
 \begin{equation}
 	q_{k} = z_{k}^{T} S_(k)^{-1} z_{k}
 \end{equation}
@@ -1332,7 +1332,7 @@ P(N\bar{q}\in [r_{1}, r_{2}] | H_{0}) = 1 - \alpha
 \end{equation}
 We choose $\alpha$ = 0.005 (i.e. defining a two sided 95\% confidence region). We get that
 [$r_{1}, r_{2}$] = [$\chi_{4}(0.025), \chi_{4}(0.975)$] = 0.4844, 11.1433. For a factor of 10000 , we obtain $\bar{q}$ = 3.6561 which is within the confidence region.
-In the third test, we verify that error is white and to do this, we performed the autocorrelation of the noise using our obtained Xtion factor of 10000. Ideally for whiteness, autocorrelation peaks at a lag of 0 and is essentially zero for all others. For large enough N, we can assume that r($\tau$) is normally distributed with mean 0 and variance $\frac{1}{N}$. Practically, we can compute the $\pm$ 2$\sigma$ gate and check that aleast 95\% of values fall within this confidence region. In our test, we obtained that percentage of innovation in Nx,Ny and Nz that satisfy are the condition are 98.40$\%$, 97.81\%, 98.35\%, respectively. Error in distance however gives 93.14\%. 
+In the third check, we verify that error is white and thus uncorrelated with its past values. To do this, we performed the autocorrelation of the noise using our obtained Xtion factor of 10000. Ideally for whiteness, autocorrelation peaks at a lag of 0 and is essentially zero for all others. For large enough N, we can assume that r($\tau$) is normally distributed with mean 0 and variance $\frac{1}{N}$. Practically, we can compute the $\pm$ 2$\sigma$ gate and check that aleast 95\% of values fall within this confidence region. In our test, we obtained that percentage of innovation in Nx,Ny and Nz that satisfy are the condition are 98.40$\%$, 97.81\%, 98.35\%, respectively. Error in distance however gives 93.14\%. 
 \begin{figure}[H]
 	\centering     %%% not \center
 	\subfloat[Nx error]{
@@ -1360,7 +1360,7 @@ In the third test, we verify that error is white and to do this, we performed th
 \end{figure}
 
 
-In order to verify that our system works with the kalman tuning, we ran it from our default initial position leaving it stationary. Below is the trajectory results. It shows a point cloud indicating that our kalman filter does indeed converge to some estimate of our real position fluctuating by only millimetres. This  somewhat accurate result is due to the full observability provided by the three orthogonal planes lying in the xy, yz, zx spaces.
+In order to verify that our system works with the kalman tuning, we ran it from our default initial position leaving it stationary. Below is the trajectory results. It shows a point cloud indicating that our kalman filter does indeed converge to some estimate of our real position fluctuating by only millimetres. This somewhat accurate result is due to the full observability provided by the three orthogonal planes lying in the xy, yz, zx spaces.
 
 \begin{figure}[H]
 	\begin{center}
