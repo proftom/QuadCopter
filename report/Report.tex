@@ -516,23 +516,7 @@ The PCA was never implemented as it was found that by increasing the minimum num
 
 
 
-\begin{figure}[p]
-	\centering
-	\subfloat[ in normal space. A total of 4 planes were found:, the floor, the white boards and two back walls] 
-	{
-		\label{fig:dbscan_planes}
-		\includegraphics[width=0.4\textwidth]{6normal_boards.png}
-	}
-	\;
-	\subfloat[of a laboratory in xyz space. Each white board is considered a separate cluster. Distant objects coloured in blue.] {
-		\label{fig:table_dbscan}
-		\includegraphics[width=0.4\textwidth]{6table_dbscan.png}
 
-	}
-	\caption{Images}
-	\label{fig:DBSCAN_LAB}
-
-\end{figure}
 
 \begin{figure}[p]
 	\centering     %%% not \center
@@ -550,7 +534,23 @@ The PCA was never implemented as it was found that by increasing the minimum num
 	\label{fig:box_normal_clustering}
 \end{figure}
 
+\begin{figure}[p]
+	\centering
+	\subfloat[Result of Flood Fill, $\epsilon=0.2, \gamma=50, \sigma=0.8$] 
+	{
+		\label{fig:dbscan_planes}
+		\includegraphics[width=0.4\textwidth]{floodFill.png}
+	}
+	\;
+	\subfloat[of a laboratory in xyz space. Each white board is considered a separate cluster. Distant objects coloured in blue.] {
+		\label{fig:table_dbscan}
+		\includegraphics[width=0.4\textwidth]{6table_dbscan.png}
 
+	}
+	\caption{Images}
+	\label{fig:DBSCAN_LAB}
+
+\end{figure}
 
 
 \clearpage
@@ -1393,7 +1393,7 @@ The flight controller board only supports quad copter maneuverability control ov
 An immediate solution to this problem is to use a platform with a dedicated SPI bus or install a fast peripheral SPI expansion card. If possible, decreasing the buffer size of both SPI and USB will reduce latency. Additionally, by using an RGB-D camera with a wider field of view should allow the system to maintain vision for longer. Further, using a smaller convolution kernel for normal estimation would allow more of the RGB-D image to be utilised. Another possibility is to use more accurate gyroscopes and accelerometers as when vision is lost, the system would take longer to lose state.   
 
 \section{Further Work}
-Although much work was done on trying to implement our system on an ARM application processor during the course of this project, significant problems surrounding compatibility with OpenNI (the frame work linking the Xtion depth camera with PCL). This is currently in version 1.6. Version 2.0 will be released soon and is intended to increase compatibility with arm platforms. This will allow a much lighter setup with more options of development boards with low level outputs, which would also solve some of the latency issues that we had. 
+Although many man hours were spent trying to implement our system on an embedded ARM platform during the course of this project, significant problems surrounding compatibility between PCL and OpenNI (the frame work linking the Xtion depth camera with PCL) . This is currently in version 1.6. Version 2.0 will be released soon and is intended to increase compatibility with arm platforms. This will allow a much lighter setup with more options of development boards with low level outputs, which would also solve some of the latency issues that we had. 
 
 The algorithms described in this document would work much better if the inertial sensors were of high quality, as at the moment their noise causes the state estimate to diverge soon after observability of the planes is lost. Implementations utilising high quality sensors would yield more interesting results, as they could lose sight of previously registered planes and register new ones with an acceptable variance in their location to make full SLAM a possibility. 
 
