@@ -243,7 +243,7 @@ Additionally, we evaluated the possibility of using consumer grade smartphones a
 \begin{itemize}
 	\item the smartphone market is extremely competitive, driving the prices down while improving the processing power to levels compatible with embedded systems usually seen in robotics applications.
 	\item small form factor, lack of need for additional heatsinks.
-	\item smartphones of all price ranges come with additional hardware and sensors that can be useful for the quadcopter platform. Most devices have 9 degree of freedom (DoF) sensors and USB functionality, making it possible to interface with the RGB-D camera. Additonally, the estimation can be improved by using the phone's camera in a downwards looking configuration as an optical flow sensor \cite{DBLP:conf/icra/GrabeBG12}. GPS can be used in semi-indoor environments and urban canyon situations. Wifi can be used to augment the system with wifi-slam \cite{Wifi-slam} for additional localisation information in indoor environments. Furthermore, GPUs found in smartphones are starting to be OpenCL compatible (e.g. Imagination Technologies' powerVR series and newer ARM Mali cores), which can provide easily accessible acceleration for certain parts of the algorithm.
+	\item smartphones of all price ranges come with additional hardware and sensors that can be useful for the quadcopter platform. Most devices have 9 degree of freedom (DoF) sensors and USB functionality, making it possible to interface with the RGB-D camera. Additionally, the estimation can be improved by using the phone's camera in a downwards looking configuration as an optical flow sensor \cite{DBLP:conf/icra/GrabeBG12}. GPS can be used in semi-indoor environments and urban canyon situations. Wifi can be used to augment the system with wifi-slam \cite{Wifi-slam} for additional localisation information in indoor environments. Furthermore, GPUs found in smartphones are starting to be OpenCL compatible (e.g. Imagination Technologies' powerVR series and newer ARM Mali cores), which can provide easily accessible acceleration for certain parts of the algorithm.
 \end{itemize}
 
 However, in practice it was found that porting third party libraries used in the project and drivers for the RGB-D camera sensor, while possible, needed significant investment of engineering time. Additionally, the android platform enforces restricted APIs to underlying hardware resources, so it is not always possible to get the direct hardware control (e.g. for the intertial measurement unit) usually found in embedded Linux systems.
@@ -263,7 +263,7 @@ Additionally, it is important to note that transforming per-pixel depth data to 
 As mentioned above, the factory calibration of the RGB-D camera's depth sensor is unsatisfactory for the target application. Straight walls as seen by the sensor at distances of more than 2m quickly become warped (see example in Figure~\ref{fig:uncal5m2}). Such depth data quality would make robust feature extraction infeasible at distances of interest.
 
 
-\begin{figure}[H]
+\begin{figure}[htb]
 \centering     %%% not \center
 \includegraphics[width=0.8\textwidth]{uncal5m2.PNG}
 %\subfloat[coloured point cloud]{\label{fig:clouduncal5m}\includegraphics[width=60mm]{wallat6m}}
@@ -350,11 +350,29 @@ In order to avoid large computation times on the embedded device it is important
 
 The feature extraction pipeline aims to identify and classify planar surfaces within the data coming from a forward facing depth camera, the reasoning for extracting planes is given in section \ref{sub:implementation_overview}. The input data is depth values for 160x120 pixel frames at 30 fps, which is turned into a point cloud using the Point Cloud Library (PCL). Local surface normals are found at each point, which are used for clustering the data into planar patches with a flood fill algorithm. The details of each stage in the feature extraction are presented in this section. 
 
+Two clustering algorithms were designed, implemented and evaluated: a density based scan (DBScan) variant and a flood fill algorithm, with the final implementation using the latter.
 \subsection{Normal Estimation} % (fold)
 \label{sub:normal_estimation}
 
-The first feature employed from the PCL was normal estimation. Once the RGB-D camera passes the raw point cloud data to the PCL, an integral image kernel is run over the RGB-D data, obtaining an estimate of the surface normals in the field of view. By using this integral normal estimation noisy and sporadic normal estimations are smoothed out, which are present if normal estimates are taken for just a single point. However, by using a kernel an initial amount of information is required, and hence, for pixels (points) situated near the edges of the image there are no available normal estimations as there are no neighbouring points available in each direction to estimate the normal. Further another caveat of using this technique is the loss of high frequency normal information, such as sharp corners or edges, due to averaging (loss of high frequency information). This property is discussed further in section \ref{sub:flood_fill_algo}. 
+As the depth sensor is a consumer grade RGB-D camera, operated at over double the quoted distance, the depth data is significantly noisy. A naive local surface normal kernel would take several nearest neighbours to a point and construct its local normal. However, with the high frequency noise level seen in the sensor readings, this method would produce effectively random normals. Instead, we use a technique called integral image convolution \cite{Holz2011} to combine normal estimation with low pass filtering. This is done through a data structure called an integral image (also known as a summed area table), which is computationally efficient and allows the normal estimator to run in real time. 
 
+The downside of low pass filtering is illustrated in Figure~\ref{fig:spurious_plane_normals}, which shows that intersections of planes (which are common indoors) are smoothed and instead look like curved surfaces. This can cause clustering algorithms to either follow the smooth curve and classify everything as one cluster, or instead break the curve into many planar strips. This problem was one of the main concerns and is discussed further in the clustering algorithms' sections. Additionally, the kernel nature of the normal estimator effectively reduces the depth sensor's field of view as it cannot operate on points near edges. Furthermore, the sensor cannot return data around sharp depth discontinuities due to parallax. This means that the kernel operator is also unable to operate within very small clusters of points. The kernel's size used in this prototype was the experimentally best tradeoff between low pass filtering of noise, corruption of edges and reduction of the sensor's field of view.
+
+\begin{figure}[p]
+	\centering     %%% not \center
+	\subfloat[Smoothed corners can give rise to planar strips being found by plane finding algorithms]{
+		\label{fig:spurious_plane_normals1}
+		\includegraphics[width=0.4\textwidth]{6spuriousplanes_normals.PNG}
+	}
+	\;
+	\subfloat[high frequency content along the edge of two orthogonal planes smoothed by the kernel]{
+		\label{fig:spurious_plane_normals_2}
+		\includegraphics[width=0.4\textwidth]{6spuriousplanes_normals_2.PNG}
+	}
+
+	\caption{Effects of the low pass filtering by the normal estimation kernel}
+	\label{fig:spurious_plane_normals}
+\end{figure}
 
 \subsection{Density Based Scan} % (fold)
 \label{sub:density_based_scan}
@@ -496,6 +514,8 @@ In an effort to deal with this caveat, introducing an additional step between th
 The PCA was never implemented as it was found that by increasing the minimum number of points required for a fill region to be classified as a plane fixed the issue sufficiently for the purpose of this project. Additionally, it was decided to remove the DBScan algorithm altogether as it was realised that although planes occasionally become segmented using the Flood Fill, in practice running DBScan after Flood Fill made no measurable performance difference to the Kalman filter.
 
 
+
+
 \begin{figure}[p]
 	\centering
 	\subfloat[ in normal space. A total of 4 planes were found:, the floor, the white boards and two back walls] 
@@ -503,6 +523,7 @@ The PCA was never implemented as it was found that by increasing the minimum num
 		\label{fig:dbscan_planes}
 		\includegraphics[width=0.4\textwidth]{6normal_boards.png}
 	}
+	\;
 	\subfloat[of a laboratory in xyz space. Each white board is considered a separate cluster. Distant objects coloured in blue.] {
 		\label{fig:table_dbscan}
 		\includegraphics[width=0.4\textwidth]{6table_dbscan.png}
@@ -519,6 +540,7 @@ The PCA was never implemented as it was found that by increasing the minimum num
 		\label{fig:6box_before}
 		\includegraphics[width=0.4\textwidth]{6box_before.PNG}
 	}
+	\;
 	\subfloat[Box after applying DBScan algorithm in normal space]{
 		\label{fig:6box_after}
 		\includegraphics[width=0.4\textwidth]{6box_after.PNG}
@@ -530,21 +552,7 @@ The PCA was never implemented as it was found that by increasing the minimum num
 
 
 
-\begin{figure}[p]
-	\centering     %%% not \center
-	\subfloat[Flood Fill generating false planes along intersecting plane edge]{
-		\label{fig:spurious_plane_normals1}
-		\includegraphics[width=0.4\textwidth]{6spuriousplanes_normals.PNG}
-	}
-	\;
-	\subfloat[Kernel averaging operation, causing the loss of high frequency information on the edges of 2 planes]{
-		\label{fig:spurious_plane_normals_2}
-		\includegraphics[width=0.4\textwidth]{6spuriousplanes_normals_2.PNG}
-	}
 
-	\caption{Normal estimation kernel causing loss of high frequency information of normals}
-	\label{fig:spurious_plane_normals}
-\end{figure}
 \clearpage
 
 % section feature_extraction (end)
@@ -1275,11 +1283,12 @@ This makes an enormous difference in the scalability of the Kalman filter approa
 
 \section{Testing and Results} % (fold)
 \label{sub:testing_kalman}
-In our test setup, we based our coordinate system in a vertex of the room as origin defining the x,y and z coordinates to be along the three wall edges connected to the origin vertex. Our test system consist of Thalamus chip containing the inertial sensors and Xtion Pro taped together. To ensure a functional Kalman filter, full observability of system in the x,y and z axis is needed. Thus we decided to observe three orthogonal planes formed by the wall that meet at the origin. We then initialise our state in the filter to be -2,2,2 in the x,y,z space. In practice however, the initial state will be close to but not exactly the same as in the filter. It is left to the Kalman filter to converge to the real state estimate.
+In our test setup, we based our coordinate system in a vertex of the room as origin defining the x,y and z coordinates to be along the three wall edges connected to the origin vertex. Our test system consist of Mavrx's inertial measurement unit containing the inertial sensors and depth camera taped together. To ensure a functional kalman filter, full observability of system in the x,y and z axis is needed. Ideally, an observation should be a definite point in space giving information in all the components of the Nx, Ny, Nz and D spaces. Planes however, fundamentally provides accurate information in at most two of the three axis and distance.  Thus we decided to observe three orthogonal planes formed by the wall that meet at the origin in order to achieve full observability. We then initialise our state in the filter to be -2,2,2 in the x,y,z space. In practice however, the initial state will be close to but not exactly the same as in the filter. It is left to the kalman filter to converge to the real state estimate.
 
-To properly running the Kalman filter, we had to tune the observation covariance parameter since the range of values obtained by using the DBscan algorithm was too low (in the order of $10^{-7}$). A larger value would result in the Kalman relying too much on the inertial sensors while a smaller one means we trust the xtion's output more [Fig:~\ref{fig:trustXtion}]. Feature extraction has considerable random noise due to the random initial seed point for the DBscan algorithm. Thus trusting the camera would result in high frequency noise or fluctuations in state estimate. On the other hand, position estimate from the inertial sensors behave like low pass filtered values as it is obtained by double integrating the acceleration. Thus increasing the Xtion's uncertainty results in a lower frequency in estimate which means the filter is slow to respond. We choose an appropriate value such that our filter behaves within an optimal region based on three test as discussed in \cite{KalmanTuning} . We focus our analysis on position estimate alone because since it depends on speed and attitude change, a good position estimate is sufficient to validate our algorithm implying the other estimates are correct. 
+To ensure correct operation of the kalman filter, we had to tune the observation covariance parameter since the range of values obtained by using our custom feature extraction algorithm was too low (in the order of $10^{-7}$). A larger value would result in the kalman relying too much on the inertial sensors while a smaller one means we trust the depth camera's output more [Fig:~\ref{fig:trustXtion}]. Feature extraction has considerable random noise due to the random initial seed point for the custom flood fill algorithm. Thus trusting the camera would result in high frequency noise or fluctuations in state estimate. On the other hand, position estimate from the inertial sensors behave like low pass filtered values as it is obtained by double integrating the acceleration. Thus trusting the inertial sensors more by increasing the depth cameras uncertainty results in a lower frequency in estimation. We choose an appropriate value such that our filter behaves within an optimal region based on three test as discussed in \cite{KalmanTuning} . We focus our analysis on position estimate alone because since it depends on speed and attitude change, a good position estimate is sufficient to validate our algorithm implying the other estimates are correct. 
 
-First we checked for consistency in the Kalman filter by verifying that most(ideally \textgreater 95\%) of error magnitude in the observation measurements are bounded to $\pm\sqrt{2\sigma}$. [Show results].After increasing the Xtion's uncertainty by a factor of 100, the results suggest that 100 is indeed too small. A factor of 10000 gives better results.
+First we checked for consistency in the kalman filter by verifying that most(ideally \textgreater 95\%) of error magnitude in the observation measurements are bounded to $\pm\sqrt{2\sigma}$. After increasing the depth camera's uncertainty by a factor of 100, the results suggest that 100 is indeed too small. A factor of 10000 gives better results.
+
 
 \begin{table}[ht]
 \caption{Innovation Magnitude Bound Test(\textgreater 2500 samples used)} % title of Table
@@ -1297,11 +1306,11 @@ Variable & Case\#1 (factor = 100) & Case\#2 (factor = 10000)  \\ [0.5ex] % inser
 \end{tabular}
 \label{table:firstTest} % is used to refer this table in the text
 \end{table}
-In the second test, we check that it is not biased by computing the normalised innovation squared
+In the second check, we check that the innovation is not biased by computing the normalised innovation squared
 \begin{equation}
 	q_{k} = z_{k}^{T} S_(k)^{-1} z_{k}
 \end{equation}
-for a sequence of i trials. If the filter's assumptions are met then $q_{k}$ are each $\chi^{2}$ in 4 degrees of freedom. To test for that it is not biased, we can use the mean of the sequence,
+for a sequence of i trials. If the filter's assumptions are met then $q_{k}$ are each $\chi^{2}$ in 4 degrees of freedom. To test for unbiasness, we can use the mean of the sequence,
 \begin{equation}
 	\bar{q} = \frac{1}{N}\sum_{k=1}^N {q_k}
 \end{equation}
@@ -1311,35 +1320,36 @@ P(N\bar{q}\in [r_{1}, r_{2}] | H_{0}) = 1 - \alpha
 \end{equation}
 We choose $\alpha$ = 0.005 (i.e. defining a two sided 95\% confidence region). We get that
 [$r_{1}, r_{2}$] = [$\chi_{4}(0.025), \chi_{4}(0.975)$] = 0.4844, 11.1433. For a factor of 10000 , we obtain $\bar{q}$ = 3.6561 which is within the confidence region.
-In the third test, we verify that error is white and to do this, we performed the autocorrelation of the noise using our obtained Xtion factor of 10000. Ideally for whiteness, autocorrelation peaks at a lag of 0 and is essentially zero for all others. For large enough N, we can assume that r($\tau$) is normally distributed with mean 0 and variance $\frac{1}{N}$. Practically, we can compute the $\pm$ 2$\sigma$ gate and check that aleast 95\% of values fall within this confidence region. In our test, we obtained that percentage of innovation in Nx,Ny and Nz that satisfy are the condition are 98.40$\%$, 97.81\%, 98.35\%, respectively. Error in distance however gives 93.14\%. 
+In the third check, we verify that error is white and thus uncorrelated with its past values. To do this, we performed the autocorrelation of the noise using our obtained Xtion factor of 10000. Ideally for whiteness, autocorrelation peaks at a lag of 0 and is essentially zero for all others. For large enough N, we can assume that r($\tau$) is normally distributed with mean 0 and variance $\frac{1}{N}$. Practically, we can compute the $\pm$ 2$\sigma$ gate and check that aleast 95\% of values fall within this confidence region. In our test, we obtained that percentage of innovation in Nx,Ny and Nz that satisfy are the condition are 98.40$\%$, 97.81\%, 98.35\%, respectively. Error in distance however gives 93.14\% confidence. We are unable to explain why the confidence in the distance is below the accepted value.
 \begin{figure}[H]
 	\centering     %%% not \center
-	\subfloat[Nx error]{
+	\subfloat[Nx]{
 		\label{fig:errorNx}
 		\includegraphics[width=0.45\textwidth]{noiseNx.PNG}
 	}
 	\;
-	\subfloat[Ny error]{
+	\subfloat[Ny]{
 		\label{fig:errorNy}
 		\includegraphics[width=0.45\textwidth]{noiseNy.PNG}
 	}
 	\;
-	\subfloat[Nz error]{
+	\subfloat[Nz]{
 		\label{fig:errorNz}
 		\includegraphics[width=0.45\textwidth]{noiseNz.PNG}
 	}
 	\;
-	\subfloat[D error]{
+	\subfloat[D]{
 		\label{fig:errorD}
 		\includegraphics[width=0.45\textwidth]{noised.PNG}
 	}
 	\;
-	\caption{Error in innovation showing whiteness expect for the distance variable}
+	\caption{Autocorrelation of error in innovation showing whiteness except for the distance variable}
 	\label{fig:errorfigures}
 \end{figure}
 
 
-In order to verify that our system works with the Kalman tuning, we ran it from our default initial position leaving it stationary. Below is the trajectory results. It shows a point cloud indicating that our Kalman filter does indeed converge to some estimate of our real position fluctuating by only millimetres. This  somewhat accurate result is due to the full observability provided by the three orthogonal planes lying in the xy, yz, zx spaces.
+In order to verify that our system works with the kalman tuning, we ran it from our default initial position leaving it stationary. Below is the trajectory results. It shows a point cloud indicating that our kalman filter does indeed converge to some estimate of our real position fluctuating by only millimetres. This somewhat accurate result is due to the full observability provided by the three orthogonal planes lying in the xy, yz, zx spaces.
+
 
 \begin{figure}[H]
 	\begin{center}
@@ -1362,29 +1372,41 @@ In the second test, we moved the setup by hand in a pseudo straight line of leng
 	\label{fig:moving_trajectory}
 \end{figure}
 
-To test the system, a yaw control loop was built where the system uses the estimated state to control the quad copter's yaw such that the depth camera (and hence frame of the craft) is always pointing towards a set point in the global coordinate system. The system was tested under lab conditions, where 2 intersecting planes were constructed to be used as a features for the system to localise against. Before flight the system was initialised to a known location, with the planes well within the depth camera's field of view. The quad copter was controlled remotely, and flown into a stable position out of ground effect before manually switching control of the yaw component to the automated control loop. So that the system doesn't lose visibility of the planes, the chosen point to track was the corner between the 2 constructed planes and the floor. 
+To test the system, a yaw control loop was built where the system uses the estimated state to control the quad copter's yaw such that the depth camera (and hence frame of the craft) is always pointing towards a set point in the global coordinate system. The system was tested under lab conditions, where two intersecting planes were constructed to be used as a features for the system to localise against. Before flight the system was initialised to a known location, with the planes well within the depth camera's field of view. The quad copter was controlled remotely, and flown into a stable position out of ground effect before manually switching control of the yaw component to the automated control loop. So that the system doesn't lose visibility of the planes, the chosen point to track was the corner between the two constructed planes and the floor. 
 
+%sentences 2 and 3 could be redundant
+With the yaw control loop activated, it is obvious that the craft attempts to correct for yaw. However, the craft is required to be flown at a slow speed with gradual changes in position. Sudden movements or high speeds cause the craft to veer off in the direction of correction. Despite modifying the control loop parameters, rapid movement of the craft while in flight results in the system over compensating for yaw, over rotating the craft and then losing visibility. When visibility of both planes is lost for a short period of time, the Kalman filter relies more heavily upon the inertial sensors which are simply not accurate enough to obtain a good state estimate. Hence, the system ends up predicting an incorrect state, incorrectly attempts to correct the yaw and has to be grounded to prevent collisions. 
 
-With the yaw control loop activated, it is obvious that the craft attempts to correct for yaw. However, the craft is required to be flown at a slow speed with gradual changes in both position and speed. Despite modifying the control loop parameters, rapid movement of the craft while in flight results in the system over compensating for yaw, over rotating the craft and then losing visibility. When visibility of both planes is lost for even a short period of time, the kalman filter relies more heavily upon the inertial sensors which are simply not accurate enough to obtain a good state estimate. Hence, the system ends up predicting an incorrect state, attempts to correct the yaw for this and has to be grounded. 
-
-
-
-\clearpage
 
 \section{Conclusion}
  
-The system correctly estimates the indoor state of a small aerial vehicle using an inexpensive and readily available depth camera coupled with an embedded platform. Correct and proper state estimation was achieved using inertial sensors This was achieved The state includes properties such as position, speed, ... 
+The system correctly estimates the indoor state of a small aerial vehicle using an inexpensive and readily available depth camera coupled with an embedded platform. The state includes information about the quad copter such as position within the global coordinate system, velocity. By using a Kalman filter which combines inertial sensors and vision landmarks, an accuracy to within 10mm was achieved up to a distance of 4 meters. The Kalman filter showed strong resilience to noise ........
 
-An 
+REGISTRATION
 
-Many unforeseen technical issues were encounted. 
+It has been hypothesized that the reason for the over correction in yaw at higher speeds is due to latency in the communication between the x86 platform and the R10 quad copter flight controller hardware. The flight controller board, which is situated on the quad copter provides basic maneuverability and stability functions, along with the inertial sensors.  
 
-Can accurately detect and ignore noise. The tailored vision algorithms worker particularly well, having very good resilence to noise. 
+The flight controller only supports quad copter maneuverability control over a SPI bus, while the x86 board, which ran the vision and Kalman filter had no such interface. To enable communication between the two pieces of hardware, a small embedded processor known as an MBed was used. This processor ran a software SPI to USB bridge, allowing the x86 to connect to the flight controller through a USB port. The communication buffers in this bridge, the flight controller and the USB controller of the x86 board would amount to a considerable delay. From observing filmed footage of the craft in flight running the yaw control loop, the estimate for the latency between an the flight controller measuring the IMU sensors and the measurement being available for computation in the Linux environment is about half a second. This figure has not yet been confirmed or fully investigated, but would explain why the system cannot track the corner point at high speeds.
 
-The next chapter of the research and work performed in this document would be to achieve robust 
+Solutions to this problem are to use a platform with an dedicate SPI bus. Is possible, decreasing the buffer size..
 
+Can accurately detect and ignore noise. The tailored vision algorithms worker particularly well, having very good resilience to noise. 
+
+ 
 
 Due to delay in the hardware connecting the embedded platform to the 
+
+\section{Further Work}
+Although much work was done on trying to implement our system on an ARM application processor during the course of this project, significant problems surrounding compatibility with OpenNI (the frame work linking the Xtion depth camera with PCL). This is currently in version 1.6. Version 2.0 will be released soon and is intended to increase compatibility with arm platforms. This will allow a much lighter setup with more options of development boards with low level outputs, which would also solve some of the latency issues that we had. 
+
+The algorithms described in this document would work much better if the inertial sensors were of high quality, as at the moment their noise causes the state estimate to diverge soon after observability of the planes is lost. Implementations utilising high quality sensors would yield more interesting results, as they could lose sight of previously registered planes and register new ones with an acceptable variance in their location to make full SLAM a possibility. 
+
+There is also hope in the near future for consumer grade time of flight RGB-D camera to be widely available, due to these being used in the XBox One console. These will have less quantisation noise, and a much wider field of view. This would solve a number of issues that we had regarding losing sight of known planes before observing new ones to register, as well as removing much of the noise from the raw depth data. 
+
+
+
+
+
 
 \nocite{*}
 
