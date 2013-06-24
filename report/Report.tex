@@ -1291,18 +1291,14 @@ More specifically, as the Hessian Normal form uses a unit vector, the length of 
 In fact, after linearisation, this distribution is projected onto a hyper-plane tangential to the actual distribution.
 
 While we cannot serialise the individual components of a plane measurement, the measurement errors between simultaneous plane measurements are uncorrelated, so we can still make use of a hybrid serial update strategy. That is, at each time there is a new frame that has finished feature extraction, we serially apply the measurement updates for each plane, without running the predict loop in-between.
-Assuming that there are $v$ plane equations at an instance in time
-That means the update stage will only have to invert $v$ matrices of size $4\times4$, instead of inverting a $4v \times 4v$ matrix. 
-As a further optimization, we find that the equation that transforms the state covariance matrix (\ref{eqn:predictP}) forms a separable system. That is, the Jacobian matrix $F$ as defined in (\ref{eqn:F}) does not carry any information regarding the craft to the planes, and vica versa.
+Assuming that there are $v$ measured plane equations at time $k$, we have that our algorithm will only have to invert $v$ matrices of size $4\times4$ at the update stage, instead of inverting a $4v \times 4v$ matrix.
+
+As mentioned briefly in in Section~\ref{sub:system_model}, the most important optimization is to that the equation that transforms the state covariance matrix (\ref{eqn:predictP}) forms a separable system. That is, the Jacobian matrix $F$ as defined in (\ref{eqn:F}) does not let the state of the craft affect the the plane map, and vice versa.
 In fact, all terms in $F$ regarding the planes are zero, except the main diagonal, which is unity. This means that not only is it a separable system, but the plane subsystem is fully static.
-Because the system is separable, and because the second half is static, we can ignore the second half of the system when computing (\ref{eqn:predictP}).
-This makes an enormous difference in the scalability of the Kalman filter approach. If the entire matrix-matrix multiplication is required, then the algorithm will scale like $O(n^3)$ where $n$ is the number of planes in the state vector. Now that this cubic dependence on $n$ is removed, only $O(n^2)$ terms remain, along with other terms.
-%TODO: explore complexity
-%TODO: incorporate reasoning from Sola2013
+This lends itself to the optimisations excellently described in \cite{Sola2013}.
+This makes an enormous difference in the scalability of the Kalman filter approach. If the entire matrix-matrix multiplication is required in equation \ref{eqn:predictP}, then the algorithm will scale like $O(n^3)$ where $n$ is the number of planes in the state vector. Now that this cubic dependence on $n$ is removed, only $O(n^2)$ terms remain from the rest of the filter, along with lower order terms, making the filter perform each update stage in $O(n^2)$ time.
 
-	We cross check our implementation against a similar open source implementation by the OpenPilot team %\cite{OpenPilotinsgps}. \cite{Holz2011}
-
-% subsection implementation (end)
+% subsection optimisations (end)
 
 % section EKF (end)
 
