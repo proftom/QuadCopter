@@ -1378,7 +1378,6 @@ To test the system, a yaw control loop was built where the system uses the estim
 %sentences 2 and 3 could be redundant
 With the yaw control loop activated, it is obvious that the craft attempts to correct for yaw. However, the craft is required to be flown at a slow speed with gradual changes in position. Sudden movements or high speeds cause the craft to veer off in the direction of correction. Despite modifying the control loop parameters, rapid movement of the craft while in flight results in the system over compensating for yaw, over rotating the craft and then losing visibility. When visibility of both planes is lost for a short period of time, the Kalman filter relies more heavily upon the inertial sensors which are simply not accurate enough to obtain a good state estimate. Hence, the system ends up predicting an incorrect state, incorrectly attempts to correct the yaw and has to be grounded to prevent collisions. 
 
-\clearpage
 
 \section{Conclusion}
  
