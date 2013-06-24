@@ -929,7 +929,7 @@ Furthermore, as a rotation matrix is orthogonal, we have that
 	R_{eb} &= R_{be}^\top
 \end{align}
 
-As the state transition model $f$ operates in descrete time, and more directly, because we have performed the descritisation shown in Equation~(\ref{eqn:descrete_f}), we derive the state transition Jacobian matrix, mentioned in Equation~(\ref{eqn:predictP}) as follows
+As the state transition model $f$ operates in discrete time, and more directly, because we have performed the discritisation shown in Equation~(\ref{eqn:descrete_f}), we derive the state transition Jacobian matrix, mentioned in Equation~(\ref{eqn:predictP}) as follows
 \begin{align}
 	F &= \frac{\partial f}{\partial x} \notag \\
 	&=
@@ -1028,7 +1028,7 @@ The process noise model is defined as follows
 	\frac{\partial \dot{x}}{\partial w} \Delta T
 \end{align}
 
-By considering the way that the noiseis modelled, and assuming that the process noise only affects the craft, we derive the following
+By considering the way that the noise is modelled, and assuming that the process noise only affects the craft, we derive the following
 \begin{align}
 	G = \left[
 	\begin{matrix}
@@ -1056,7 +1056,7 @@ where $\cdot$ represents null entries, and where
 %	G_{b_a w_{ba}} &= I_{3x3}
 \end{align}
 
-Having derived $F$ and $G$, we can use a sparse matrix optimisation that is based on the fact that the plane map features do not move. This tequnique, specific to EKF-SLAM, is developed in detail in \cite{Sola2013}.
+Having derived $F$ and $G$, we can use a sparse matrix optimisation that is based on the fact that the plane map features do not move. This technique, specific to EKF-SLAM, is developed in detail in \cite{Sola2013}.
 This means that when calculating equation~(\ref{eqn:predictP}), we can use the sparsity of $F$ to simplify the calculation as follows:
 \begin{align}
 	F_r &= F_{(0-15,0-15)} \notag \\
