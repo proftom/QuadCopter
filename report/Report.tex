@@ -354,9 +354,9 @@ Two clustering algorithms were designed, implemented and evaluated: a density ba
 \subsection{Normal Estimation} % (fold)
 \label{sub:normal_estimation}
 
-As the depth sensor is a consumer grade RGB-D camera, operated at over double the quoted distance, the depth data is significantly noisy. A naive local surface normal kernel would take several nearest neighbours to a point and construct its local normal. However, with the high frequency noise level seen in the sensor readings, this method would produce effectively random normals. Instead, we use a technique called integral image convolution \cite{Holz2011} to combine normal estimation with low pass filtering. This is done through a data structure called an integral image (also known as a summed area table), which is computationally efficient and allows the normal estimator to run in real time. 
+As the depth sensor is a consumer grade RGB-D camera operated at over double the quoted distance, the depth data is significantly noisy. A naive local surface normal kernel would take several nearest neighbours to a point and construct its local normal. However, with the high frequency noise level seen in the sensor readings, this method would produce effectively random normals. Instead, we use a technique called integral image convolution \cite{Holz2011} to combine normal estimation with low pass filtering. This is done through a data structure called an integral image (also known as a summed area table), which is computationally efficient and allows the normal estimator to run in real time. 
 
-The downside of low pass filtering is illustrated in Figure~\ref{fig:spurious_plane_normals}, which shows that intersections of planes (which are common indoors) are smoothed and instead look like curved surfaces. This can cause clustering algorithms to either follow the smooth curve and classify everything as one cluster, or instead break the curve into many planar strips. This problem was one of the main concerns and is discussed further in the clustering algorithms' sections. Additionally, the kernel nature of the normal estimator effectively reduces the depth sensor's field of view as it cannot operate on points near edges. Furthermore, the sensor cannot return data around sharp depth discontinuities due to parallax. This means that the kernel operator is also unable to operate within very small clusters of points. The kernel's size used in this prototype was the experimentally best tradeoff between low pass filtering of noise, corruption of edges and reduction of the sensor's field of view.
+The downside of low pass filtering is illustrated in Figure~\ref{fig:spurious_plane_normals}, which shows that intersections of planes (which are common indoors) are smoothed and instead look like curved surfaces. This can cause clustering algorithms to either follow the smooth curve and classify everything as one cluster, or instead break the curve into many planar strips. This problem was one of the main concerns and is discussed further in the clustering algorithms' sections. Additionally, the kernel nature of the normal estimator effectively reduces the depth sensor's field of view as it cannot operate on points near edges. Furthermore, the sensor cannot return data around sharp depth discontinuities due to parallax. This means that the kernel operator is also unable to operate within very small clusters of points. The convolution kernel's size used in this prototype was the experimentally best tradeoff between low pass filtering of noise, corruption of edges and reduction of the sensor's field of view.
 
 \begin{figure}[p]
 	\centering     %%% not \center
@@ -370,7 +370,7 @@ The downside of low pass filtering is illustrated in Figure~\ref{fig:spurious_pl
 		\includegraphics[width=0.4\textwidth]{6spuriousplanes_normals_2.PNG}
 	}
 
-	\caption{Effects of the low pass filtering by the normal estimation kernel}
+	\caption{Effects of the low pass filtering by the normal estimation kernel. White lines represent local surface normals.}
 	\label{fig:spurious_plane_normals}
 \end{figure}
 
@@ -432,16 +432,19 @@ One popular algorithm for density based clustering is density based scan (DBScan
 
 Four parameters are required to uniquely characterize planes, in this case we use the Hessian plane form with parameters $(N_A, N_B, N_C, D)$. Hence our DBScan implementation operates in this four dimensional space, with the normal components coming from the normal estimator and the $D$ components mathematically derived from xyz and N spaces. An example of the clustering is shown in Figure~\ref{fig:box_normal_clustering}.
 
-\subsection{DBScan Optimisations} % (fold)
-\label{sub:dbscan_optimisations}
+The downsides to the DBScan approach is the computational and space complexities. With $n$ being the number of points per frame, there is an O(n) preprocessing step to find $D$ components, followed by $O(n^2)$ clustering without accelerating data structures, or $O(n \cdot log(n))$ with. Therefore the decision was made to instead implement a faster flood fill algorithm and leave the coplanar patch merging to the EKF's feature association stage.
 
-% subsection dbscan_optimisations (end)
+% \subsection{DBScan Optimisations} % (fold)
+% \label{sub:dbscan_optimisations}
 
-Modifications to the DBScan algorithm were made to decrease the running time. By using tag fields to set whether points had already been visited or were already part of a cluster (a point can belong to one cluster only), the region query was prevented from being performed on points already part of a cluster. Further a custom conditional insertion procedure to insert into a list-like data structure without duplication was created, decreasing the complexity of insertion from $O(m \cdot log(n))$ (if using the standard template library set object) to $O(m)$.
+% % subsection dbscan_optimisations (end)
 
-The DBScan algorithm completes in $O(n^2)$ if the region query completes in $O(n)$, and $O(n \cdot log(n))$ if the region query completes within $O(log(n))$. Our implementation lay somewhere between the two, having a complexity dependent on run time, where a field of view containing more planar features took closer to the upper boundary. This is because captures with large or many planar features cause the region query procedure to be invoked more often, shifting the runtime complexity towards $O(n^2)$.
+% Modifications to the DBScan algorithm were made to decrease the running time. By keeping an open and a closed node sets (a point can belong to one cluster only), thus removing redundant duplicate lookups from the region query. Further a custom conditional insertion procedure to insert into a list-like data structure without duplication was created, decreasing the complexity of insertion from $O(m \cdot log(n))$ (if using the standard template library set object) to $O(m)$.
 
-To combat against the possibility of slow run-time performance, it was decided to use a 2 step algorithm. A simple Flood Fill algorithm fills the initial field of view captured from the depth camera by flooding (clustering) connected points which have the same plane equation (remember the xyz-Normal point cloud is converted to a plane cloud once the vision module receives a frame from the RGB-D camera). The Flood Fill will generate a new set of planes, typically of a plane count less than 10. This will then be passed to the DBScan algorithm for the second step of the two step algorithm. Where as the Flood Fill algorithm moved only between neighbouring points, the DBScan looks over the whole image space to find points within tolerance $\epsilon$ of the seed point plane equation. Planes which are partially obscured or divided  will still be recognised as a single plane in DBScan. This is not the case in Flood Fill, and hence why a 2 step algorithm is employed. The Flood Fill rapidly finds planes and the slower DBScan corrects for any planes that have been segmented. Using the analogy of a graphical editing package, if the Flood Fill is the paint bucket tool, the DBScan is the patching tool.
+% The DBScan algorithm completes in $O(n^2)$ if the region query completes in $O(n)$, and $O(n \cdot log(n))$ if the region query completes within $O(log(n))$. Our implementation lay somewhere between the two, having a complexity dependent on run time, where a field of view containing more planar features took closer to the upper boundary. This is because captures with large or many planar features cause the region query procedure to be invoked more often, shifting the runtime complexity towards $O(n^2)$.
+
+% we considered doing the below but realised that kalman can do stitching in plane association 
+%To combat against the possibility of slow run-time performance, it was decided to use a 2 step algorithm. A simple Flood Fill algorithm fills the initial field of view captured from the depth camera by flooding (clustering) connected points which have the same plane equation (remember the xyz-Normal point cloud is converted to a plane cloud once the vision module receives a frame from the RGB-D camera). The Flood Fill will generate a new set of planes, typically of a plane count less than 10. This will then be passed to the DBScan algorithm for the second step of the two step algorithm. Where as the Flood Fill algorithm moved only between neighbouring points, the DBScan looks over the whole image space to find points within tolerance $\epsilon$ of the seed point plane equation. Planes which are partially obscured or divided  will still be recognised as a single plane in DBScan. This is not the case in Flood Fill, and hence why a 2 step algorithm is employed. The Flood Fill rapidly finds planes and the slower DBScan corrects for any planes that have been segmented. Using the analogy of a graphical editing package, if the Flood Fill is the paint bucket tool, the DBScan is the patching tool.
 
 \begin{algorithm}[tbp]
 	\SetAlgoLined
@@ -475,7 +478,7 @@ To combat against the possibility of slow run-time performance, it was decided t
 	\label{alg:flood_fill}
 \end{algorithm}
 
-This design leads to increased throughput as the Flood Fill deals with the raw data from CCD space, converting 19200 points to only a few planes. The DBScan, having complexity towards a greedy $O(n^{2})$, only works on the plane set generated by the Flood Fill algorithm, meaning the near-quadratic complexity does not dominate run time as there are much less planes than there are points.
+%This design leads to increased throughput as the Flood Fill deals with the raw data from CCD space, converting 19200 points to only a few planes. The DBScan, having complexity towards a greedy $O(n^{2})$, only works on the plane set generated by the Flood Fill algorithm, meaning the near-quadratic complexity does not dominate run time as there are much less planes than there are points.
 
 \subsection{The Flood Fill Algorithm}
 \label{sub:flood_fill_algo}
@@ -557,12 +560,12 @@ The PCA was never implemented as it was found that by increasing the minimum num
 \section{Extended Kalman Filter} % (fold)
 \label{sec:ekf}
 
-To estimate the state of the system we employ the EKF which is the non-linear version of the regular Kalman Filter: the optimal state estimation filter for linear systems \cite{todo} with Gaussian noise.
-When supplied with an accurate system model, and its statistical properties, the Kalman Filter provides the state estimate with the minimum mean-squared error \cite{todo}.
+To estimate the state of the system we employ the EKF which is the non-linear version of the regular Kalman Filter: the optimal state estimation filter for linear systems \cite{Stengel} with Gaussian noise.
+When supplied with an accurate system model, and its statistical properties, the Kalman Filter provides the state estimate with the minimum mean-squared error \cite{oxford}.
 The extended version of the filter provides a near-optimal estimate of the system's state by linearising it around the current state estimate.
 The reason why we need the non-linear version of the filter is due to the fact that the model includes rotations, which are non-linear in nature.
 Furthermore, as our system has very many sources of noise for each modelled noise variable, we can assume from the central limit theorem that the noise is approximately Gaussian.
-In practice, the assumption of approximately Gaussian noise works well in practice, and is used in many navigation applications \cite{todo}.
+In practice, the assumption of approximately Gaussian noise works well in practice, and is used in many navigation applications \cite{Stengel}.
 
 % We use a kalman filter... the optimal state estimator
 % non linear due to rotations -- ekf
@@ -930,7 +933,7 @@ Furthermore, as a rotation matrix is orthogonal, we have that
 	R_{eb} &= R_{be}^\top
 \end{align}
 
-As the state transition model $f$ operates in descrete time, and more directly, because we have performed the descritisation shown in Equation~(\ref{eqn:descrete_f}), we derive the state transition Jacobian matrix, mentioned in Equation~(\ref{eqn:predictP}) as follows
+As the state transition model $f$ operates in discrete time, and more directly, because we have performed the discritisation shown in Equation~(\ref{eqn:descrete_f}), we derive the state transition Jacobian matrix, mentioned in Equation~(\ref{eqn:predictP}) as follows
 \begin{align}
 	F &= \frac{\partial f}{\partial x} \notag \\
 	&=
@@ -1029,7 +1032,7 @@ The process noise model is defined as follows
 	\frac{\partial \dot{x}}{\partial w} \Delta T
 \end{align}
 
-By considering the way that the noiseis modelled, and assuming that the process noise only affects the craft, we derive the following
+By considering the way that the noise is modelled, and assuming that the process noise only affects the craft, we derive the following
 \begin{align}
 	G = \left[
 	\begin{matrix}
@@ -1057,7 +1060,7 @@ where $\cdot$ represents null entries, and where
 %	G_{b_a w_{ba}} &= I_{3x3}
 \end{align}
 
-Having derived $F$ and $G$, we can use a sparse matrix optimisation that is based on the fact that the plane map features do not move. This tequnique, specific to EKF-SLAM, is developed in detail in \cite{Sola2013}.
+Having derived $F$ and $G$, we can use a sparse matrix optimisation that is based on the fact that the plane map features do not move. This technique, specific to EKF-SLAM, is developed in detail in \cite{Sola2013}.
 This means that when calculating equation~(\ref{eqn:predictP}), we can use the sparsity of $F$ to simplify the calculation as follows:
 \begin{align}
 	F_r &= F_{(0-15,0-15)} \notag \\
