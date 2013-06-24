@@ -103,11 +103,9 @@ columns=flexible
 This report investigates the design of indoor state estimation techniques, and demonstrates one particular implementation using a depth camera mounted to a quadcopter frame. The approach consists of collecting data from the environment and detecting planes within it. Using these in combination with an extended Kalman filter we estimate the location of the frame. We combine more traditional sensors such as an accelerometer and gyro to complete the localisation system. We investigate the hardware necessary to process point clouds in real time. Further to this we propose a calibration algorithm for the Xtion Pro depth camera and demonstrate its success.   
 \tableofcontents
 
-%todo: kill acronyms
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Acronyms} % (fold)
-\label{sec:acronyms}
+%\section{Acronyms} % (fold)
+%\label{sec:acronyms}
 \begin{acronym}
 	\acro{DBScan}{Density Based Spatial Clustering of Applications with Noise}
 	\acro{DoF}{Degrees of Freedom}
@@ -126,7 +124,7 @@ This report investigates the design of indoor state estimation techniques, and d
 	\acro{UAV}{Unmanned Aerial Vehicle}
 	\acro{ToF}{time of flight}
 \end{acronym}
-\clearpage
+%\clearpage
 % section acronyms (end)
 
 \section{Executive Summary} % (fold)
@@ -201,9 +199,31 @@ The aircraft configuration of choice is a quadcopter, due to its ability to navi
 \section{Implementation Overview}
 \label{sub:implementation_overview}
 
-%todo!!!: the below is not too bad, include it somewhere?
+% dropped below:
 
-% Our state estimator involves a moving agent such as a quadcopter which uses one sensor to gather information about its surroundings. This is called an exteroceptive sensor and in our case, we use a depth camera. We also incorporate extra sensors to measure the agent's own movement. These are called preprioceptive sensors and we used an accelerometer and a gyroscope. The state evaluation process involves the following steps:
+
+
+%todo
+localisation is done through a ekf
+
+which is a filter for blablabla, maybe diagram
+
+<<talk about just imu being hrap?
+
+the primary sensor for feature extraction is a depth camera, streaming qqvga at 30 fps. ONLY DEPTH CHANNEL IS OF INTEREST TO US
+
+openni + pcl gives us data in point cloud form (xyz) relative to the camera, and the ability to operate on the cloud
+
+from these point clouds, integral image estimation to get local (Nx, Ny, Nz) normal vector at each point in the cloud. Then a Flood Fill algorithm is used to cluster points with similar local normals. Note that the region growing for the clusters is done in the xyz space but the condition for adding a point to the cluster operates in nxnynz space.
+
+Flood Fill, for a point cloud data obtained from one depth frame. starting from a set of randomised seed points... for each seed point, the algorithm visits its neighbours in the camera-xy space 
+
+patches thrown into the kalman filter, and associated based on mahalanobis distance
+
+include the fact that dbscan was toyed with at the start?
+
+% Our state estimator involves a moving agent such as a quadcopter which deploys one sensor to gather information about its surroundings. This is called an exteroceptive sensor and in our case, we use a depth camera. We also incorporate extra sensors to measure the agent's own movement. These are called preprioceptive sensors and we used an accelerometer and a gyroscope. The state evaluation process involves the following steps:
+
 
 % \textbf{The agent moves, reaching a new point of view in the room} As a result of unavoidable noise
 % and errors, this movement increases the uncertainty on the robot's localization.
@@ -224,7 +244,7 @@ The state of the robot consists of its position, velocity, attitude, acceleromet
 
 The feature extraction pipeline starts with 160x120 depth frames at 30 frames per second from the RGB-D camera. Using Point Cloud Library (PCL) the data is transformed into a xyz point cloud. Next, local surface normals at each point are computed using integral images \cite{Holz2011}. The use of integral images lets us remove the high frequency noise from the depth camera in a computationally efficient manner. At this stage there is a point cloud in xyz space with a local normal vector $(N_x, N_y, N_z)$ at each point. 
 
-The above point cloud is then clustered by a custom flood fill algorithm. The algorithm starts with a set of randomised seed points within the CCD pixel space (as each pixel corresponds to a point in xyz space). For each seed, the fill incrementally grows a cluster by visiting neighbours along the CCD (i.e. xy) space. The condition for adding a point to the cluster is derived from how similar the local normal is at that point to that of the initial seed. Clusters are then rejected if they do not meet the depth-dependent minimum parameter, the clusters passing this test are considered further as planar patches. The feature extraction pipeline also calculates the uncertainties associated with the discovered planes, passing that information to the EKF. An alternative clustering approach, based on the DBScan algorithm was also evaluated and is discussed in the relevant section.
+The above point cloud is then clustered by a custom Flood Fill algorithm. The algorithm starts with a set of randomised seed points within the CCD pixel space (as each pixel corresponds to a point in xyz space). For each seed, the fill incrementally grows a cluster by visiting neighbours along the CCD (i.e. xy) space. The condition for adding a point to the cluster is derived from how similar the local normal is at that point to that of the initial seed. Clusters are then rejected if they do not meet the depth-dependent minimum parameter, the clusters passing this test are considered further as planar patches. The feature extraction pipeline also calculates the uncertainties associated with the discovered planes, passing that information to the EKF. An alternative clustering approach, based on the DBScan algorithm was also evaluated and is discussed in the relevant section.
 
 The incoming plane data invokes an update iteration in the EKF, which tries to associate measured planes to existing features in its state. The association is based on Mahalanobis distance, which is a measurement used in multi-dimensional statistical analysis for classification of samples.
 
@@ -241,7 +261,7 @@ The project aims to implement the estimation algorithm on on-board processing, t
 
 In conventional processor applications, of importance is optimising the computational performance against cost and power usage. For an embedded system that is mounted on a quadcopter however, power usage of the chip is not a concern as it is insignificant compared to the usage of the MAV itself. Therefore, for implementing this project we desire the best processing power per pound for the target workload. In this metric, no distinct advantage can be given to either of the two main standard processor architecture families (x86 and ARM) and the evaluation needs to be done on a chip-by-chip basis. 
 
-In addition to the above, the choise of the instruction set architecture is influenced by the architecture's operating system support and the ability to interface with other system components that could be incorporated into the system (e.g. coprocessors). The target operating system for this project is a lightweight distribution based on the Linux kernel. This is due to the Linux kernel being free, open source and being easily configurable, with the ability to compile in only the needed functionality and put options in loadable kernel modules. This results in an embedded operating system with minimal memory and processing footprint, as well as small disk usage which can be limited in embedded systems. For the specific libraries and frameworks used in implementing the estimation software (PCL and OpenNI), x86-Linux variants were found to have more mature support than ARM-Linux at the time of writing.
+In addition to the above, the choice of the instruction set architecture is influenced by the architecture's operating system support and the ability to interface with other system components that could be incorporated into the system (e.g. coprocessors). The target operating system for this project is a lightweight distribution based on the Linux kernel. This is due to the Linux kernel being free, open source and being easily configurable, with the ability to compile in only the needed functionality and put options in loadable kernel modules. This results in an embedded operating system with minimal memory and processing footprint, as well as small disk usage which can be limited in embedded systems. For the specific libraries and frameworks used in implementing the estimation software (PCL and OpenNI), x86-Linux variants were found to have more mature support than ARM-Linux at the time of writing.
 
 For low volume production, it is not always worth investing the engineering time in designing a custom hardware platform, sourcing the components and manufacturing. Instead, small form factor boards can be readily purchased at acceptable prices. For example: \$90 Odroid-U2 development board with a quad core ARM Cortex-A9 @1.7 GHz processor with a Mali-400 quad core GPU in a 60x60x60 mm package.
 
@@ -257,9 +277,8 @@ However, in practice it was found that porting third party libraries used in the
 
 For the above reasons, the project was implemented on Intel Atom D2550 (Dual Core @1.86 GHz) processor running x86-Linux. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%throw in fpga as additional possibilities?, zynq7 style?, fixed point scaling etc
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%extra possibility: throw in fpga as additional possibilities?, zynq7 style?, fixed point scaling etc
+
 
 \subsection{Sensor Calibration} % (fold)
 
@@ -356,12 +375,16 @@ In order to avoid large computation times on the embedded device it is important
 \section{Feature Extraction} % (fold)
 \label{sec:feature_extraction}
 
-To obtain consistent and robust computer vision the open source PCL was used as a foundation on which our vision algorithms were implemented. By levering the both well featured and documented PCL allowed us to rapidly develop and test our algorithms in real time. Among other features, the PCL library provided an interface to the Xtion hardware, exposing the data captures or point clouds at speeds of up to 30 frames per second.
+To obtain consistent and robust computer vision the open source PCL was used as a foundation on which our vision algorithms were implemented. By leveraging the both well featured and documented PCL allowed us to rapidly develop and test our algorithms in real time. Among other features, the PCL library provided an interface to the Xtion hardware (RGB-D camera), exposing the data captures known as point clouds at speeds of up to 30 frames per second.
 
 \subsection{Normal Estimation} % (fold)
 \label{sub:normal_estimation}
 
-The first feature employed from the PCL was normal estimation. Once the Xtion passes the raw point cloud data to the PCL, a kernel operator is run over the image which integrates over many points to obtain an estimate of the normal. By using this integral normal estimation noisy and sporadic normal estimations are smoothed out, which are present if normal estimates are taken for just a single point. However, by using a kernel an initial amount of information is required, and hence, for pixels (points) situated near the edges of the image there are no available normal estimations as there are no neighbouring points available in each direction to estimate the normal. Further another caveat of using this technique is the loss of high frequency normal information, such as sharp corners or edges, due to averaging (loss of high frequency information). This property is dicussed further in section \ref{sub:flood_fill_algo}. 
+
+
+The first feature employed from the PCL was normal estimation. Once the RGB-D camera passes the raw point cloud data to the PCL, an integral image kernel is run over the RGB-D data, obtaining an estimate of the surface normals in the field of view. By using this integral normal estimation noisy and sporadic normal estimations are smoothed out, which are present if normal estimates are taken for just a single point. However, by using a kernel an initial amount of information is required, and hence, for pixels (points) situated near the edges of the image there are no available normal estimations as there are no neighbouring points available in each direction to estimate the normal. Further another caveat of using this technique is the loss of high frequency normal information, such as sharp corners or edges, due to averaging (loss of high frequency information). This property is discussed further in section 6.5. 
+
+
 \subsection{Density Based Scan} % (fold)
 \label{sub:density_based_scan}
 
@@ -419,22 +442,22 @@ A much referenced and popular algorithm for density based clustering is density 
 	\label{alg:dbscan}
 \end{algorithm}
 
-To begin, a basic naïve implementation which iteratively looped through each point in the cloud, discovering all further points in x, y, z space that are within a certain distance  $(\epsilon)$. This procedure is listed as region query in algorithm~\ref{alg:dbscan}. This was then progressed to performing the region query in normal space, meaning planes with a similar normal equation would appear in the same cluster, shown in Figure~\ref{fig:dbscan_planes}
+To begin, a basic naïve implementation was built which iteratively looped through each point in the cloud, discovering all further points in x, y, z space that are within a certain distance  $(\epsilon)$. This procedure is listed as region query in algorithm~\ref{alg:dbscan}. This was then progressed to performing the region query in normal space, meaning planes with a similar normal equation would appear in the same cluster, shown in Figure~\ref{fig:dbscan_planes}
 
 
 
-Four parameters are required to uniquely characterize planes $(N_A, N_B, N_C, D)$ so finally the normal space was combined with distance space (z) for the region query criteria conditions. To make things easier, as soon as an Xtion capture becomes available, the data cloud is converted to a plane cloud (a large list  containing the 4 plane parameters).
+Four parameters are required to uniquely characterize planes $(N_A, N_B, N_C, D)$ so finally the normal space was combined with distance space (z) for the region query criteria conditions. To make things easier, as soon as an RGB-D camera capture becomes available, the data cloud is converted to a plane cloud (a large list containing the 4 plane parameters).
 
 \subsection{DBScan Optimisations} % (fold)
 \label{sub:dbscan_optimisations}
 
 % subsection dbscan_optimisations (end)
 
-Modifications to the DBScan algorithm were made to decrease the running time. By using tag fields to set whether points had already been visited or were already part of a cluster (a point can belong to one cluster only), the region query was prevented from being performed on points already part of a cluster. Further a  custom conditional insertion procedure to insert into a list-like data structure without duplication was created, decreasing the complexity of insertion from $O(m \cdot log(n))$ (if using the standard template library set object) to $O(m)$.
+Modifications to the DBScan algorithm were made to decrease the running time. By using tag fields to set whether points had already been visited or were already part of a cluster (a point can belong to one cluster only), the region query was prevented from being performed on points already part of a cluster. Further a custom conditional insertion procedure to insert into a list-like data structure without duplication was created, decreasing the complexity of insertion from $O(m \cdot log(n))$ (if using the standard template library set object) to $O(m)$.
 
 The DBScan algorithm completes in $O(n^2)$ if the region query completes in $O(n)$, and $O(n \cdot log(n))$ if the region query completes within $O(log(n))$. Our implementation lay somewhere between the two, having a complexity dependent on run time, where a field of view containing more planar features took closer to the upper boundary. This is because captures with large or many planar features cause the region query procedure to be invoked more often, shifting the runtime complexity towards $O(n^2)$.
 
-To combat against the possibility of slow run-time performance, it was decided to use a 2 step algorithm. A simple flood fill algorithm fills the initial field of view captured from the depth camera by flooding (clustering) connected points which have the same plane equation (remember the XYZ-Normal point cloud is converted to a plane cloud once the vision module receives a frame from the Xtion). The flood fill will generate a new set of planes, typically of a plane count less than 10. This will then be passed to the DBScan algorithm for the second step of the two step algorithm. Where as the flood fill algorithm moved only between neighbouring points, the DBScan looks over the whole image space to find points within tolerance $\epsilon$ of the seed point plane equation. Planes which are partially obscured or divided  will still be recognised as a single plane in DBScan. This is not the case in flood fill, and hence why a 2 step algorithm is employed. The flood fill rapidly finds planes and the slower DBScan corrects for any planes that have been segmented. Using the analogy of a graphical editing package, if the flood fill is the paint bucket tool, the DBScan is the patching tool.
+To combat against the possibility of slow run-time performance, it was decided to use a 2 step algorithm. A simple Flood Fill algorithm fills the initial field of view captured from the depth camera by flooding (clustering) connected points which have the same plane equation (remember the xyz-Normal point cloud is converted to a plane cloud once the vision module receives a frame from the RGB-D camera). The Flood Fill will generate a new set of planes, typically of a plane count less than 10. This will then be passed to the DBScan algorithm for the second step of the two step algorithm. Where as the Flood Fill algorithm moved only between neighbouring points, the DBScan looks over the whole image space to find points within tolerance $\epsilon$ of the seed point plane equation. Planes which are partially obscured or divided  will still be recognised as a single plane in DBScan. This is not the case in Flood Fill, and hence why a 2 step algorithm is employed. The Flood Fill rapidly finds planes and the slower DBScan corrects for any planes that have been segmented. Using the analogy of a graphical editing package, if the Flood Fill is the paint bucket tool, the DBScan is the patching tool.
 
 \begin{algorithm}[tbp]
 	\SetAlgoLined
@@ -446,7 +469,7 @@ To combat against the possibility of slow run-time performance, it was decided t
 	\While {Q is not empty}
 	{
 	 	Pop $Q \rightarrow P$ \\
-		\If{$P$ plane components within $\epsilon$ tolerence of $P_{seed}$}{
+		\If{$P$ plane components within $\epsilon$ tolerance of $P_{seed}$}{
 		Add $P$ to set $S$ \\
 
 		\If{$P$ not in $Q$} {
@@ -464,17 +487,17 @@ To combat against the possibility of slow run-time performance, it was decided t
 		}
 	}
 	\bigskip
-	\caption{Flood fill pseudo code for a single fill area}
+	\caption{Flood Fill pseudo code for a single fill area}
 	\label{alg:flood_fill}
 \end{algorithm}
 
-This design leads to increased throughput as the flood fill deals with the raw data from CCD space, converting 19200 points to only a few planes. The DBScan, having complexity towards a greedy $O(n^{2})$, only works on the plane set generated by the flood fill algorithm, meaning the near-quadratic complexity does not dominate run time as there are much less planes than there are points.
+This design leads to increased throughput as the Flood Fill deals with the raw data from CCD space, converting 19200 points to only a few planes. The DBScan, having complexity towards a greedy $O(n^{2})$, only works on the plane set generated by the Flood Fill algorithm, meaning the near-quadratic complexity does not dominate run time as there are much less planes than there are points.
 
 \subsection{The Flood Fill Algorithm}
 \label{sub:flood_fill_algo}
-As mentioned, the flood fill algorithm is analogous to a paint bucket function in a graphical editing package. We randomly choose a seed point in pixel space (that is we randomly select a point from the Xtion sensor output) and take the normal and distance (plane space), and then proceed to fill out from this point in all directions until the planes parameters $(N_A, N_B, N_C, D)$ differ by more than a value $\epsilon$ from the original seed point. Algorithm~\ref{alg:flood_fill} lists how given a seed point, a region fill is generated.
+As mentioned, the Flood Fill algorithm is analogous to a paint bucket function in a graphical editing package. The algorithm begins by randomly selecting a seed plane from the plane cloud (that is we randomly select a point and corresponding normal from the RGB-D camera sensor output), and proceed to fill out from this seed in all directions until the planes parameters $(N_A, N_B, N_C, D)$ differ by more than a value $\epsilon$ from the original seed plane. This forms a connected region, which represents a plane. Algorithm~\ref{alg:flood_fill} lists how given a seed point, a region fill is generated.
 
-Once a single fill has terminated and more than a certain threshold of the image has either been filled (call it $\sigma$, i.e. 90\%) then the algorithm terminates. If this threshold has not been satisfied then begin a new fill, selecting a new random seed point from a point that has not been already included in a previous fill region. The algorithm will repeat until $\sigma$ is satisfied or it has attempted to flood fill the plane cloud for more than a certain number of times (call it $\gamma$, i.e. 50). The flood fill algorithm works iteratively using only a simple queue structure and list keep track if points have been explored yet in the context of the current fill or already added to a previous fill (plane) respectively, resulting in a linear complexity of $O(n)$. 
+Once a single fill has terminated and more than a certain threshold of the image has either been filled (call it $\sigma$, i.e. 90\%) then the algorithm terminates. If this threshold has not been satisfied then begin a new fill, selecting a new random seed point from a point that has not been already included in a previous fill region. The algorithm will repeat until $\sigma$ is satisfied or it has attempted to flood fill the plane cloud for more than a certain number of times (call it $\gamma$, i.e. 50). The Flood Fill algorithm works iteratively using only a simple queue structure and list keep track if points have been explored yet in the context of the current fill or already added to a previous fill (plane) respectively, resulting in a linear complexity of $O(n)$. 
 
 
 \subsection{Complications and Caveats in Segmentation} % (fold)
@@ -482,7 +505,7 @@ Once a single fill has terminated and more than a certain threshold of the image
 
 % subsection complications_in_the_segmentation_algorithm (end)
 
-Complications arose when performing the flooding. As explained before, the projected grid from the Xtion opens in a conic fashion. This means that objects closer the Xtion will be showered in points, while those further away will contain far fewer points. This drop off happens at a quadratic rate, meaning the error in distance also occurs at a quadratic rate. To deal with this, the condition on the D parameter for which a point to be considered within the region was modified. As depth increases we open the parameter quadratically by projecting the z component of the plane normal onto the quadratic point z component. We do this for both the seed point and the point being queried, taking their absolute values and sum. We then multiply this value by an adjusted epsilon value ($\epsilon_{depth}$). 
+Complications arose when performing the flooding. As explained before, the projected grid from the RGB-D camera opens in a conic fashion. This means that objects closer the RGB-D camera will be showered in points, while those further away will contain far fewer points. This drop off happens at a quadratic rate, meaning the error in distance also occurs at a quadratic rate. To deal with this, the condition on the D parameter for which a point to be considered within the region was modified. As depth increases we open the parameter quadratically by projecting the z component of the plane normal onto the quadratic point z component. We do this for both the seed point and the point being queried, taking their absolute values and sum. We then multiply this value by an adjusted epsilon value ($\epsilon_{depth}$). 
 
 
 The conditions (which all must be satisfied) for accepting a point into the current fill region becomes:
@@ -493,16 +516,14 @@ The conditions (which all must be satisfied) for accepting a point into the curr
 |P_{seed|D}-P_{D}| &< (|N_{seed|z} \times P^{2}_{seed|z}| + |N_{z} \times P^{2}_{z}|) \times \epsilon_{depth}
 \end{align}
 where as before the last equation was the same as the previous three, except changed to the D parameter.
-Note that P is the point which is under test (to investigate whether it should exist in the flood region), while $P_{seed}$ is the seed point at which was first chosen to characterise the flood fill region. 
+Note that P is the point which is under test (to investigate whether it should exist in the flood region), while $P_{seed}$ is the seed point at which was first chosen to characterise the Flood Fill region. 
 
-Unforeseen consequences arose from the flood fill algorithm where when the flood fill selects a random seed point, it can select a point near a vertex. The problem is that in order to get realistic normal components, the integral image normal estimation performs an averaging operation over normals in a kernel space of 40x40 normals. This means that high frequency information is lost, as shown in Figure~\ref{fig:spurious_plane_normals}. Hence, when the flood fill algorithm is filling out, spurious long thin planes may be generated along edges, giving rise to a false positive. Initial attempts to resolve this problem by adjusting the flood fill algorithm parameters such as the minimum points to consider a plane failed.
+Unforeseen consequences arose from the Flood Fill algorithm where the algorithm randomly selects a seed point near a vertex. The problem is that in order to get realistic normal components, the integral image normal estimation performs an averaging operation over normals in a kernel space of 40x40 normals. This means that high frequency information is lost, as shown in Figure~\ref{fig:spurious_plane_normals}. Hence, when the flood fill algorithm is filling out, spurious long thin planes may be generated along edges, giving rise to a false positive. 
 
-In an effort to deal with this caveat, introducing an additional step between the Flood Fill and the DBScan which detects for false positives was undertaken. By computing the covariance matrix in XYZ space for each point in a cluster, then finding the eigenvalues of this matrix calculates the PCA of each plane allowing us the investigate the dimensionality of each plane by checking the ratio of Eigen values generated. If there is much disparity, it can be assumed that a plane has been encountered fitting to the caveat described above and hence the plane is removed from the set of planes generated by the flood fill algorithm. 
+In an effort to deal with this caveat, introducing an additional step between the Flood Fill and the DBScan which detects for false positives was undertaken. By computing the covariance matrix in xyz space for each point in a cluster, then finding the eigenvalues of this matrix calculates the PCA of each plane allowing us the investigate the dimensionality of each plane by checking the ratio of Eigen values generated. If there is much disparity, it can be assumed that a plane has been encountered fitting to the caveat described above and hence the plane is removed from the set of planes generated by the Flood Fill algorithm. 
 
-This method was never implemented as after thinking ahead towards plane association in the state update of the EKF (below), it was realised that neither the DBScan or PCA algorithms were required.  In fact, it was found that DBScan was no longer the algorithm suitable, but rather a similar algorithm called Iterative Nearest Neighbour (INN) should be used. This is discussed in detail in the registration section of the EKF.
+The PCA was never implemented as it was found that by increasing the minimum number of points required for a fill region to be classified as a plane fixed the issue sufficiently for the purpose of this project. Additionally, it was decided to remove the DBScan algorithm altogether as it was realised that although planes occasionally become segmented using the Flood Fill, in practice running DBScan after Flood Fill made no measurable performance difference to the Kalman filter.
 
-
-%todo!!!: fix captions as they coalesce into one sentence
 
 \begin{figure}[p]
 	\centering
@@ -540,7 +561,7 @@ This method was never implemented as after thinking ahead towards plane associat
 
 \begin{figure}[p]
 	\centering     %%% not \center
-	\subfloat[Flood fill generating false planes along intersecting plane edge]{
+	\subfloat[Flood Fill generating false planes along intersecting plane edge]{
 		\label{fig:spurious_plane_normals1}
 		\includegraphics[width=0.4\textwidth]{6spuriousplanes_normals.PNG}
 	}
@@ -561,8 +582,12 @@ This method was never implemented as after thinking ahead towards plane associat
 \section{Extended Kalman Filter} % (fold)
 \label{sec:ekf}
 
-To estimate the state of the system we employ the EKF which is the non-linear version of the regular Kalman Filter: the optimal state estimation filter \cite{todo}. When supplied with an accurate system model, and its statistical properties, the EKF provides the state estimate with the minimum mean-squared error.
-The EKF provides a near-optimal estimate of the system's state by linearising it around the current state estimate. The reason why we need the non-linear version of the filter is due to the fact that the model includes rotations, which are non-linear in nature.
+To estimate the state of the system we employ the EKF which is the non-linear version of the regular Kalman Filter: the optimal state estimation filter for linear systems \cite{todo} with Gaussian noise.
+When supplied with an accurate system model, and its statistical properties, the Kalman Filter provides the state estimate with the minimum mean-squared error \cite{todo}.
+The extended version of the filter provides a near-optimal estimate of the system's state by linearising it around the current state estimate.
+The reason why we need the non-linear version of the filter is due to the fact that the model includes rotations, which are non-linear in nature.
+Furthermore, as our system has very many sources of noise for each modelled noise variable, we can assume from the central limit theorem that the noise is approximately Gaussian.
+In practice, the assumption of approximately Gaussian noise works well in practice, and is used in many navigation applications \cite{todo}.
 
 % We use a kalman filter... the optimal state estimator
 % non linear due to rotations -- ekf
@@ -572,14 +597,17 @@ The EKF provides a near-optimal estimate of the system's state by linearising it
 % 		euler is fine if sampling fast enough
 % 			if deltaT is small
 
-Our system model can be described as a six DoF rigid body system with Newtonian mechanics. We do not model the aerodynamics of the craft and thus must rely on inertial sensors that gives information on the evolution of the system \cite{OpenPilotPaper}. The alternative would be to model the aerodynamics of the craft and the forces acting on the craft. Our approach allows us to apply our model to any system that uses the sensors because we are not concerned about the particular physiology of the agent but rather that its sensors can describe its state.
-This has the advantage that modelling errors are minimised, and the time required for system identification is reduced.
+Our system model can be described as a six DoF rigid body with Newtonian mechanics.
+We do not model the aerodynamics of the craft and thus must rely on inertial sensors that gives information on the evolution of the system, similar to  \cite{OpenPilotPaper}.
+The alternative would be to model the aerodynamics of the craft and the forces acting on the it. Our approach allows us to apply our model to any craft.
 Complex phenomena such as the turbulence caused by the thrust channelled around in the confined space would be close to impossible to model.
+Thus, our approach has the advantage that modelling-errors are minimised, and the time required for system identification is reduced.
 
 \subsection{Filter Equations} % (fold)
 \label{sub:filter_equations}
+The notation of this section uses lower case letters for vectors and functions, and upper case letters for matrices. 
 
-The filter is based on the following discrete time update model
+The Extended Kalman Filter is based on the following discrete time state space update model
 \begin{align}
 	x_k &= f(x_{k-1}, u_{k-1}, w_{k-1}) \notag \\
 	y_k &= h(x_k, v_k)
@@ -587,7 +615,7 @@ The filter is based on the following discrete time update model
 \end{align}
 where $x_k$ is the state vector at time $k$, $f$ is the state transition function, $u$ is the control input vector at time $k$, $w_k$ is the process noise vector at time $k$, $y_k$ is the measurement vector at time $k$, $h$ is the function that maps the state space to the observed space, and $v_k$ is the measurement noise vector.
 
-For compartibility with the Kalman filter, we assumed the noise in the system to be Gaussian white noise as follows
+The EKF assumes the noise in the system to be Gaussian white noise as follows
 \begin{align}
 	w_k &\sim N(0,Q_k) \notag \\
 	v_k &\sim N(0,R_k) \notag \\
@@ -596,7 +624,7 @@ For compartibility with the Kalman filter, we assumed the noise in the system to
 \end{align}
 where $Q_k$ and $R_k$ are the process noise and measurement noise covariance matrices, at time $k$, respectively. The initial state estimate error is assumed to be drawn from a normal distribution with covariance $P_0$.
 
-We define
+We define the notation
 \begin{align}
 	\hat{x}_{k|i} 	&= \mathbb{E}[x_k|y_0 \hdots y_i] \\
 	P_{k|i} 		&= \operatorname{cov}(x_k - \hat{x}_{k|i}) \notag \\
@@ -614,7 +642,7 @@ where we assume that the noise has zero mean:
 	\mathbb{E}[w_{k-1}] &= 0
 \end{align}
 
-We transform the state error covariance matrix using a linear approximation to the transformation imposed by the state transition function $f$ as follows:
+The EKF uses a linearised version of the system model $f$, represented as a Jacobian matrix $F$. We use this matrix to transform the state error covariance matrix at each time step. We also account for the process noise $w$ using the Jacobian matrix $G$. This is computed as follows:
 \begin{align}
 	P_{k|k-1} &\approx F_{k-1} P_{k-1|k-1} F_{k-1}^\top + G_{k-1} Q_{k-1} G_{k-1}^\top
 	\label{eqn:predictP}
@@ -625,12 +653,11 @@ where
 	G_{k-1} &= \left . \frac{\partial f}{\partial w} \right \vert _{\hat{x}_{k-1|k-1},u_{k-1}}
 \end{align}
 
---------------------------------------------------------------------------------
+In order to correct for errors in the state estimate that has been accumulated due to the process noise, we incorporate corrections based on measurements made from the output of the system. To do this, we use the EKF update equations, which are described below.
 
-In order to correct for errors accumulated by the state transition function we incorporate corrections based on measurements made from the output of the system. To do this, we use the EKF update equations.
-%todo: more flesh here
-
-For each measurement, we compute the expected measurement given our current state estimate using $h$, and compute the difference $z_k$, and estimate the associated covariance matrix using a linear approximation:
+For each measurement, such as a observed plane equation or a sonar altitude reading, we compute the expected measurement given our current state estimate. This is done using $h$, the measurement model, which maps the state space to the observed space.
+This will be two distinct functions for sonar and plane measurement.
+We compute the difference between this expected measurement, and the actual measurement, which we define as $z_k$. We also use the covariance associated with the measurment error $R$ to compute the covariance matrix associated with $z_k$ using a linear approximation of the measurement model $h$ denoted as $H$. This update equations are presented below:
 \begin{align}
 	z_k &= y_k - h(\hat{x}_{k|k-1}, \mathbb{E}[v_k]) \\
 	S_k &= \operatorname{cov}(z_k) \notag \\
@@ -642,8 +669,8 @@ where $P$ and $R$ are defined in equation (\ref{eqn:noisedef}), and where we ass
 \end{align}
 and where
 \begin{align}
-	H_{k} &= \left . \frac{\partial h}{\partial x} \right \vert _{\hat{x}_{k|k-1}} \\
-	V_{k} &= \left . \frac{\partial h}{\partial v} \right \vert _{\hat{x}_{k|k-1}}
+	H_{k} &= \left . \frac{\partial h}{\partial x} \right \vert _{\hat{x}_{k|k-1}}
+	%V_{k} &= \left . \frac{\partial h}{\partial v} \right \vert _{\hat{x}_{k|k-1}}
 \end{align}
 
 We define the Kalman gain as follows:
@@ -1355,6 +1382,11 @@ In the second test, we moved the setup by hand in a pseudo straight line of leng
 
 \section{Conclusion}
 
+The project was created with the goal to use inexpensive and available hardware to accurately estimate the state of a . 
+
+Can accurately detect and ignore noise. The tailored vision algorithms worker particularly well, having very good resilence to noise. 
+
+The next chapter of the research and work performed in this document would be to achieve robust 
 
 \nocite{*}
 
