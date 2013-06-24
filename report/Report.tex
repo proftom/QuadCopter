@@ -1393,7 +1393,13 @@ Can accurately detect and ignore noise. The tailored vision algorithms worker pa
 Due to delay in the hardware connecting the embedded platform to the 
 
 \section{Further Work}
-The next chapter of work performed in this document would be to achieve robust registration engine some shit like that or something
+Although much work was done on trying to implement our system on an ARM application processor during the course of this project, significant problems surrounding compatibility with OpenNI (the frame work linking the Xtion depth camera with PCL). This is currently in version 1.6. Version 2.0 will be released soon and is intended to increase compatibility with arm platforms. This will allow a much lighter setup with more options of development boards with low level outputs, which would also solve some of the latency issues that we had. 
+
+The algorithms described in this document would work much better if the inertial sensors were of high quality, as at the moment their noise causes the state estimate to diverge soon after observability of the planes is lost. Implementations utilising high quality sensors would yield more interesting results, as they could lose sight of previously registered planes and register new ones with an acceptable variance in their location. 
+
+
+
+
 
 \nocite{*}
 
