@@ -371,7 +371,7 @@ The downside of low pass filtering is illustrated in Figure~\ref{fig:spurious_pl
 		\includegraphics[width=0.4\textwidth]{6spuriousplanes_normals_2.PNG}
 	}
 
-	\caption{Effects of the low pass filtering by the normal estimation kernel}
+	\caption{Effects of the low pass filtering by the normal estimation kernel. White lines represent local surface normals.}
 	\label{fig:spurious_plane_normals}
 \end{figure}
 
@@ -433,16 +433,19 @@ One popular algorithm for density based clustering is density based scan (DBScan
 
 Four parameters are required to uniquely characterize planes, in this case we use the Hessian plane form with parameters $(N_A, N_B, N_C, D)$. Hence our DBScan implementation operates in this four dimensional space, with the normal components coming from the normal estimator and the $D$ components mathematically derived from xyz and N spaces. An example of the clustering is shown in Figure~\ref{fig:box_normal_clustering}.
 
-\subsection{DBScan Optimisations} % (fold)
-\label{sub:dbscan_optimisations}
+The downsides to the DBScan approach is the computational and space complexities. With $n$ being the number of points per frame, there is an O(n) preprocessing step to find $D$ components, followed by $O(n^2)$ clustering without accelerating data structures, or $O(n \cdot log(n))$ with. Therefore the decision was made to instead implement a faster flood fill algorithm and leave the coplanar patch merging to the EKF's feature association stage.
 
-% subsection dbscan_optimisations (end)
+% \subsection{DBScan Optimisations} % (fold)
+% \label{sub:dbscan_optimisations}
 
-Modifications to the DBScan algorithm were made to decrease the running time. By using tag fields to set whether points had already been visited or were already part of a cluster (a point can belong to one cluster only), the region query was prevented from being performed on points already part of a cluster. Further a custom conditional insertion procedure to insert into a list-like data structure without duplication was created, decreasing the complexity of insertion from $O(m \cdot log(n))$ (if using the standard template library set object) to $O(m)$.
+% % subsection dbscan_optimisations (end)
 
-The DBScan algorithm completes in $O(n^2)$ if the region query completes in $O(n)$, and $O(n \cdot log(n))$ if the region query completes within $O(log(n))$. Our implementation lay somewhere between the two, having a complexity dependent on run time, where a field of view containing more planar features took closer to the upper boundary. This is because captures with large or many planar features cause the region query procedure to be invoked more often, shifting the runtime complexity towards $O(n^2)$.
+% Modifications to the DBScan algorithm were made to decrease the running time. By keeping an open and a closed node sets (a point can belong to one cluster only), thus removing redundant duplicate lookups from the region query. Further a custom conditional insertion procedure to insert into a list-like data structure without duplication was created, decreasing the complexity of insertion from $O(m \cdot log(n))$ (if using the standard template library set object) to $O(m)$.
 
-To combat against the possibility of slow run-time performance, it was decided to use a 2 step algorithm. A simple Flood Fill algorithm fills the initial field of view captured from the depth camera by flooding (clustering) connected points which have the same plane equation (remember the xyz-Normal point cloud is converted to a plane cloud once the vision module receives a frame from the RGB-D camera). The Flood Fill will generate a new set of planes, typically of a plane count less than 10. This will then be passed to the DBScan algorithm for the second step of the two step algorithm. Where as the Flood Fill algorithm moved only between neighbouring points, the DBScan looks over the whole image space to find points within tolerance $\epsilon$ of the seed point plane equation. Planes which are partially obscured or divided  will still be recognised as a single plane in DBScan. This is not the case in Flood Fill, and hence why a 2 step algorithm is employed. The Flood Fill rapidly finds planes and the slower DBScan corrects for any planes that have been segmented. Using the analogy of a graphical editing package, if the Flood Fill is the paint bucket tool, the DBScan is the patching tool.
+% The DBScan algorithm completes in $O(n^2)$ if the region query completes in $O(n)$, and $O(n \cdot log(n))$ if the region query completes within $O(log(n))$. Our implementation lay somewhere between the two, having a complexity dependent on run time, where a field of view containing more planar features took closer to the upper boundary. This is because captures with large or many planar features cause the region query procedure to be invoked more often, shifting the runtime complexity towards $O(n^2)$.
+
+% we considered doing the below but realised that kalman can do stitching in plane association 
+%To combat against the possibility of slow run-time performance, it was decided to use a 2 step algorithm. A simple Flood Fill algorithm fills the initial field of view captured from the depth camera by flooding (clustering) connected points which have the same plane equation (remember the xyz-Normal point cloud is converted to a plane cloud once the vision module receives a frame from the RGB-D camera). The Flood Fill will generate a new set of planes, typically of a plane count less than 10. This will then be passed to the DBScan algorithm for the second step of the two step algorithm. Where as the Flood Fill algorithm moved only between neighbouring points, the DBScan looks over the whole image space to find points within tolerance $\epsilon$ of the seed point plane equation. Planes which are partially obscured or divided  will still be recognised as a single plane in DBScan. This is not the case in Flood Fill, and hence why a 2 step algorithm is employed. The Flood Fill rapidly finds planes and the slower DBScan corrects for any planes that have been segmented. Using the analogy of a graphical editing package, if the Flood Fill is the paint bucket tool, the DBScan is the patching tool.
 
 \begin{algorithm}[tbp]
 	\SetAlgoLined
@@ -476,13 +479,13 @@ To combat against the possibility of slow run-time performance, it was decided t
 	\label{alg:flood_fill}
 \end{algorithm}
 
-This design leads to increased throughput as the Flood Fill deals with the raw data from CCD space, converting 19200 points to only a few planes. The DBScan, having complexity towards a greedy $O(n^{2})$, only works on the plane set generated by the Flood Fill algorithm, meaning the near-quadratic complexity does not dominate run time as there are much less planes than there are points.
+%This design leads to increased throughput as the Flood Fill deals with the raw data from CCD space, converting 19200 points to only a few planes. The DBScan, having complexity towards a greedy $O(n^{2})$, only works on the plane set generated by the Flood Fill algorithm, meaning the near-quadratic complexity does not dominate run time as there are much less planes than there are points.
 
 \subsection{The Flood Fill Algorithm}
 \label{sub:flood_fill_algo}
-As mentioned, the Flood Fill algorithm is analogous to a paint bucket function in a graphical editing package. The algorithm begins by randomly selecting a seed plane from the plane cloud (that is we randomly select a point and corresponding normal from the RGB-D camera sensor output), and proceed to fill out from this seed in all directions until the planes parameters $(N_A, N_B, N_C, D)$ differ by more than a value $\epsilon$ from the original seed plane. This forms a connected region, which represents a plane. Algorithm~\ref{alg:flood_fill} lists how given a seed point, a region fill is generated.
+The flood fill algorithm is analogous to a paint bucket function in a graphical editing package. The algorithm begins by randomly selecting a seed plane from the plane cloud (that is we randomly select a point and corresponding normal from the RGB-D camera sensor output), and proceed to grow a cluster out from this seed in all directions until the local surface plane equation parameters at those points $(N_A, N_B, N_C, D)$ differ by more than a value $\epsilon$ from the original seed. This forms a connected region, which represents a planar patch. Algorithm~\ref{alg:flood_fill} lists how given a seed point, a region fill is peformed.
 
-Once a single fill has terminated and more than a certain threshold of the image has either been filled (call it $\sigma$, i.e. 90\%) then the algorithm terminates. If this threshold has not been satisfied then begin a new fill, selecting a new random seed point from a point that has not been already included in a previous fill region. The algorithm will repeat until $\sigma$ is satisfied or it has attempted to flood fill the plane cloud for more than a certain number of times (call it $\gamma$, i.e. 50). The Flood Fill algorithm works iteratively using only a simple queue structure and list keep track if points have been explored yet in the context of the current fill or already added to a previous fill (plane) respectively, resulting in a linear complexity of $O(n)$. 
+The fill is then performed again, selecting a new random seed point from a point that has not been already included in a previous fill region. The algorithm will repeat until a certain portion of the image is filled (called $\sigma$) or there have been more than $\gamma$ seed points tried on the frame. The flood fill algorithm works iteratively with a linear complexity of $O(n)$. 
 
 
 \subsection{Complications and Caveats in Segmentation} % (fold)
@@ -557,12 +560,12 @@ The PCA was never implemented as it was found that by increasing the minimum num
 \section{Extended Kalman Filter} % (fold)
 \label{sec:ekf}
 
-To estimate the state of the system we employ the EKF which is the non-linear version of the regular Kalman Filter: the optimal state estimation filter for linear systems \cite{todo} with Gaussian noise.
-When supplied with an accurate system model, and its statistical properties, the Kalman Filter provides the state estimate with the minimum mean-squared error \cite{todo}.
+To estimate the state of the system we employ the EKF which is the non-linear version of the regular Kalman Filter: the optimal state estimation filter for linear systems \cite{Stengel} with Gaussian noise.
+When supplied with an accurate system model, and its statistical properties, the Kalman Filter provides the state estimate with the minimum mean-squared error \cite{oxford}.
 The extended version of the filter provides a near-optimal estimate of the system's state by linearising it around the current state estimate.
 The reason why we need the non-linear version of the filter is due to the fact that the model includes rotations, which are non-linear in nature.
 Furthermore, as our system has very many sources of noise for each modelled noise variable, we can assume from the central limit theorem that the noise is approximately Gaussian.
-In practice, the assumption of approximately Gaussian noise works well in practice, and is used in many navigation applications \cite{todo}.
+In practice, the assumption of approximately Gaussian noise works well in practice, and is used in many navigation applications \cite{Stengel}.
 
 % We use a kalman filter... the optimal state estimator
 % non linear due to rotations -- ekf
@@ -1161,28 +1164,28 @@ Furthermore, we have a sonar sensor that measures the altitude of the craft with
 
 \subsection{Landmark Association} % (fold)
 \label{sub:landmark_association}
-When a new plane measruement is generated by the depth camera and the vision system, we need to decide whether this plane exists in the map or not. To do this we use the statistical measure called the squared Mahalanobis distance to evaluate how closely a newly observed plane is related to the ones in the state map. This measure is best described as a normalised distance that is used to gauge similarity of a new sample to a distribution with a known covariance matrix. The measure is formally defined as
-
-%\begin{aligned}
-	%d = 
-%\end{aligned}
-
-We do 
-
-When making the decision on whete
+When a new plane measurement is generated by the depth camera and the vision system, we need to decide whether this plane exists in the map or not. To do this we use the statistical measure called the squared Mahalanobis distance to evaluate how closely a newly observed plane is related to the ones in the state map.
+This measure is best described as a normalised distance that is used to gauge similarity of a new sample to a distribution with a known covariance matrix. The measure is formally defined as
+\begin{align}
+	d &= (x-\mu)^\top S^{-1} (x-\mu)
+\end{align}
+where $\mu$ is the mean of the distribution and $S$ is its covariance matrix. In our case, $\mu$ is the estimate of a plane equation which is in our map, and $S$ is defined in Equation~(\ref{eqn:measurement_model}).
 
 We use a threshold on this distance such that 99\% of true measurements are accepted. For our 4 dimensional plane measurement, this evaluates to:
+\verb"d = chi2inv(0.99,4) = 13.2767" which is the MATLAB command for the inverse chi squared distribution with 4 degrees of freedom, evaluated at 0.99.
 
-\verb"d = chi2inv(0.99,4) = 13.2767" which is the MATLAB command for the inverse chi squared distribution with 4 degrees of freedom and evaluated at 0.99. In order to perform association, the procedure is we find the mahalanobis distance between our new observation and all the planes in the map, keeping the minimum. If this minimum is less than the threshold, then the data is associated, if not it is discarded as an outlier.
+For each plane received from the vision algorithm, we compute the Mahalanobis distance to each plane in the map.
+If there are any pairs that have a distance less than the threshold, we associate it to the landmark with the smallest one.
+If no matches are found, we add the plane to the plane map as described in the next section.
 
 % subsection landmark_association (end)
 
 \subsection{Landmark Initialization} % (fold)
 \label{sub:landmark_initialization}
-The ability to observe new planes as the craft explores its environment is crucial for it to keep track of its location. By re-observing these new features, the craft is able to compute corrections in its location. When the craft sees a new plane, it add this to its internal state transforming the plane equations in the body frame to the world frame and then storing this and its associated covariance information. It uses an inverse observation model, e which describes how we can derive the current state from an observed plane equation y. Mathematically we have,
-
+The ability to observe new planes as the craft explores its environment is crucial for it to keep track of its location. By re-observing these new features, the craft is able to compute corrections in its location.
+When the craft sees a new plane, it adds this to its internal state by transforming the plane equations in the body frame to the world frame and then storing this and its associated covariance information. This transformation we call $e$, the inverse observation model, which describes the state of the plane in the form we store in our map from an observed plane equation $y$. Mathematically we have
 \begin{align}
-	y_{k} = y|_{x(k)} =  
+	y_{k} &=  
 	\left[
 	\begin{matrix}
 		\hat{N}_x \\
@@ -1191,9 +1194,7 @@ The ability to observe new planes as the craft explores its environment is cruci
 		\hat{D}
 	\end{matrix}
 	\right]
-\end{align}
-
-\begin{align}
+	&
 	T_e &= 
 	\left[
 	\begin{matrix}
@@ -1202,13 +1203,13 @@ The ability to observe new planes as the craft explores its environment is cruci
 	\end{matrix}
 	\right]
 \end{align}
-$T_e$ defines the transformation matrix from the body frame to the earth frame. The new plane numbered j is defined below, 
-
+where $T_e$ defines the transformation matrix from the body frame to the earth frame. The new plane, numbered $j$ is defined as 
 \begin{align}
 	\pi_j	&= e(y_k,x) \notag \\
 			&= T_e y_k
 \end{align}
-The new state at time k now becomes, 
+
+We now add the plane to our state as follows
 \begin{align}
 	x_{k} &\leftarrow
 	\left[
@@ -1218,7 +1219,8 @@ The new state at time k now becomes,
 	\end{matrix}
 	\right]
 \end{align}
-To update the P or state covariance matrix, we have to compute the jacobian of e w.r.t the state denoted as $E_x$ and the jacobiain w.r.t the newly observed plane denoted as $E_y$. Mathematically we have, 
+
+To initialize the new entries in the state covariance matrix, $P$, we have to compute the Jacobian of $e$ w.r.t the state, which we denote as $E_x$, and the Jacobiain of $e$ w.r.t the newly observed plane, denoted as $E_y$. Mathematically we have
 \begin{align}
 	E_y &= \frac{\partial e}{\partial y} \notag \\
 		&= T_e \\
@@ -1257,8 +1259,8 @@ where
 \begin{align}
 	E_{Nq(0\cdots3)} &= \Xi(q) \hat{N}
 \end{align}
-TODO(define Enq and N hat)
-The updated P matrix is defined as: 
+
+Using the optimizations described in \cite{Sola2013} we use these matrices to initialize the new entries in $P$ as follows
 \begin{align}
 	P_{\pi \pi} &= E_x P_{(0-15,0-15)} E_x^\top + E_y R E_y^\top \notag \\
 	P_{x \pi} 	&= E_x P_{(0-15,all)} \notag \\
@@ -1273,8 +1275,8 @@ The updated P matrix is defined as:
 
 % subsection landmark_initialization (end)
 
-\subsection{Optimisation} % (fold)
-\label{sub:optimisation}
+\subsection{Optimisations} % (fold)
+\label{sub:optimisations}
 
 SerialUpdate: \cite{OpenPilotPaper} and chapter 4.2.2 of \cite{KFBookSerialupdate}, and also mentioned in \cite{Sola2013}
 The referenced papers perform an optimization which assumes an entirely uncorrelated measurement noise covariance matrix. That is the $R$ matrix is purely diagonal.
