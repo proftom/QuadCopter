@@ -161,7 +161,6 @@ Therefore there is increased interest in autonomous micro aerial vehicles (MAVs)
 
 \subsection{Project Aim}
 \label{sub:what_are_we_trying_to_achieve}
-%todo: \cite{OpenPilotinsgps} was here, why?
 This project aims to build a functional prototype of an autonomous micro aerial vehicle that can operate in GPS denied environments, such as indoors and in urban canyons. The aim of the prototype is to be a proof of concept, showing that the above is possible with current technology, using only on-board sensors and computing. 
 
 \subsection{Who are Mavrx and why are they interested?} % (fold)
@@ -201,7 +200,7 @@ The aircraft configuration of choice is a quadcopter, due to its ability to navi
 
 %todo!!!: the below is not too bad, include it somewhere?
 
-% Our state estimator involves a moving agent such as a quadcopter which deploys one sensor to gather information about its surroundings. This is called an exteroceptive sensor and in our case, we use a depth camera. We also incorporate extra sensors to measure the agent's own movement. These are called preprioceptive sensors and we used an accelerometer and a gyroscope. The state evaluation process involves the following steps:
+% Our state estimator involves a moving agent such as a quadcopter which uses one sensor to gather information about its surroundings. This is called an exteroceptive sensor and in our case, we use a depth camera. We also incorporate extra sensors to measure the agent's own movement. These are called preprioceptive sensors and we used an accelerometer and a gyroscope. The state evaluation process involves the following steps:
 
 % \textbf{The agent moves, reaching a new point of view in the room} As a result of unavoidable noise
 % and errors, this movement increases the uncertainty on the robot's localization.
@@ -262,8 +261,6 @@ For the above reasons, the project was implemented on Intel Atom D2550 (Dual Cor
 \subsection{Sensor Calibration} % (fold)
 
 The depth data obtained by the RGB-D camera of choice has two distinct adverse properties. Firstly, the depth values are quantised to levels that scale quadratically, i.e. there is a loss of resolution at longer distances. Furthermore, the feature extraction pipeline needs to account for this effect and have depth-dependent parameters. Secondly, the factory calibration of the sensor was evaluated and found to be inadequate for our application, already having as much as 23.5\% error at 4 meter distance. This section further discusses the sensor's performance and our calibration routine.
-%todo: mention depth-dependent smoothing in integral image convolution?
-
 Additionally, it is important to note that transforming per-pixel depth data to a xyz point cloud is based on the cone projection model of the sensor. Therefore an error in the depth measurement for a CCD pixel will also introduce error in the corresponding point's x and y coordinates within the xyz space.
 %todo: paint a quick and dirty explanation picture?
 
@@ -277,8 +274,6 @@ As mentioned above, the factory calibration of the RGB-D camera's depth sensor i
 \caption{Example of the poor factory calibration of the Xtion sensor when looking at a wall 4 meters from the camera, plotted as xyz space point cloud.}
 \label{fig:uncal5m2}
 \end{figure}
-%todo!!!: would be nice to fix up the lhs matlab plot, no axes labeling, too small to see, etc. Maybe just nuke the colour plot
-
 
 Figure~\ref{fig:avDist2} shows the average measurement across all of the frame for a range of distances. It can be seen that the depth data is not just warped per pixel, but also wrong on average. At 4m the average distance measured was 3.32m, which represents a 17\% error. The maximum per-pixel error being 0.941m at 4m, which corresponds to 23.5\% error. 
 
@@ -505,15 +500,7 @@ In an effort to deal with this caveat, introducing an additional step between th
 This method was never implemented as after thinking ahead towards plane association in the state update of the EKF (below), it was realised that neither the DBScan or PCA algorithms were required.  In fact, it was found that DBScan was no longer the algorithm suitable, but rather a similar algorithm called Iterative Nearest Neighbour (INN) should be used. This is discussed in detail in the registration section of the EKF.
 
 
-
-
-
-
-
-
-
-
-
+%todo!!!: fix captions as they coalesce into one sentence
 
 \begin{figure}[p]
 	\centering
@@ -566,18 +553,9 @@ This method was never implemented as after thinking ahead towards plane associat
 \end{figure}
 \clearpage
 
-% \subsection{Sensor Calibration} % (fold)
-% \label{sub:sensor_calibration}
-
-% Multidimensional least squares correction
-% measure a plane at a known distance (d)
-% least squares establish the observed plane that matches this distance d % 	(or just least squares the plane first??)
-% the distance of each point from the plane is the true calibration vector field projected onto the normal of the observed plane (in the camera's coordinate system)
-% subsection sensor_calibration (end)
-
 % section feature_extraction (end)
 
-\clearpage %temp!
+\clearpage %todo temp!
 \section{Extended Kalman Filter} % (fold)
 \label{sec:ekf}
 
@@ -592,7 +570,7 @@ The EKF provides a near-optimal estimate of the system's state by linearising it
 % 		euler is fine if sampling fast enough
 % 			if deltaT is small
 
-Our system model can be described as a six DoF rigid body system with Newtonian mechanics. We do not model the aerodynamics of the craft and thus must rely on inertial sensors that gives information on the evolution of the system\cite{OpenPilotPaper}. The alternative would be to model the aerodynamics of the craft and the forces acting on the craft. Our approach allows us to apply our model to any system that uses the sensors because we are not concerned about the particular physiology of the agent but rather that its sensors can describe its state.
+Our system model can be described as a six DoF rigid body system with Newtonian mechanics. We do not model the aerodynamics of the craft and thus must rely on inertial sensors that gives information on the evolution of the system \cite{OpenPilotPaper}. The alternative would be to model the aerodynamics of the craft and the forces acting on the craft. Our approach allows us to apply our model to any system that uses the sensors because we are not concerned about the particular physiology of the agent but rather that its sensors can describe its state.
 This has the advantage that modelling errors are minimised, and the time required for system identification is reduced.
 Complex phenomena such as the turbulence caused by the thrust channelled around in the confined space would be close to impossible to model.
 
