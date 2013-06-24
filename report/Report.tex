@@ -554,8 +554,12 @@ The PCA was never implemented as it was found that by increasing the minimum num
 \section{Extended Kalman Filter} % (fold)
 \label{sec:ekf}
 
-To estimate the state of the system we employ the EKF which is the non-linear version of the regular Kalman Filter: the optimal state estimation filter \cite{todo}. When supplied with an accurate system model, and its statistical properties, the EKF provides the state estimate with the minimum mean-squared error.
-The EKF provides a near-optimal estimate of the system's state by linearising it around the current state estimate. The reason why we need the non-linear version of the filter is due to the fact that the model includes rotations, which are non-linear in nature.
+To estimate the state of the system we employ the EKF which is the non-linear version of the regular Kalman Filter: the optimal state estimation filter for linear systems \cite{todo} with Gaussian noise.
+When supplied with an accurate system model, and its statistical properties, the Kalman Filter provides the state estimate with the minimum mean-squared error \cite{todo}.
+The extended version of the filter provides a near-optimal estimate of the system's state by linearising it around the current state estimate.
+The reason why we need the non-linear version of the filter is due to the fact that the model includes rotations, which are non-linear in nature.
+Furthermore, as our system has very many sources of noise for each modelled noise variable, we can assume from the central limit theorem that the noise is approximately Gaussian.
+In practice, the assumption of approximately Gaussian noise works well in practice, and is used in many navigation applications \cite{todo}.
 
 % We use a kalman filter... the optimal state estimator
 % non linear due to rotations -- ekf
@@ -565,14 +569,17 @@ The EKF provides a near-optimal estimate of the system's state by linearising it
 % 		euler is fine if sampling fast enough
 % 			if deltaT is small
 
-Our system model can be described as a six DoF rigid body system with Newtonian mechanics. We do not model the aerodynamics of the craft and thus must rely on inertial sensors that gives information on the evolution of the system \cite{OpenPilotPaper}. The alternative would be to model the aerodynamics of the craft and the forces acting on the craft. Our approach allows us to apply our model to any system that uses the sensors because we are not concerned about the particular physiology of the agent but rather that its sensors can describe its state.
-This has the advantage that modeling errors are minimised, and the time required for system identification is reduced.
-Complex phenomena such as the turbulence caused by the thrust channeled around in the confined space would be close to impossible to model.
+Our system model can be described as a six DoF rigid body with Newtonian mechanics.
+We do not model the aerodynamics of the craft and thus must rely on inertial sensors that gives information on the evolution of the system, similar to  \cite{OpenPilotPaper}.
+The alternative would be to model the aerodynamics of the craft and the forces acting on the it. Our approach allows us to apply our model to any craft.
+Complex phenomena such as the turbulence caused by the thrust channelled around in the confined space would be close to impossible to model.
+Thus, our approach has the advantage that modelling-errors are minimised, and the time required for system identification is reduced.
 
 \subsection{Filter Equations} % (fold)
 \label{sub:filter_equations}
+The notation of this section uses lower case letters for vectors and functions, and upper case letters for matrices. 
 
-The filter is based on the following discrete time update model
+The Extended Kalman Filter is based on the following discrete time state space update model
 \begin{align}
 	x_k &= f(x_{k-1}, u_{k-1}, w_{k-1}) \notag \\
 	y_k &= h(x_k, v_k)
@@ -580,7 +587,7 @@ The filter is based on the following discrete time update model
 \end{align}
 where $x_k$ is the state vector at time $k$, $f$ is the state transition function, $u$ is the control input vector at time $k$, $w_k$ is the process noise vector at time $k$, $y_k$ is the measurement vector at time $k$, $h$ is the function that maps the state space to the observed space, and $v_k$ is the measurement noise vector.
 
-For compatibility with the Kalman filter, we assumed the noise in the system to be Gaussian white noise as follows
+The EKF assumes the noise in the system to be Gaussian white noise as follows
 \begin{align}
 	w_k &\sim N(0,Q_k) \notag \\
 	v_k &\sim N(0,R_k) \notag \\
@@ -589,7 +596,7 @@ For compatibility with the Kalman filter, we assumed the noise in the system to 
 \end{align}
 where $Q_k$ and $R_k$ are the process noise and measurement noise covariance matrices, at time $k$, respectively. The initial state estimate error is assumed to be drawn from a normal distribution with covariance $P_0$.
 
-We define
+We define the notation
 \begin{align}
 	\hat{x}_{k|i} 	&= \mathbb{E}[x_k|y_0 \hdots y_i] \\
 	P_{k|i} 		&= \operatorname{cov}(x_k - \hat{x}_{k|i}) \notag \\
@@ -607,7 +614,7 @@ where we assume that the noise has zero mean:
 	\mathbb{E}[w_{k-1}] &= 0
 \end{align}
 
-We transform the state error covariance matrix using a linear approximation to the transformation imposed by the state transition function $f$ as follows:
+The EKF uses a linearised version of the system model $f$, represented as a Jacobian matrix $F$. We use this matrix to transform the state error covariance matrix at each time step. We also account for the process noise $w$ using the Jacobian matrix $G$. This is computed as follows:
 \begin{align}
 	P_{k|k-1} &\approx F_{k-1} P_{k-1|k-1} F_{k-1}^\top + G_{k-1} Q_{k-1} G_{k-1}^\top
 	\label{eqn:predictP}
@@ -618,12 +625,11 @@ where
 	G_{k-1} &= \left . \frac{\partial f}{\partial w} \right \vert _{\hat{x}_{k-1|k-1},u_{k-1}}
 \end{align}
 
---------------------------------------------------------------------------------
+In order to correct for errors in the state estimate that has been accumulated due to the process noise, we incorporate corrections based on measurements made from the output of the system. To do this, we use the EKF update equations, which are described below.
 
-In order to correct for errors accumulated by the state transition function we incorporate corrections based on measurements made from the output of the system. To do this, we use the EKF update equations.
-%todo: more flesh here
-
-For each measurement, we compute the expected measurement given our current state estimate using $h$, and compute the difference $z_k$, and estimate the associated covariance matrix using a linear approximation:
+For each measurement, such as a observed plane equation or a sonar altitude reading, we compute the expected measurement given our current state estimate. This is done using $h$, the measurement model, which maps the state space to the observed space.
+This will be two distinct functions for sonar and plane measurement.
+We compute the difference between this expected measurement, and the actual measurement, which we define as $z_k$. We also use the covariance associated with the measurment error $R$ to compute the covariance matrix associated with $z_k$ using a linear approximation of the measurement model $h$ denoted as $H$. This update equations are presented below:
 \begin{align}
 	z_k &= y_k - h(\hat{x}_{k|k-1}, \mathbb{E}[v_k]) \\
 	S_k &= \operatorname{cov}(z_k) \notag \\
@@ -635,8 +641,8 @@ where $P$ and $R$ are defined in equation (\ref{eqn:noisedef}), and where we ass
 \end{align}
 and where
 \begin{align}
-	H_{k} &= \left . \frac{\partial h}{\partial x} \right \vert _{\hat{x}_{k|k-1}} \\
-	V_{k} &= \left . \frac{\partial h}{\partial v} \right \vert _{\hat{x}_{k|k-1}}
+	H_{k} &= \left . \frac{\partial h}{\partial x} \right \vert _{\hat{x}_{k|k-1}}
+	%V_{k} &= \left . \frac{\partial h}{\partial v} \right \vert _{\hat{x}_{k|k-1}}
 \end{align}
 
 We define the Kalman gain as follows:
