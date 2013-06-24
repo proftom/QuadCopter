@@ -104,8 +104,8 @@ This report investigates the design of indoor state estimation techniques, and d
 \tableofcontents
 
 
-\section{Acronyms} % (fold)
-\label{sec:acronyms}
+%\section{Acronyms} % (fold)
+%\label{sec:acronyms}
 \begin{acronym}
 	\acro{DBScan}{Density Based Spatial Clusttering of Applications with Noise}
 	\acro{DoF}{Degrees of Freedom}
@@ -124,7 +124,7 @@ This report investigates the design of indoor state estimation techniques, and d
 	\acro{UAV}{Unmanned Aerial Vehicle}
 	\acro{ToF}{time of flight}
 \end{acronym}
-\clearpage
+%\clearpage
 % section acronyms (end)
 
 \section{Executive Summary} % (fold)
@@ -188,7 +188,7 @@ Shen et al. \cite{Shen2012} use a quadcopter airframe and a RGB-D camera combine
 
 The intended approach is to use a consumer grade RGB-D camera as the primary sensor, supplemented with accelerometers, gyroscopes and a downward facing sonar sensor. In order to generate the estimate of the robot's state we use an Extended Kalman Filter (EKF) to fuse the data. In order to simplify feature extraction and reduce the computational complexity, features tracked by the filter are planar surfaces. This is due to planes are being easy to characterise from all directions as well as being a consistently available feature in man-made environments. 
 
-The depth camera of choise is the Asus Xtion Pro as it is considerably lighter than the copeting products, while maintaining a similar price point. Due to the relatively narrow field of view, the floor and the ceiling is expected to often be out of view, resulting in reduced observability in the elevation direction. The depth camera is complemented with a downward facing sonar sensor to address this issue.
+The depth camera of choise is the Asus Xtion Pro as it is considerably lighter than the copeting products, while maintaining a similar price point. Due to the relatively narrow field of view (58$^{\circ}$ horizontal, 45$^{\circ}$ vertical), the floor and the ceiling is expected to often be out of view, resulting in reduced observability in the elevation direction. The depth camera is complemented with a downward facing sonar sensor to address this issue.
 
 The aircraft configuration of choice is a quadcopter, due to its ability to navigate environments with limited space and stability. The latter also helps to reduce the amount of motion blur in the depth camera. Finally, it presents a good opportunity to test Mavrx/UAir's R10 quadcopter platform's reliability and robustness.
 
@@ -215,7 +215,7 @@ The localisation scheme used is based on a feature tracking Extended Kalman Filt
 The job of the EKF is to perform an optimal evaluation of the robot's state given the presence of uncertainties in measurements. The EKF is a non-linear extension of the Kalman filter which is itself a linear quadratic estimator capable of giving optimal values of a measurement in the presence of noise. Its results are more accurate than those obtained from single measurements. The EKF operates iteratively producing optimal values around the current mean and covariance. The other alternative to the EKF is the particle filter. The main difference is that the EKF produces optimal results using an approximate mathematical model while the particle filter produces optimal results based on physical models.
 Based on a comparative study \cite{CompareFilters} on the difference between the two approaches, for Gaussian noise model the Kalman filter will always produce a better result in less computation time.
 
-The state of the robot consists of its position, velocity, attitude, accelerometer and gyroscope biases, and landmark positions. The non-trivial state components, the biases due to temperature variation and manufacturing process errors, are stored because they exhibit a random walk and thus depend on their previous values. \textbf{TODO Insert reference for bias behaviour here}. The Kalman filter iteratively updates the robot's state along with its uncertainties, referred to as its covariance matrix.
+The state of the robot consists of its position, velocity, attitude, accelerometer and gyroscope biases, and landmark positions. The non-trivial state components, the biases due to temperature variation and manufacturing process errors, are stored because they exhibit a random walk and thus depend on their previous values. The Kalman filter iteratively updates the robot's state along with its uncertainties, referred to as its covariance matrix.
 
 The feature extraction pipeline starts with 160x120 depth frames at 30 frames per second from the RGB-D camera. Using Point Cloud Library (PCL) the data is transformed into a xyz point cloud. Next, local surface normals at each point are computed using integral images \cite{Holz2011}. The use of integral images lets us remove the high frequency noise from the depth camera in a computationally efficient manner. At this stage there is a point cloud in xyz space with a local normal vector $(N_x, N_y, N_z)$ at each point. 
 
@@ -224,7 +224,6 @@ The above point cloud is then clustered by a custom flood fill algorithm. The al
 The incoming plane data invokes an update iteration in the EKF, which tries to associate measured planes to existing features in its state. The association is based on Mahalanobis distance, which is a measurement used in multi-dimensional statistical analysis for classification of samples.
 
 Additionally, the project produced the necessary mathematical derivations and a partial implementation of feature registration. Registration enables the filter to increase the landmark map with previously unobserved features online. This will allow the quadrotor to solve the full simultaneous localisation and mapping (SLAM) problem and operate in environments without any prior knowledge.
-
 
 
 \section{Preliminaries}
