@@ -1,5 +1,4 @@
 <h1>Project Indoor State Estimation (Grade: A)</h1>
-<b> Forked from the original repo where I contributed. This is my local copy just in case </b>
 README
 This file describes the organisation of our project folders:
 <ul>
